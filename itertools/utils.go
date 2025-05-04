@@ -6,7 +6,7 @@ func equal[T comparable](a, b []T) bool {
 		return false
 	}
 	for i, v := range a {
-		if v != b[i] {
+		if v != b[i] { // reflect.DeepEqual(v, b[i])
 			return false
 		}
 	}
