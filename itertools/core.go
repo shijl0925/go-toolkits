@@ -20,12 +20,12 @@ func Filter[T any](s []T, fn func(T) bool) []T {
 	return result
 }
 
-func Reduce[T any](s []T, fn func(T, T) T) T {
-	result := s[0]
-	for _, v := range s[1:] {
-		result = fn(result, v)
+func Reduce[T any, U any](s []T, fn func(U, T) U, initial U) U {
+	acc := initial
+	for _, v := range s {
+		acc = fn(acc, v)
 	}
-	return result
+	return acc
 }
 
 type Tuple[T any, U any] struct {
