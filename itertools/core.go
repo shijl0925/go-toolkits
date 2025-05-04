@@ -76,3 +76,35 @@ func Reverse[T any](s []T) []T {
 	}
 	return s
 }
+
+// Repeat returns a new slice with n copies of the given element.
+func Repeat[T any](s T, n int) []T {
+	result := make([]T, 0, n)
+	for i := 0; i < n; i++ {
+		result = append(result, s)
+	}
+	return result
+}
+
+// Product returns a new slice of tuples, where each tuple contains the corresponding elements from two slices.
+func Product[T any](slices ...[]T) [][]T {
+	length := len(slices)
+	if length == 0 {
+		return nil
+	} else if length == 1 {
+		result := make([][]T, 0, len(slices[0]))
+		for _, v := range slices[0] {
+			result = append(result, []T{v})
+		}
+		return result
+	} else {
+		prev := Product(slices[1:]...)
+		result := make([][]T, 0, len(slices[0])*len(prev))
+		for _, v := range slices[0] {
+			for _, p := range prev {
+				result = append(result, append([]T{v}, p...))
+			}
+		}
+		return result
+	}
+}
