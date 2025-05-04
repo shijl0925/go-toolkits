@@ -302,3 +302,50 @@ func Test_Product(t *testing.T) {
 		}
 	})
 }
+
+func Test_GroupBy(t *testing.T) {
+	t.Run("test1", func(t *testing.T) {
+		slice := []string{"A", "B", "DEF", "GH", "IJK"}
+		wanted := map[int][]string{
+			1: {"A", "B"},
+			2: {"GH"},
+			3: {"DEF", "IJK"},
+		}
+		if got := GroupBy(slice, func(x string) int { return len(x) }); !reflect.DeepEqual(got, wanted) {
+			t.Errorf("GroupBy() expected %v, got %v", wanted, got)
+		}
+	})
+
+	tests := []struct {
+		name    string
+		slice   []int
+		keyFunc func(int) int
+		want    map[int][]int
+	}{
+		{
+			name:  "group by parity",
+			slice: []int{1, 2, 3, 4, 5},
+			keyFunc: func(x int) int {
+				return x % 2
+			},
+			want: map[int][]int{
+				1: {1, 3, 5},
+				0: {2, 4},
+			},
+		},
+		{
+			name:    "empty slice",
+			slice:   []int{},
+			keyFunc: func(x int) int { return 1 },
+			want:    map[int][]int{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GroupBy(tt.slice, tt.keyFunc); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("groupBy() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

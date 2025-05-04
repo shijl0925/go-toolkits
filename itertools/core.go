@@ -108,3 +108,13 @@ func Product[T any](slices ...[]T) [][]T {
 		return result
 	}
 }
+
+// GroupBy groups elements of the slice into a map based on a key function
+func GroupBy[T any, U comparable](slice []T, fn func(T) U) map[U][]T {
+	result := make(map[U][]T)
+	for _, v := range slice {
+		key := fn(v)
+		result[key] = append(result[key], v)
+	}
+	return result
+}
