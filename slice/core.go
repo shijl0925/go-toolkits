@@ -22,9 +22,9 @@ func Sum[T RealNumber](s []T) T {
 // Max returns the maximum value in the slice.
 func Max[T constraints.Ordered](s []T) T {
 	result := s[0]
-	for _, v := range s[1:] {
-		if v > result {
-			result = v
+	for i := 1; i < len(s); i++ {
+		if s[i] > result {
+			result = s[i]
 		}
 	}
 	return result
@@ -33,9 +33,9 @@ func Max[T constraints.Ordered](s []T) T {
 // Min returns the minimum value in the slice.
 func Min[T constraints.Ordered](s []T) T {
 	result := s[0]
-	for _, v := range s[1:] {
-		if v < result {
-			result = v
+	for i := 1; i < len(s); i++ {
+		if s[i] < result {
+			result = s[i]
 		}
 	}
 	return result
@@ -88,4 +88,49 @@ func Insert[T any](src []T, element T, index int) []T {
 // 在 slice 的指定位置插入新切片。
 func InsertMany[T any](src []T, elements []T, index int) []T {
 	return append(src[:index], append(elements, src[index:]...)...)
+}
+
+// Contains 判断 src 里面是否存在 dst
+func Contains[T comparable](src []T, dst T) bool {
+	//for _, v := range src {
+	//	if v == dst {
+	//		return true
+	//	}
+	//}
+
+	//invMap := make(map[T]struct{}, len(src))
+	//if _, ok := invMap[dst]; ok {
+	//	return true
+	//}
+
+	return false
+}
+
+// ContainsAny 判断 src 里面是否存在 dst 中的任何一个元素
+func ContainsAny[T comparable](src, dst []T) bool {
+	//for _, v := range src {
+	//	if Contains(dst, v) {
+	//		return true
+	//	}
+	//}
+	return false
+}
+
+// ContainsAll 判断 src 里面是否存在 dst 中的所有元素
+func ContainsAll[T comparable](src, dst []T) bool {
+	return false
+}
+
+// Unique removes duplicate elements from a slice.
+// 删除 slice 中的重复元素。
+func Unique[T comparable](s []T) []T {
+	result := make([]T, 0, len(s))
+	seen := make(map[T]struct{}, len(s))
+	for _, v := range s {
+		if _, ok := seen[v]; !ok {
+			result = append(result, v)
+			seen[v] = struct{}{}
+		}
+	}
+	return result
 }

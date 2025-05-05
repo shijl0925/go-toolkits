@@ -227,3 +227,22 @@ func Test_Extend(t *testing.T) {
 		})
 	}
 }
+
+func Test_Unique(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		expected []int
+	}{
+		{"test1", []int{}, []int{}},
+		{"test2", []int{1, 2, 3, 4}, []int{1, 2, 3, 4}},
+		{"test3", []int{1, 2, 2, 3, 4, 4, 5}, []int{1, 2, 3, 4, 5}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.Unique(tc.slice); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("Unique() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
