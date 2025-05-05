@@ -1,6 +1,7 @@
-package itertools
+package itertools_test
 
 import (
+	"github.com/shijl0925/go-toolkits/itertools"
 	"reflect"
 	"testing"
 )
@@ -18,7 +19,7 @@ func Test_MapSliceArray(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Map(tc.slice, tc.fn); !reflect.DeepEqual(got, tc.expected) {
+			if got := itertools.Map(tc.slice, tc.fn); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Map() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -38,7 +39,7 @@ func Test_FilterSlice(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Filter(tc.slice, tc.fn); !reflect.DeepEqual(got, tc.expected) {
+			if got := itertools.Filter(tc.slice, tc.fn); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Filter() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -58,7 +59,7 @@ func Test_AllSlice(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := All(tc.slice, tc.fn); got != tc.expected {
+			if got := itertools.All(tc.slice, tc.fn); got != tc.expected {
 				t.Errorf("All() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -78,7 +79,7 @@ func Test_AnySlice(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Any(tc.slice, tc.fn); got != tc.expected {
+			if got := itertools.Any(tc.slice, tc.fn); got != tc.expected {
 				t.Errorf("Any() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -98,13 +99,13 @@ func Test_ReduceSlice(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Reduce(tc.slice, tc.fn, tc.initial); got != tc.expected {
+			if got := itertools.Reduce(tc.slice, tc.fn, tc.initial); got != tc.expected {
 				t.Errorf("Reduce() expected %v, got %v", tc.expected, got)
 			}
 		})
 	}
 	t.Run("test3", func(t *testing.T) {
-		if got := Reduce([]string{"geeks", "for", "geeks"}, func(x, y string) string { return x + y }, "!"); got != "!geeksforgeeks" {
+		if got := itertools.Reduce([]string{"geeks", "for", "geeks"}, func(x, y string) string { return x + y }, "!"); got != "!geeksforgeeks" {
 			t.Errorf("Reduce() expected %v, got %v", "!geeksforgeeks", got)
 		}
 	})
@@ -115,13 +116,13 @@ func Test_Zip(t *testing.T) {
 		name   string
 		slice1 []int
 		slice2 []string
-		want   []Tuple[int, string]
+		want   []itertools.Tuple[int, string]
 	}{
 		{
 			name:   "equal length slices",
 			slice1: []int{1, 2, 3},
 			slice2: []string{"one", "two", "three"},
-			want: []Tuple[int, string]{
+			want: []itertools.Tuple[int, string]{
 				{A: 1, B: "one"},
 				{A: 2, B: "two"},
 				{A: 3, B: "three"},
@@ -131,7 +132,7 @@ func Test_Zip(t *testing.T) {
 			name:   "first slice longer",
 			slice1: []int{1, 2, 3, 4},
 			slice2: []string{"one", "two", "three"},
-			want: []Tuple[int, string]{
+			want: []itertools.Tuple[int, string]{
 				{A: 1, B: "one"},
 				{A: 2, B: "two"},
 				{A: 3, B: "three"},
@@ -141,7 +142,7 @@ func Test_Zip(t *testing.T) {
 			name:   "second slice longer",
 			slice1: []int{1, 2},
 			slice2: []string{"one", "two", "three", "four"},
-			want: []Tuple[int, string]{
+			want: []itertools.Tuple[int, string]{
 				{A: 1, B: "one"},
 				{A: 2, B: "two"},
 			},
@@ -150,25 +151,25 @@ func Test_Zip(t *testing.T) {
 			name:   "empty first slice",
 			slice1: []int{},
 			slice2: []string{"one", "two", "three"},
-			want:   []Tuple[int, string]{},
+			want:   []itertools.Tuple[int, string]{},
 		},
 		{
 			name:   "empty second slice",
 			slice1: []int{1, 2, 3},
 			slice2: []string{},
-			want:   []Tuple[int, string]{},
+			want:   []itertools.Tuple[int, string]{},
 		},
 		{
 			name:   "both slices empty",
 			slice1: []int{},
 			slice2: []string{},
-			want:   []Tuple[int, string]{},
+			want:   []itertools.Tuple[int, string]{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Zip(tt.slice1, tt.slice2); !reflect.DeepEqual(got, tt.want) {
+			if got := itertools.Zip(tt.slice1, tt.slice2); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Zip() = %v, want %v", got, tt.want)
 			}
 		})
@@ -177,17 +178,17 @@ func Test_Zip(t *testing.T) {
 
 func Test_ReverseSlice(t *testing.T) {
 	t.Run("test1", func(t *testing.T) {
-		if got := Reverse([]int{1, 2, 3, 4, 5}); !reflect.DeepEqual(got, []int{5, 4, 3, 2, 1}) {
+		if got := itertools.Reverse([]int{1, 2, 3, 4, 5}); !reflect.DeepEqual(got, []int{5, 4, 3, 2, 1}) {
 			t.Errorf("Reverse() expected %v, got %v", 0, got)
 		}
 	})
 	t.Run("test2", func(t *testing.T) {
-		if got := Reverse([]string{"one", "two", "three"}); !reflect.DeepEqual(got, []string{"three", "two", "one"}) {
+		if got := itertools.Reverse([]string{"one", "two", "three"}); !reflect.DeepEqual(got, []string{"three", "two", "one"}) {
 			t.Errorf("Reverse() expected %v, got %v", []string{"three", "two", "one"}, got)
 		}
 	})
 	t.Run("test3", func(t *testing.T) {
-		if got := Reverse([]byte("Google")); string(got) != "elgooG" {
+		if got := itertools.Reverse([]byte("Google")); string(got) != "elgooG" {
 			t.Errorf("Reverse() expected %v, got %v", "elgooG", string(got))
 		}
 	})
@@ -195,19 +196,19 @@ func Test_ReverseSlice(t *testing.T) {
 
 func Test_RepeatSlice(t *testing.T) {
 	t.Run("test1", func(t *testing.T) {
-		if got := Repeat(1, 5); !reflect.DeepEqual(got, []int{1, 1, 1, 1, 1}) {
+		if got := itertools.Repeat(1, 5); !reflect.DeepEqual(got, []int{1, 1, 1, 1, 1}) {
 			t.Errorf("Repeat() expected %v, got %v", []int{1, 1, 1, 1, 1}, got)
 		}
 	})
 	t.Run("test2", func(t *testing.T) {
 		wanted := [][]int{[]int{1, 2, 3}, []int{1, 2, 3}, []int{1, 2, 3}, []int{1, 2, 3}, []int{1, 2, 3}}
-		if got := Repeat([]int{1, 2, 3}, 5); !reflect.DeepEqual(got, wanted) {
+		if got := itertools.Repeat([]int{1, 2, 3}, 5); !reflect.DeepEqual(got, wanted) {
 			t.Errorf("Repeat() expected %v, got %v", wanted, got)
 		}
 	})
 	t.Run("test3", func(t *testing.T) {
 		wanted := []string{"one", "one", "one"}
-		if got := Repeat("one", 3); !reflect.DeepEqual(got, wanted) {
+		if got := itertools.Repeat("one", 3); !reflect.DeepEqual(got, wanted) {
 			t.Errorf("Repeat() expected %v, got %v", wanted, got)
 		}
 	})
@@ -282,7 +283,7 @@ func Test_Product(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Product(tt.slices...); !reflect.DeepEqual(got, tt.want) {
+			if got := itertools.Product(tt.slices...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Product() = %v, want %v", got, tt.want)
 			}
 		})
@@ -290,14 +291,14 @@ func Test_Product(t *testing.T) {
 	t.Run("test5", func(t *testing.T) {
 		slices := [][]int{[]int{1, 2, 3}}
 		wanted := [][]int{{1}, {2}, {3}}
-		if got := Product(slices...); !reflect.DeepEqual(got, wanted) {
+		if got := itertools.Product(slices...); !reflect.DeepEqual(got, wanted) {
 			t.Errorf("Product() expected %v, got %v", wanted, got)
 		}
 	})
 	t.Run("test6", func(t *testing.T) {
 		var slices [][]int
 		var wanted [][]int
-		if got := Product(slices...); !reflect.DeepEqual(got, wanted) {
+		if got := itertools.Product(slices...); !reflect.DeepEqual(got, wanted) {
 			t.Errorf("Product() expected %v, got %v", wanted, got)
 		}
 	})
@@ -311,7 +312,7 @@ func Test_GroupBy(t *testing.T) {
 			2: {"GH"},
 			3: {"DEF", "IJK"},
 		}
-		if got := GroupBy(slice, func(x string) int { return len(x) }); !reflect.DeepEqual(got, wanted) {
+		if got := itertools.GroupBy(slice, func(x string) int { return len(x) }); !reflect.DeepEqual(got, wanted) {
 			t.Errorf("GroupBy() expected %v, got %v", wanted, got)
 		}
 	})
@@ -343,7 +344,7 @@ func Test_GroupBy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GroupBy(tt.slice, tt.keyFunc); !reflect.DeepEqual(got, tt.want) {
+			if got := itertools.GroupBy(tt.slice, tt.keyFunc); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("groupBy() = %v, want %v", got, tt.want)
 			}
 		})
