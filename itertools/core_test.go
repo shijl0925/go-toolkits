@@ -18,7 +18,7 @@ func Test_MapSliceArray(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Map(tc.slice, tc.fn); !equal(got, tc.expected) {
+			if got := Map(tc.slice, tc.fn); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Map() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -38,7 +38,7 @@ func Test_FilterSlice(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Filter(tc.slice, tc.fn); !equal(got, tc.expected) {
+			if got := Filter(tc.slice, tc.fn); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Filter() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -168,7 +168,7 @@ func Test_Zip(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Zip(tt.slice1, tt.slice2); !equal(got, tt.want) {
+			if got := Zip(tt.slice1, tt.slice2); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Zip() = %v, want %v", got, tt.want)
 			}
 		})
@@ -177,12 +177,12 @@ func Test_Zip(t *testing.T) {
 
 func Test_ReverseSlice(t *testing.T) {
 	t.Run("test1", func(t *testing.T) {
-		if got := Reverse([]int{1, 2, 3, 4, 5}); !equal(got, []int{5, 4, 3, 2, 1}) {
+		if got := Reverse([]int{1, 2, 3, 4, 5}); !reflect.DeepEqual(got, []int{5, 4, 3, 2, 1}) {
 			t.Errorf("Reverse() expected %v, got %v", 0, got)
 		}
 	})
 	t.Run("test2", func(t *testing.T) {
-		if got := Reverse([]string{"one", "two", "three"}); !equal(got, []string{"three", "two", "one"}) {
+		if got := Reverse([]string{"one", "two", "three"}); !reflect.DeepEqual(got, []string{"three", "two", "one"}) {
 			t.Errorf("Reverse() expected %v, got %v", []string{"three", "two", "one"}, got)
 		}
 	})
@@ -195,7 +195,7 @@ func Test_ReverseSlice(t *testing.T) {
 
 func Test_RepeatSlice(t *testing.T) {
 	t.Run("test1", func(t *testing.T) {
-		if got := Repeat(1, 5); !equal(got, []int{1, 1, 1, 1, 1}) {
+		if got := Repeat(1, 5); !reflect.DeepEqual(got, []int{1, 1, 1, 1, 1}) {
 			t.Errorf("Repeat() expected %v, got %v", []int{1, 1, 1, 1, 1}, got)
 		}
 	})

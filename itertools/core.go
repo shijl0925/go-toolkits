@@ -11,7 +11,7 @@ func Map[T any, U any](s []T, fn func(T) U) []U {
 
 // Filter applies a function to each element in a slice and returns a new slice with the elements that satisfy the predicate.
 func Filter[T any](s []T, fn func(T) bool) []T {
-	var result []T
+	result := make([]T, 0, len(s))
 	for _, v := range s {
 		if fn(v) {
 			result = append(result, v)
