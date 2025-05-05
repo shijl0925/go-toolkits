@@ -2,6 +2,7 @@ package slice_test
 
 import (
 	"github.com/shijl0925/go-toolkits/slice"
+	"reflect"
 	"testing"
 )
 
@@ -52,4 +53,25 @@ func Test_MinSlice(t *testing.T) {
 			t.Errorf("Min() expected %v, got %v", -5, got)
 		}
 	})
+}
+
+func Test_Insert(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		element  int
+		index    int
+		expected []int
+	}{
+		{"test1", []int{}, 1, 0, []int{1}},
+		{"test2", []int{1, 2, 3, 4}, 2, 1, []int{1, 2, 2, 3, 4}},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 7, 6, []int{1, 2, 3, 4, 5, 6, 7}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.Insert(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("Map() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
 }
