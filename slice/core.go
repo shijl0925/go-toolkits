@@ -90,6 +90,59 @@ func InsertMany[T any](src []T, elements []T, index int) []T {
 	return append(src[:index], append(elements, src[index:]...)...)
 }
 
+// Reverse returns a new slice with the elements in reverse order.
+// 返回一个新的 slice，元素顺序相反。
+func Reverse[T any](s []T) []T {
+	length := len(s)
+	result := make([]T, 0, length)
+
+	for i := length - 1; i >= 0; i-- {
+		result = append(result, s[i])
+	}
+
+	return result
+}
+
+// ReverseSelf reverses the elements in a slice in place.
+// 反转 slice 本身。
+func ReverseSelf[T any](s []T) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+}
+
+// Repeat returns a new slice with n copies of the given element.
+func Repeat[T any](s T, n int) []T {
+	result := make([]T, 0, n)
+	for i := 0; i < n; i++ {
+		result = append(result, s)
+	}
+	return result
+}
+
+// Product returns a new slice of tuples, where each tuple contains the corresponding elements from two slices.
+func Product[T any](slices ...[]T) [][]T {
+	length := len(slices)
+	if length == 0 {
+		return nil
+	} else if length == 1 {
+		result := make([][]T, 0, len(slices[0]))
+		for _, v := range slices[0] {
+			result = append(result, []T{v})
+		}
+		return result
+	} else {
+		prev := Product(slices[1:]...)
+		result := make([][]T, 0, len(slices[0])*len(prev))
+		for _, v := range slices[0] {
+			for _, p := range prev {
+				result = append(result, append([]T{v}, p...))
+			}
+		}
+		return result
+	}
+}
+
 // Contains 判断 src 里面是否存在 dst
 func Contains[T comparable](src []T, dst T) bool {
 	//for _, v := range src {
@@ -133,4 +186,39 @@ func Unique[T comparable](s []T) []T {
 		}
 	}
 	return result
+}
+
+// DiffSet returns the difference between two slices.
+// 返回 src 和 dst 的差集。
+func DiffSet[T comparable](src, dst []T) []T {
+	return []T{}
+}
+
+// IntersectSet returns the intersection between two slices.
+// 返回 src 和 dst 的交集。
+func IntersectSet[T comparable](src, dst []T) []T {
+	return []T{}
+}
+
+// UnionSet returns the union of two slices.
+// 返回 src 和 dst 的并集。
+func UnionSet[T comparable](src, dst []T) []T {
+	return []T{}
+}
+
+// Index 返回和 dst 相等的第一个元素下标
+// -1 表示没找到
+func Index[T comparable](src []T, dst T) int {
+	return -1
+}
+
+// LastIndex 返回和 dst 相等的最后一个元素下标
+// -1 表示没找到
+func LastIndex[T comparable](src []T, dst T) int {
+	return -1
+}
+
+// IndexAll 返回和 dst 相等的所有元素的下标
+func IndexAll[T comparable](src []T, dst T) []int {
+	return []int{}
 }

@@ -246,3 +246,156 @@ func Test_Unique(t *testing.T) {
 		})
 	}
 }
+
+func Test_ReverseSelfSlice(t *testing.T) {
+	s1 := []int{1, 2, 3, 4, 5}
+	t.Run("test1", func(t *testing.T) {
+		slice.ReverseSelf(s1)
+		if !reflect.DeepEqual(s1, []int{5, 4, 3, 2, 1}) {
+			t.Errorf("Reverse() expected %v, got %v", 0, s1)
+		}
+	})
+
+	s2 := []string{"one", "two", "three"}
+	t.Run("test2", func(t *testing.T) {
+		slice.ReverseSelf(s2)
+		if !reflect.DeepEqual(s2, []string{"three", "two", "one"}) {
+			t.Errorf("Reverse() expected %v, got %v", []string{"three", "two", "one"}, s2)
+		}
+	})
+
+	s3 := []byte("Google")
+	t.Run("test3", func(t *testing.T) {
+		slice.ReverseSelf(s3)
+		if string(s3) != "elgooG" {
+			t.Errorf("Reverse() expected %v, got %v", "elgooG", string(s3))
+		}
+	})
+}
+func Test_ReverseSlice(t *testing.T) {
+	t.Run("test1", func(t *testing.T) {
+		if got := slice.Reverse([]int{1, 2, 3, 4, 5}); !reflect.DeepEqual(got, []int{5, 4, 3, 2, 1}) {
+			t.Errorf("Reverse() expected %v, got %v", []int{5, 4, 3, 2, 1}, got)
+		}
+	})
+	t.Run("test2", func(t *testing.T) {
+		if got := slice.Reverse([]string{"one", "two", "three"}); !reflect.DeepEqual(got, []string{"three", "two", "one"}) {
+			t.Errorf("Reverse() expected %v, got %v", []string{"three", "two", "one"}, got)
+		}
+	})
+	t.Run("test3", func(t *testing.T) {
+		if got := slice.Reverse([]byte("Google")); string(got) != "elgooG" {
+			t.Errorf("Reverse() expected %v, got %v", "elgooG", string(got))
+		}
+	})
+}
+
+func Test_RepeatSlice(t *testing.T) {
+	t.Run("test1", func(t *testing.T) {
+		if got := slice.Repeat(1, 5); !reflect.DeepEqual(got, []int{1, 1, 1, 1, 1}) {
+			t.Errorf("Repeat() expected %v, got %v", []int{1, 1, 1, 1, 1}, got)
+		}
+	})
+	t.Run("test2", func(t *testing.T) {
+		wanted := [][]int{[]int{1, 2, 3}, []int{1, 2, 3}, []int{1, 2, 3}, []int{1, 2, 3}, []int{1, 2, 3}}
+		if got := slice.Repeat([]int{1, 2, 3}, 5); !reflect.DeepEqual(got, wanted) {
+			t.Errorf("Repeat() expected %v, got %v", wanted, got)
+		}
+	})
+	t.Run("test3", func(t *testing.T) {
+		wanted := []string{"one", "one", "one"}
+		if got := slice.Repeat("one", 3); !reflect.DeepEqual(got, wanted) {
+			t.Errorf("Repeat() expected %v, got %v", wanted, got)
+		}
+	})
+}
+
+func Test_Product(t *testing.T) {
+	tests := []struct {
+		name   string
+		slices [][]string
+		want   [][]string
+	}{
+		{
+			name:   "test1",
+			slices: [][]string{[]string{"A", "B", "C"}, []string{"one", "two", "three"}},
+			want: [][]string{
+				{"A", "one"},
+				{"A", "two"},
+				{"A", "three"},
+				{"B", "one"},
+				{"B", "two"},
+				{"B", "three"},
+				{"C", "one"},
+				{"C", "two"},
+				{"C", "three"},
+			},
+		},
+		{
+			name:   "test2",
+			slices: [][]string{[]string{"A", "B"}, []string{"C", "D"}, []string{"E", "F"}},
+			want: [][]string{
+				{"A", "C", "E"},
+				{"A", "C", "F"},
+				{"A", "D", "E"},
+				{"A", "D", "F"},
+				{"B", "C", "E"},
+				{"B", "C", "F"},
+				{"B", "D", "E"},
+				{"B", "D", "F"},
+			},
+		},
+		{
+			name:   "test3",
+			slices: [][]string{[]string{"A", "B"}, []string{"C", "D", "E", "F"}},
+			want: [][]string{
+				{"A", "C"},
+				{"A", "D"},
+				{"A", "E"},
+				{"A", "F"},
+				{"B", "C"},
+				{"B", "D"},
+				{"B", "E"},
+				{"B", "F"},
+			},
+		},
+		{
+			name:   "test4",
+			slices: [][]string{[]string{"A", "B", "C", "D", "E"}, []string{"F", "G"}},
+			want: [][]string{
+				{"A", "F"},
+				{"A", "G"},
+				{"B", "F"},
+				{"B", "G"},
+				{"C", "F"},
+				{"C", "G"},
+				{"D", "F"},
+				{"D", "G"},
+				{"E", "F"},
+				{"E", "G"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := slice.Product(tt.slices...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Product() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+	t.Run("test5", func(t *testing.T) {
+		slices := [][]int{[]int{1, 2, 3}}
+		wanted := [][]int{{1}, {2}, {3}}
+		if got := slice.Product(slices...); !reflect.DeepEqual(got, wanted) {
+			t.Errorf("Product() expected %v, got %v", wanted, got)
+		}
+	})
+	t.Run("test6", func(t *testing.T) {
+		var slices [][]int
+		var wanted [][]int
+		if got := slice.Product(slices...); !reflect.DeepEqual(got, wanted) {
+			t.Errorf("Product() expected %v, got %v", wanted, got)
+		}
+	})
+}
