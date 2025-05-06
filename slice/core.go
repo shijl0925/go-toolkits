@@ -188,37 +188,84 @@ func Unique[T comparable](s []T) []T {
 	return result
 }
 
+func toMap[T comparable](s []T) map[T]struct{} {
+	result := make(map[T]struct{}, len(s))
+	for _, v := range s {
+		result[v] = struct{}{}
+	}
+	return result
+}
+
 // DiffSet returns the difference between two slices.
-// 返回 src 和 dst 的差集。
+// 返回 src 和 dst 的差集, 即 src 中存在，dst 中不存在的元素。
 func DiffSet[T comparable](src, dst []T) []T {
-	return []T{}
+	srcMap := toMap(src)
+	for _, value := range dst {
+		delete(srcMap, value)
+	}
+
+	result := make([]T, 0, len(srcMap))
+
+	for _, value := range src {
+		if _, ok := srcMap[value]; ok {
+			result = append(result, value)
+		}
+	}
+
+	return result
 }
 
 // IntersectSet returns the intersection between two slices.
-// 返回 src 和 dst 的交集。
+// 返回 src 和 dst 的交集, 即 src 中存在，dst 中也存在元素。
 func IntersectSet[T comparable](src, dst []T) []T {
-	return []T{}
+	dstMap := toMap(dst)
+
+	result := make([]T, 0, len(src))
+
+	for _, value := range src {
+		if _, ok := dstMap[value]; ok {
+			result = append(result, value)
+		}
+	}
+	return result
 }
 
 // UnionSet returns the union of two slices.
-// 返回 src 和 dst 的并集。
+// 返回 src 和 dst 的并集, 即 src 和 dst 的并集。
 func UnionSet[T comparable](src, dst []T) []T {
-	return []T{}
+	result := append(src, dst...)
+	return Unique(result)
 }
 
 // Index 返回和 dst 相等的第一个元素下标
 // -1 表示没找到
 func Index[T comparable](src []T, dst T) int {
+	for i, v := range src {
+		if v == dst {
+			return i
+		}
+	}
 	return -1
 }
 
 // LastIndex 返回和 dst 相等的最后一个元素下标
 // -1 表示没找到
 func LastIndex[T comparable](src []T, dst T) int {
+	for i := len(src) - 1; i >= 0; i-- {
+		if src[i] == dst {
+			return i
+		}
+	}
 	return -1
 }
 
 // IndexAll 返回和 dst 相等的所有元素的下标
 func IndexAll[T comparable](src []T, dst T) []int {
-	return []int{}
+	result := make([]int, 0, len(src))
+	for i, v := range src {
+		if v == dst {
+			result = append(result, i)
+		}
+	}
+	return result
 }
