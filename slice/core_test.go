@@ -399,3 +399,129 @@ func Test_Product(t *testing.T) {
 		}
 	})
 }
+
+func Test_DiffSet(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice1   []int
+		slice2   []int
+		expected []int
+	}{
+		{"test1", []int{1, 2, 3, 4}, []int{3, 5, 4, 6, 7}, []int{1, 2}},
+		{"test2", []int{1, 3, 4, 2}, []int{}, []int{1, 3, 4, 2}},
+		{"test3", []int{1, 3, 2, 4}, []int{5, 6, 7, 8}, []int{1, 3, 2, 4}},
+		{"test4", []int{}, []int{3, 4, 5, 6, 7}, []int{}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.DiffSet(tc.slice1, tc.slice2); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("DiffSet() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
+func Test_IntersectSet(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice1   []int
+		slice2   []int
+		expected []int
+	}{
+		{"test1", []int{1, 2, 3, 4}, []int{3, 5, 4, 6, 7}, []int{3, 4}},
+		{"test2", []int{1, 3, 4, 2}, []int{}, []int{}},
+		{"test3", []int{1, 3, 2, 4}, []int{5, 6, 7, 8}, []int{}},
+		{"test4", []int{}, []int{3, 4, 5, 6, 7}, []int{}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.IntersectSet(tc.slice1, tc.slice2); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("IntersectSet() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
+func Test_UnionSet(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice1   []int
+		slice2   []int
+		expected []int
+	}{
+		{"test1", []int{1, 2, 3, 4}, []int{3, 5, 4, 6, 7}, []int{1, 2, 3, 4, 5, 6, 7}},
+		{"test2", []int{1, 3, 4, 2}, []int{}, []int{1, 3, 4, 2}},
+		{"test3", []int{1, 3, 2, 4}, []int{5, 6, 7, 8}, []int{1, 3, 2, 4, 5, 6, 7, 8}},
+		{"test4", []int{}, []int{3, 4, 5, 6, 7}, []int{3, 4, 5, 6, 7}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.UnionSet(tc.slice1, tc.slice2); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("UnionSet() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
+func Test_Index(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		e        int
+		expected int
+	}{
+		{"test1", []int{1, 2, 3, 4}, 1, 0},
+		{"test2", []int{1, 2, 3, 4}, -3, -1},
+		{"test3", []int{1, 2, 3, 4, 4}, 4, 3},
+		{"test4", []int{1, 2, 3, 4, 5, 4, 6}, 4, 3},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.Index(tc.slice, tc.e); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("Index() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
+func Test_LastIndex(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		e        int
+		expected int
+	}{
+		{"test1", []int{1, 2, 3, 4}, 2, 1},
+		{"test2", []int{1, 2, 3, 4}, -3, -1},
+		{"test3", []int{1, 2, 3, 4, 4}, 4, 4},
+		{"test4", []int{1, 2, 3, 4, 5, 4, 6}, 4, 5},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.LastIndex(tc.slice, tc.e); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("LastIndex() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
+func Test_IndexAll(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		e        int
+		expected []int
+	}{
+		{"test1", []int{1, 2, 3, 4}, 2, []int{1}},
+		{"test2", []int{1, 2, 3, 4}, -3, []int{}},
+		{"test3", []int{1, 2, 3, 4, 4}, 4, []int{3, 4}},
+		{"test4", []int{1, 2, 3, 4, 5, 4, 6}, 4, []int{3, 5}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.IndexAll(tc.slice, tc.e); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("IndexAll() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
