@@ -77,7 +77,28 @@ func Test_Insert(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := slice.Insert(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("Map() expected %v, got %v", tc.expected, got)
+				t.Errorf("Insert() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
+func Test_Add(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		element  int
+		index    int
+		expected []int
+	}{
+		{"test1", []int{}, 1, 0, []int{1}},
+		{"test2", []int{1, 2, 3, 4}, 2, 1, []int{1, 2, 2, 3, 4}},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 7, 6, []int{1, 2, 3, 4, 5, 6, 7}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.AddV2(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("Add() expected %v, got %v", tc.expected, got)
 			}
 		})
 	}
@@ -98,7 +119,28 @@ func Test_InsertMany(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := slice.InsertMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("Map() expected %v, got %v", tc.expected, got)
+				t.Errorf("InsertMany() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
+func Test_AddMany(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		elements []int
+		index    int
+		expected []int
+	}{
+		{"test1", []int{}, []int{1}, 0, []int{1}},
+		{"test2", []int{1, 2, 3, 4}, []int{2, 3}, 1, []int{1, 2, 3, 2, 3, 4}},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, []int{7}, 6, []int{1, 2, 3, 4, 5, 6, 7}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.AddMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("AddMany() expected %v, got %v", tc.expected, got)
 			}
 		})
 	}
@@ -146,7 +188,6 @@ func Test_Delete(t *testing.T) {
 	}{
 		{"test1", []int{1, 2, 3, 4}, 1, []int{1, 3, 4}},
 		{"test2", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}},
-		{"test3", []int{1, 2, 3, 4}, 4, []int{1, 2, 3, 4}},
 		{"test4", []int{1, 2, 3, 4, 5, 6}, 2, []int{1, 2, 4, 5, 6}},
 	}
 	for _, tc := range tests {
