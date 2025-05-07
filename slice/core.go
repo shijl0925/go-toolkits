@@ -1,6 +1,8 @@
 package slice
 
-import "golang.org/x/exp/constraints"
+import (
+	"golang.org/x/exp/constraints"
+)
 
 type RealNumber interface {
 	constraints.Integer | constraints.Float
@@ -54,8 +56,8 @@ func Pop[T any](s []T) (T, []T) {
 // Delete removes and returns the element at a specific index from a slice.
 // 删除位于索引 index 的元素。
 func Delete[T any](s []T, index int) []T {
-	if index >= len(s) {
-		return s
+	if index < 0 || index > len(s) {
+		panic("index out of range")
 	}
 	return append(s[:index], s[index+1:]...)
 }
@@ -63,6 +65,13 @@ func Delete[T any](s []T, index int) []T {
 // DeleteMany removes and returns the elements between start and end from a slice.
 // 删除位于索引 start 和 end 之间的元素。
 func DeleteMany[T any](s []T, start, end int) []T {
+	if start < 0 || end > len(s) {
+		panic("index out of range")
+	}
+	if end < start {
+		panic("end must be greater than start")
+	}
+
 	return append(s[:start], s[end:]...)
 }
 
@@ -81,13 +90,70 @@ func Extend[T any](src []T, elements []T) []T {
 // Insert inserts an element at a specific index in a slice.
 // 在 slice 的指定位置插入一个元素。
 func Insert[T any](src []T, element T, index int) []T {
+	if index < 0 || index > len(src) {
+		panic("index out of range")
+	}
 	return append(src[:index], append([]T{element}, src[index:]...)...)
+}
+
+func AddV1[T any](src []T, element T, index int) []T { // 性能比Insert好
+	if index < 0 || index > len(src) {
+		panic("index out of range")
+	}
+	var zeroValue T
+	src = append(src, zeroValue)
+	for i := len(src) - 1; i > index; i-- {
+		if i-1 >= 0 {
+			src[i] = src[i-1]
+		}
+	}
+
+	src[index] = element
+
+	return src
+}
+
+func AddV2[T any](src []T, element T, index int) []T { // 性能比AddV1好
+	if index < 0 || index > len(src) {
+		panic("index out of range")
+	}
+	sn := len(src)
+	var zeroValue T
+	src = append(src, zeroValue)
+
+	if index < sn {
+		copy(src[index+1:], src[index:sn])
+	}
+	src[index] = element
+
+	return src
 }
 
 // InsertMany inserts multiple elements at a specific index in a slice.
 // 在 slice 的指定位置插入新切片。
 func InsertMany[T any](src []T, elements []T, index int) []T {
+	if index < 0 || index > len(src) {
+		panic("index out of range")
+	}
 	return append(src[:index], append(elements, src[index:]...)...)
+}
+
+func AddMany[T any](src []T, elements []T, index int) []T { // 性能比InsertMany好
+	if index < 0 || index > len(src) {
+		panic("index out of range")
+	}
+	en := len(elements)
+	sn := len(src)
+	src = append(src, make([]T, en)...)
+
+	// 移动元素
+	if index < sn {
+		copy(src[index+en:], src[index:sn])
+	}
+
+	// 插入新元素
+	copy(src[index:index+en], elements)
+	return src
 }
 
 // Reverse returns a new slice with the elements in reverse order.
@@ -145,33 +211,36 @@ func Product[T any](slices ...[]T) [][]T {
 
 // Contains 判断 src 里面是否存在 dst
 func Contains[T comparable](src []T, dst T) bool {
-	//for _, v := range src {
-	//	if v == dst {
-	//		return true
-	//	}
-	//}
-
-	//invMap := make(map[T]struct{}, len(src))
-	//if _, ok := invMap[dst]; ok {
-	//	return true
-	//}
+	for _, v := range src {
+		if v == dst {
+			return true
+		}
+	}
 
 	return false
 }
 
 // ContainsAny 判断 src 里面是否存在 dst 中的任何一个元素
 func ContainsAny[T comparable](src, dst []T) bool {
-	//for _, v := range src {
-	//	if Contains(dst, v) {
-	//		return true
-	//	}
-	//}
+	srcMap := toMap(src)
+	for _, value := range dst {
+		if _, ok := srcMap[value]; ok {
+			return true
+		}
+	}
+
 	return false
 }
 
 // ContainsAll 判断 src 里面是否存在 dst 中的所有元素
 func ContainsAll[T comparable](src, dst []T) bool {
-	return false
+	srcMap := toMap(src)
+	for _, value := range dst {
+		if _, ok := srcMap[value]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // Unique removes duplicate elements from a slice.
