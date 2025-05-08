@@ -384,3 +384,22 @@ func IndexAll[T comparable](src []T, dst T) []int {
 	}
 	return result
 }
+
+// Clone returns a new slice with the same elements as the original slice.
+// 返回一个新的 slice，其中包含原始 slice 的副本, 原始 slice 不会被改变。
+func Clone[T any](s []T) []T {
+	t := make([]T, 0, len(s))
+	t = append(t, s...)
+	return t
+}
+
+//func JoinStrings[T fmt.Stringer](sep string, s []T) string {
+//	var bf strings.Builder
+//	for i, v := range s {
+//		if i > 0 {
+//			bf.WriteString(sep)
+//		}
+//		bf.WriteString(v.String())
+//	}
+//	return bf.String()
+//}

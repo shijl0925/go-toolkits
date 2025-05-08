@@ -586,3 +586,19 @@ func Test_IndexAll(t *testing.T) {
 		})
 	}
 }
+
+//type Int int
+//
+//func (i Int) String() string {
+//	return strconv.Itoa(int(i))
+//}
+
+//func Test_JoinStrings(t *testing.T) {
+//	s1 := []Int{1, 2, 3, 4, 5}
+//	w1 := "1,2,3,4,5"
+//	t.Run("test1", func(t *testing.T) {
+//		if got := slice.JoinStrings(",", s1); !reflect.DeepEqual(got, w1) {
+//			t.Errorf("JoinStrings() expected %v, got %v", w1, got)
+//		}
+//	})
+//}
