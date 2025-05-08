@@ -72,6 +72,15 @@ func Pop[T any](s []T) (T, []T) {
 	return s[len(s)-1], s[:len(s)-1]
 }
 
+// Drop returns the last n elements from a slice.
+// 返回最后一个 n 个元素组成的切片, 原始 slice 不会被改变。
+func Drop[T any](s []T, n int) []T {
+	if n < 0 || n > len(s) {
+		panic("wrong drop number")
+	}
+	return s[len(s)-n:]
+}
+
 // Remove removes and returns the first occurrence of an element from a slice.
 // 删除第一个出现的元素后组成的切片, 原始 slice 会被改变。
 func Remove[T comparable](s []T, element T) []T {

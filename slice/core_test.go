@@ -179,6 +179,26 @@ func Test_Pop(t *testing.T) {
 	}
 }
 
+func Test_Drop(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		n        int
+		expected []int
+	}{
+		{"test1", []int{1, 2, 3, 4}, 0, []int{}},
+		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{4, 5}},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, []int{1, 2, 3, 4, 5, 6}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := slice.Drop(tc.slice, tc.n); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("Drop() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
 func Test_Delete(t *testing.T) {
 	var tests = []struct {
 		name     string
