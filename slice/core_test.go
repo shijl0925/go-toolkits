@@ -76,14 +76,14 @@ func Test_Insert(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Insert(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slice.Insert(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Insert() expected %v, got %v", tc.expected, got)
 			}
 		})
 	}
 }
 
-func Test_Add(t *testing.T) {
+func Test_InsertAt(t *testing.T) {
 	var tests = []struct {
 		name     string
 		slice    []int
@@ -97,7 +97,7 @@ func Test_Add(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.AddV2(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slice.InsertAtV2(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Add() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -118,7 +118,7 @@ func Test_InsertMany(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.InsertMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slice.InsertMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("InsertMany() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -139,7 +139,7 @@ func Test_AddMany(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.AddMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slice.AddMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("AddMany() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -186,13 +186,13 @@ func Test_Drop(t *testing.T) {
 		n        int
 		expected []int
 	}{
-		{"test1", []int{1, 2, 3, 4}, 0, []int{}},
-		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{4, 5}},
-		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, []int{1, 2, 3, 4, 5, 6}},
+		{"test1", []int{1, 2, 3, 4}, 0, []int{1, 2, 3, 4}},
+		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{1, 2, 3}},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, []int{}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Drop(tc.slice, tc.n); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slice.Drop(tc.slice, tc.n); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Drop() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -212,7 +212,7 @@ func Test_Delete(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Delete(tc.slice, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slice.Delete(tc.slice, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Delete() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -233,7 +233,7 @@ func Test_DeleteMany(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.DeleteMany(tc.slice, tc.start, tc.end); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slice.DeleteMany(tc.slice, tc.start, tc.end); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("DeleteMany() expected %v, got %v", tc.expected, got)
 			}
 		})
