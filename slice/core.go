@@ -108,6 +108,7 @@ func Pop[T any](s []T) (T, []T) {
 
 // Drop removes the n elements from the slice and returns the remaining elements.
 // 删除并返回切片的前 n 个元素和剩余元素组成的切片, 原始 slice 不会被改变。
+// 注意: 返回的切片仍与原切片共享底层数组。
 // Example:
 //
 //	s := []int{1, 2, 3, 4, 5}
@@ -120,8 +121,8 @@ func Drop[T any](s []T, n int) ([]T, error) {
 }
 
 // Remove returns a slice with the all occurrence of element removed.
-// 返回一个切片，该切片移除了所有等于 element 的元素, 原始 slice 不会被改变。
-//
+// 返回一个切片，该切片移除了所有等于 element 的元素。
+// 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 // Example:
 //
 //	s := []int{1, 2, 3, 2}
@@ -138,6 +139,7 @@ func Remove[T comparable](s []T, element T) []T {
 
 // Delete removes and returns the element at a specific index from a slice.
 // 删除位于索引 index 的元素, 原始 slice 会被改变。
+// 注意: 返回的切片仍与原切片共享底层数组。
 //
 // Example:
 //
@@ -152,6 +154,7 @@ func Delete[T any](s []T, index int) ([]T, bool) {
 
 // DeleteMany removes and returns the elements between start and end from a slice.
 // 删除位于索引 start 和 end 之间的元素, 原始 slice 会被改变。
+// 注意: 返回的切片仍与原切片共享底层数组。
 //
 // Example:
 //
@@ -172,7 +175,8 @@ func DeleteMany[T any](s []T, start, end int) ([]T, bool) {
 }
 
 // Append appends one or more elements to a slice.
-// 追加一个或多个元素到 slice, 原始 slice 不会被改变。
+// 追加一个或多个元素到 slice。
+// 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
@@ -183,7 +187,8 @@ func Append[T any](src []T, elements ...T) []T {
 }
 
 // Extend extends a slice by appending one or more elements.
-// 将切片 elements 中的所有元素追加到 src 切片后并返回新切片, 原始 slice 不会被改变。
+// 将切片 elements 中的所有元素追加到 src 切片后并返回新切片。
+// 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
@@ -195,6 +200,7 @@ func Extend[T any](src []T, elements []T) []T {
 
 // Insert inserts an element at a specific index in a slice.
 // 在 slice 的指定位置插入一个元素, 原始 slice 不会被改变。
+// 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
@@ -209,6 +215,7 @@ func Insert[T any](src []T, element T, index int) ([]T, error) {
 
 // InsertAtV1  inserts an element at a specific index in a slice.
 // 在 slice 的指定位置插入一个元素, 原始 slice 不会被改变。
+// 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
@@ -233,6 +240,7 @@ func InsertAtV1[T any](src []T, element T, index int) ([]T, error) { // 性能�
 
 // InsertAtV2  inserts an element at a specific index in a slice.
 // 在 slice 的指定位置插入一个元素, 原始 slice 不会被改变。
+// 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
@@ -256,6 +264,7 @@ func InsertAtV2[T any](src []T, element T, index int) ([]T, error) { // 性能�
 
 // InsertMany inserts multiple elements at a specific index in a slice.
 // 在 slice 的指定位置插入新切片, 原始 slice 不会被改变。
+// 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
@@ -265,13 +274,13 @@ func InsertMany[T any](src []T, elements []T, index int) ([]T, error) {
 	if index < 0 || index > len(src) {
 		return src, fmt.Errorf("index out of range: %d", index)
 	}
-	result := make([]T, 0, len(src)+len(elements))
-	result = append(src[:index], append(elements, src[index:]...)...)
-	return result, nil
+
+	return append(src[:index], append(elements, src[index:]...)...), nil
 }
 
 // AddMany adds multiple elements to a slice at a specific index.
 // 在 slice 的指定位置添加新切片, 原始 slice 不会被改变。
+// 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
@@ -297,6 +306,7 @@ func AddMany[T any](src []T, elements []T, index int) ([]T, error) { // 性能�
 
 // Reverse returns a new slice with the elements in reverse order.
 // 返回一个新的 slice，元素顺序相反, 原始 slice 不会被改变。
+// 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
@@ -328,11 +338,14 @@ func ReverseSelf[T any](s []T) {
 
 // Repeat returns a new slice with n copies of the given element.
 // 返回一个新 slice，其中包含 n 个给定元素的副本, 原始 slice 不会被改变。
+// 注意: 返回的切片仍与原切片共享底层数组。
 //
 // Example:
 //
-// s := []int{1, 2, 3}
-// r := Repeat(s, 3)  // r == []int{1, 2, 3, 1, 2, 3, 1, 2, 3}
+// r0 := Repeat(5, 0)  // r0 == []int{}
+// r1 := Repeat(5, 3)  // r1 == []int{5, 5, 5}
+// r2 := Repeat([]int{1, 2, 3}, 3)  // r2 == [][]int{{1, 2, 3}, {1, 2, 3}, {1, 2, 3}}
+// r3 := Repeat("one", 3)  // r3 == []string{"one", "one", "one"}
 func Repeat[T any](s T, n int) []T {
 	result := make([]T, 0, n)
 	for i := 0; i < n; i++ {
