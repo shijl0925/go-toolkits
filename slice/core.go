@@ -571,11 +571,13 @@ func IndexAll[T comparable](src []T, dst T) []int {
 
 // ShallowClone returns a new slice with the same elements as the original slice.
 // 返回一个新的 slice，其中包含原始 slice 的副本, 原始 slice 不会被改变。
-func ShallowClone[T any](s []T) []T {
-	t := make([]T, 0, len(s))
-	t = append(t, s...)
-	return t
-}
+// 注意：本函数不实现真正的深拷贝，适用于元素为不可变或非指针类型的场景。
+// 若 T 包含指针或引用类型，原切片与新切片将共享这些引用。
+// func ShallowClone[T any](s []T) []T {
+// 	t := make([]T, 0, len(s))
+// 	t = append(t, s...)
+// 	return t
+// }
 
 //func JoinStrings[T fmt.Stringer](sep string, s []T) string {
 //	var bf strings.Builder
