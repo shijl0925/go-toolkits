@@ -1,6 +1,7 @@
 package slice
 
 import (
+	"fmt"
 	"golang.org/x/exp/constraints"
 )
 
@@ -13,6 +14,11 @@ type Number interface {
 }
 
 // Sum returns the sum of all elements in the slice.
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r := Sum(s) //  r == 15
 func Sum[T RealNumber](s []T) T {
 	var result T
 	for _, v := range s {
@@ -22,6 +28,11 @@ func Sum[T RealNumber](s []T) T {
 }
 
 // Max returns the maximum value in the slice.
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r := Max(s) //  r == 5
 func Max[T constraints.Ordered](s []T) T {
 	result := s[0]
 	for i := 1; i < len(s); i++ {
@@ -33,6 +44,11 @@ func Max[T constraints.Ordered](s []T) T {
 }
 
 // Min returns the minimum value in the slice.
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r := Min(s) //  r == 1
 func Min[T constraints.Ordered](s []T) T {
 	result := s[0]
 	for i := 1; i < len(s); i++ {
@@ -44,7 +60,13 @@ func Min[T constraints.Ordered](s []T) T {
 }
 
 // removeHead removes the first element from a slice and returns the remaining elements.
-// 删除第一个元素后组成的切片, 原始 slice 不会被改变。
+// 返回一个新的切片，其中去除了原切片的第一个元素, 原始 slice 不会被改变。
+// 如果原切片为空，则返回原切片本身。
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r := removeHead(s) //  r == []int{2, 3, 4, 5}
 func removeHead[T any](s []T) []T {
 	if len(s) == 0 {
 		return s
@@ -53,7 +75,13 @@ func removeHead[T any](s []T) []T {
 }
 
 // removeTail removes the last element from a slice and returns the remaining elements.
-// 删除最后一个元素后组成的切片, 原始 slice 不会被改变。
+// 返回一个新的切片, 其中去除了原切片的最后一个元素, 原始 slice 不会被改变。
+// 如果原切片为空，则返回原切片本身。
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r := removeTail(s) //  r == []int{1, 2, 3, 4}
 func removeTail[T any](s []T) []T {
 	if len(s) == 0 {
 		return s
@@ -62,8 +90,14 @@ func removeTail[T any](s []T) []T {
 }
 
 // Pop removes and returns the last element from a slice.
-// 删除并返回最后一个元素和剩余元素组成的切片, 原始 slice 不会被改变。
+// 从切片 s 中弹出最后一个元素，并返回该元素和剩余切片。
 // 如果 slice 为空，则返回一个零值和空切片。
+// 注意：返回的切片仍与原切片共享底层数组。
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r, t := Pop(s) //  r == 5, t == []int{1, 2, 3, 4}
 func Pop[T any](s []T) (T, []T) {
 	if len(s) == 0 {
 		var zero T
@@ -72,74 +106,117 @@ func Pop[T any](s []T) (T, []T) {
 	return s[len(s)-1], s[:len(s)-1]
 }
 
-// Drop returns the last n elements from a slice.
-// 返回最后一个 n 个元素组成的切片, 原始 slice 不会被改变。
-func Drop[T any](s []T, n int) []T {
+// Drop removes the n elements from the slice and returns the remaining elements.
+// 删除并返回切片的前 n 个元素和剩余元素组成的切片, 原始 slice 不会被改变。
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r, _ := Drop(s, 2) //  r == []int{1, 2, 3}
+func Drop[T any](s []T, n int) ([]T, error) {
 	if n < 0 || n > len(s) {
-		panic("wrong drop number")
+		return nil, fmt.Errorf("invalid drop number: %d, length of slice is %d", n, len(s))
 	}
-	return s[len(s)-n:]
+	return s[:len(s)-n], nil
 }
 
-// Remove removes and returns the first occurrence of an element from a slice.
-// 删除第一个出现的元素后组成的切片, 原始 slice 会被改变。
+// Remove returns a slice with the all occurrence of element removed.
+// 返回一个切片，该切片移除了所有等于 element 的元素, 原始 slice 不会被改变。
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 2}
+//	r := Remove(s, 2) // r == []int{1, 3}
 func Remove[T comparable](s []T, element T) []T {
-	for i, v := range s {
-		if v == element {
-			return append(s[:i], s[i+1:]...)
+	result := make([]T, 0, len(s))
+	for _, v := range s {
+		if v != element {
+			result = append(result, v)
 		}
 	}
-	return s
+	return result
 }
 
 // Delete removes and returns the element at a specific index from a slice.
 // 删除位于索引 index 的元素, 原始 slice 会被改变。
-func Delete[T any](s []T, index int) []T {
-	if index < 0 || index > len(s) {
-		panic("index out of range")
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 2}
+//	r, _ := Delete(s, 2) // r == []int{1, 2, 2}
+func Delete[T any](s []T, index int) ([]T, bool) {
+	if index < 0 || index >= len(s) {
+		return s, false
 	}
-	return append(s[:index], s[index+1:]...)
+	return append(s[:index], s[index+1:]...), true
 }
 
 // DeleteMany removes and returns the elements between start and end from a slice.
 // 删除位于索引 start 和 end 之间的元素, 原始 slice 会被改变。
-func DeleteMany[T any](s []T, start, end int) []T {
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5, 6}
+//	r, _ := DeleteMany(s, 2, 4) // r == []int{1, 2, 5, 6}
+func DeleteMany[T any](s []T, start, end int) ([]T, bool) {
+	if len(s) == 0 {
+		return s, false
+	}
 	if start < 0 || end > len(s) {
-		panic("index out of range")
+		return s, false
 	}
 	if end < start {
-		panic("end must be greater than start")
+		return s, false
 	}
 
-	return append(s[:start], s[end:]...)
+	return append(s[:start], s[end:]...), true
 }
 
 // Append appends one or more elements to a slice.
 // 追加一个或多个元素到 slice, 原始 slice 不会被改变。
+//
+// Example:
+//
+//	s := []int{1, 2, 3}
+//	r := Append(s, 4, 5) // r == []int{1, 2, 3, 4, 5}
 func Append[T any](src []T, elements ...T) []T {
 	return append(src, elements...)
 }
 
 // Extend extends a slice by appending one or more elements.
-// 扩展 slice，追加一个新切片, 原始 slice 不会被改变。
+// 将切片 elements 中的所有元素追加到 src 切片后并返回新切片, 原始 slice 不会被改变。
+//
+// Example:
+//
+//	s := []int{1, 2, 3}
+//	r := Extend(s, []int{4, 5}) // r == []int{1, 2, 3, 4, 5}
 func Extend[T any](src []T, elements []T) []T {
 	return append(src, elements...)
 }
 
 // Insert inserts an element at a specific index in a slice.
 // 在 slice 的指定位置插入一个元素, 原始 slice 不会被改变。
-func Insert[T any](src []T, element T, index int) []T {
+//
+// Example:
+//
+//	s := []int{1, 2, 3}
+//	r, _ := Insert(s, 4, 1) // r == []int{1, 4, 2, 3}
+func Insert[T any](src []T, element T, index int) ([]T, error) {
 	if index < 0 || index > len(src) {
-		panic("index out of range")
+		return src, fmt.Errorf("index out of range: %d", index)
 	}
-	return append(src[:index], append([]T{element}, src[index:]...)...)
+	return append(src[:index], append([]T{element}, src[index:]...)...), nil
 }
 
-// AddV1  inserts an element at a specific index in a slice.
+// InsertAtV1  inserts an element at a specific index in a slice.
 // 在 slice 的指定位置插入一个元素, 原始 slice 不会被改变。
-func AddV1[T any](src []T, element T, index int) []T { // 性能比Insert好
+//
+// Example:
+//
+//	s := []int{1, 2, 3}
+//	r, _ := InsertAtV1(s, 4, 1) // r == []int{1, 4, 2, 3}
+func InsertAtV1[T any](src []T, element T, index int) ([]T, error) { // 性能比Insert好
 	if index < 0 || index > len(src) {
-		panic("index out of range")
+		return src, fmt.Errorf("index out of range: %d", index)
 	}
 	var zeroValue T
 	src = append(src, zeroValue)
@@ -151,41 +228,58 @@ func AddV1[T any](src []T, element T, index int) []T { // 性能比Insert好
 
 	src[index] = element
 
-	return src
+	return src, nil
 }
 
-// AddV2  inserts an element at a specific index in a slice.
+// InsertAtV2  inserts an element at a specific index in a slice.
 // 在 slice 的指定位置插入一个元素, 原始 slice 不会被改变。
-func AddV2[T any](src []T, element T, index int) []T { // 性能比AddV1好
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r, _ := InsertAtV2(slice, 6, 2)  // r == [1, 2, 6, 3, 4, 5]
+func InsertAtV2[T any](src []T, element T, index int) ([]T, error) { // 性能比InsertAtV1好
 	if index < 0 || index > len(src) {
-		panic("index out of range")
+		return src, fmt.Errorf("index out of range: %d", index)
 	}
-	sn := len(src)
+
 	var zeroValue T
 	src = append(src, zeroValue)
 
-	if index < sn {
-		copy(src[index+1:], src[index:sn])
+	if index < len(src)-1 {
+		copy(src[index+1:], src[index:len(src)-1])
 	}
 	src[index] = element
 
-	return src
+	return src, nil
 }
 
 // InsertMany inserts multiple elements at a specific index in a slice.
 // 在 slice 的指定位置插入新切片, 原始 slice 不会被改变。
-func InsertMany[T any](src []T, elements []T, index int) []T {
+//
+// Example:
+//
+//	s := []int{1, 2, 3}
+//	r, _ := InsertMany([]int{1, 2, 3}, []int{4, 5}, 1)  // r == [1, 4, 5, 2, 3]
+func InsertMany[T any](src []T, elements []T, index int) ([]T, error) {
 	if index < 0 || index > len(src) {
-		panic("index out of range")
+		return src, fmt.Errorf("index out of range: %d", index)
 	}
-	return append(src[:index], append(elements, src[index:]...)...)
+	result := make([]T, 0, len(src)+len(elements))
+	result = append(src[:index], append(elements, src[index:]...)...)
+	return result, nil
 }
 
 // AddMany adds multiple elements to a slice at a specific index.
 // 在 slice 的指定位置添加新切片, 原始 slice 不会被改变。
-func AddMany[T any](src []T, elements []T, index int) []T { // 性能比InsertMany好
+//
+// Example:
+//
+// s := []int{1, 2, 3}
+// r, _ := AddMany([]int{1, 2, 3}, []int{4, 5}, 1)  // r == [1, 4, 5, 2, 3]
+func AddMany[T any](src []T, elements []T, index int) ([]T, error) { // 性能比InsertMany好
 	if index < 0 || index > len(src) {
-		panic("index out of range")
+		return src, fmt.Errorf("index out of range: %d", index)
 	}
 	en := len(elements)
 	sn := len(src)
@@ -198,11 +292,16 @@ func AddMany[T any](src []T, elements []T, index int) []T { // 性能比InsertMa
 
 	// 插入新元素
 	copy(src[index:index+en], elements)
-	return src
+	return src, nil
 }
 
 // Reverse returns a new slice with the elements in reverse order.
 // 返回一个新的 slice，元素顺序相反, 原始 slice 不会被改变。
+//
+// Example:
+//
+// s := []int{1, 2, 3, 4, 5}
+// r := Reverse(s)  // r == []int{5, 4, 3, 2, 1}
 func Reverse[T any](s []T) []T {
 	length := len(s)
 	result := make([]T, 0, length)
@@ -216,6 +315,11 @@ func Reverse[T any](s []T) []T {
 
 // ReverseSelf reverses the elements in a slice in place.
 // 反转 slice 本身, 原始 slice 不会被改变。
+//
+// Example:
+//
+// s := []int{1, 2, 3, 4, 5}
+// ReverseSelf(s)  // s == []int{5, 4, 3, 2, 1}
 func ReverseSelf[T any](s []T) {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
@@ -224,6 +328,11 @@ func ReverseSelf[T any](s []T) {
 
 // Repeat returns a new slice with n copies of the given element.
 // 返回一个新 slice，其中包含 n 个给定元素的副本, 原始 slice 不会被改变。
+//
+// Example:
+//
+// s := []int{1, 2, 3}
+// r := Repeat(s, 3)  // r == []int{1, 2, 3, 1, 2, 3, 1, 2, 3}
 func Repeat[T any](s T, n int) []T {
 	result := make([]T, 0, n)
 	for i := 0; i < n; i++ {
@@ -233,6 +342,12 @@ func Repeat[T any](s T, n int) []T {
 }
 
 // Product returns a new slice of tuples, where each tuple contains the corresponding elements from two slices.
+//
+// Example:
+//
+// s1 := []int{1, 2}
+// s2 := []int{3, 4}
+// r := Product(s1, s2) // r == [][]int{{1, 3}, {1, 4}, {2, 3}, {2, 4}}
 func Product[T any](slices ...[]T) [][]T {
 	length := len(slices)
 	if length == 0 {
@@ -256,6 +371,10 @@ func Product[T any](slices ...[]T) [][]T {
 }
 
 // Contains 判断 src 里面是否存在 dst
+//
+// Example:
+//
+//	r := Contains([]int{1, 2, 3}, 2) //  r == true
 func Contains[T comparable](src []T, dst T) bool {
 	for _, v := range src {
 		if v == dst {
@@ -267,6 +386,10 @@ func Contains[T comparable](src []T, dst T) bool {
 }
 
 // ContainsAny 判断 src 里面是否存在 dst 中的任何一个元素
+//
+// Example:
+//
+//	r := ContainsAny([]int{1, 2, 3}, []int{2, 4}) //  r == true
 func ContainsAny[T comparable](src, dst []T) bool {
 	srcMap := toMap(src)
 	for _, value := range dst {
@@ -279,6 +402,10 @@ func ContainsAny[T comparable](src, dst []T) bool {
 }
 
 // ContainsAll 判断 src 里面是否存在 dst 中的所有元素
+//
+// Example:
+//
+//	r := ContainsAll([]int{1, 2, 3}, []int{2, 3}) //  r == true
 func ContainsAll[T comparable](src, dst []T) bool {
 	srcMap := toMap(src)
 	for _, value := range dst {
@@ -291,6 +418,11 @@ func ContainsAll[T comparable](src, dst []T) bool {
 
 // Unique removes duplicate elements from a slice.
 // 删除 slice 中的重复元素, 原始 slice 不会被改变 。
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 1, 2, 4}
+//	r := Unique(s) // r == []int{1, 2, 3, 4}
 func Unique[T comparable](s []T) []T {
 	result := make([]T, 0, len(s))
 	seen := make(map[T]struct{}, len(s))
@@ -303,6 +435,12 @@ func Unique[T comparable](s []T) []T {
 	return result
 }
 
+// 将 slice 转换为 map
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 1, 2, 4}
+//	r := ToMap(s) // r == map[int]struct{}{1: {}, 2: {}, 3: {}, 4: {}}
 func toMap[T comparable](s []T) map[T]struct{} {
 	result := make(map[T]struct{}, len(s))
 	for _, v := range s {
@@ -313,6 +451,12 @@ func toMap[T comparable](s []T) map[T]struct{} {
 
 // DiffSet returns the difference between two slices.
 // 返回 src 和 dst 的差集, 即 src 中存在，dst 中不存在的元素。
+//
+// Example:
+//
+//	src := []int{1, 2, 3, 4, 5}
+//	dst := []int{1, 2, 3}
+//	r := DiffSet(src, dst) // r == []int{4, 5}
 func DiffSet[T comparable](src, dst []T) []T {
 	srcMap := toMap(src)
 	for _, value := range dst {
@@ -332,6 +476,12 @@ func DiffSet[T comparable](src, dst []T) []T {
 
 // IntersectSet returns the intersection between two slices.
 // 返回 src 和 dst 的交集, 即 src 中存在，dst 中也存在元素。
+//
+// Example:
+//
+//	src := []int{1, 2, 3, 4, 5}
+//	dst := []int{4, 5, 6, 7, 8}
+//	r := IntersectSet(src, dst) // r == []int{4, 5}
 func IntersectSet[T comparable](src, dst []T) []T {
 	dstMap := toMap(dst)
 
@@ -347,6 +497,12 @@ func IntersectSet[T comparable](src, dst []T) []T {
 
 // UnionSet returns the union of two slices.
 // 返回 src 和 dst 的并集, 即 src 和 dst 的并集。
+//
+// Example:
+//
+//	src := []int{1, 2, 3, 4, 5}
+//	dst := []int{4, 5, 6, 7, 8}
+//	r := UnionSet(src, dst) // r == []int{1, 2, 3, 4, 5, 6, 7, 8}
 func UnionSet[T comparable](src, dst []T) []T {
 	result := append(src, dst...)
 	return Unique(result)
@@ -354,6 +510,11 @@ func UnionSet[T comparable](src, dst []T) []T {
 
 // Index 返回和 dst 相等的第一个元素下标
 // -1 表示没找到
+//
+// Example:
+//
+//	src := []int{1, 2, 3, 2, 5}
+//	r := Index(src, 2) // r == 1
 func Index[T comparable](src []T, dst T) int {
 	for i, v := range src {
 		if v == dst {
@@ -365,6 +526,11 @@ func Index[T comparable](src []T, dst T) int {
 
 // LastIndex 返回和 dst 相等的最后一个元素下标
 // -1 表示没找到
+//
+// Example:
+//
+//	src := []int{1, 2, 3, 2, 5}
+//	r := LastIndex(src, 2)  // r == 3
 func LastIndex[T comparable](src []T, dst T) int {
 	for i := len(src) - 1; i >= 0; i-- {
 		if src[i] == dst {
@@ -375,6 +541,11 @@ func LastIndex[T comparable](src []T, dst T) int {
 }
 
 // IndexAll 返回和 dst 相等的所有元素的下标
+//
+// Example:
+//
+//	src := []int{1, 2, 3, 2, 5}
+//	r := IndexAll(src, 2)  // r == []int{1, 3}
 func IndexAll[T comparable](src []T, dst T) []int {
 	result := make([]int, 0, len(src))
 	for i, v := range src {
@@ -385,9 +556,9 @@ func IndexAll[T comparable](src []T, dst T) []int {
 	return result
 }
 
-// Clone returns a new slice with the same elements as the original slice.
+// ShallowClone returns a new slice with the same elements as the original slice.
 // 返回一个新的 slice，其中包含原始 slice 的副本, 原始 slice 不会被改变。
-func Clone[T any](s []T) []T {
+func ShallowClone[T any](s []T) []T {
 	t := make([]T, 0, len(s))
 	t = append(t, s...)
 	return t
