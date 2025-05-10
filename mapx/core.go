@@ -1,5 +1,10 @@
 package mapx
 
+import (
+	"golang.org/x/exp/constraints"
+	"sort"
+)
+
 // Keys 返回 map 里面的所有的 key。
 // 需要注意：这些 key 的顺序是随机。
 func Keys[K comparable, V any](m map[K]V) []K {
@@ -18,4 +23,61 @@ func Values[K comparable, V any](m map[K]V) []V {
 		values = append(values, v)
 	}
 	return values
+}
+
+type KV[K any, V any] struct {
+	Key   K
+	Value V
+}
+
+// SortByKey 按 key 排序。
+func SortByKey[K constraints.Ordered, V any](a, b KV[K, V]) bool {
+	return a.Key < b.Key
+}
+
+// SortByValue 根据 value 排序。
+func SortByValue[K any, V constraints.Ordered](a, b KV[K, V]) bool {
+	return a.Value < b.Value
+}
+
+// defaultKeySort 是 SortMap 的默认排序逻辑
+func defaultKeySort[K constraints.Ordered, V any](a, b KV[K, V]) bool {
+	return a.Key < b.Key
+}
+
+// SortMap 对 map[K]V 进行排序。
+//
+// Example:
+//
+//	m := map[string]int{
+//		"b": 2,
+//		"a": 3,
+//		"c": 1,
+//	}
+//
+// sorted1 := SortMap(m)
+// fmt.Println(sorted1) // []mapx.KV[string,int]{Key: "a", Value: 3} mapx.KV[string,int]{Key: "b", Value: 2} mapx.KV[string,int]{Key: "c", Value: 1}]
+//
+// sorted2 := SortMap(m, func(a, b mapx.KV[string, int]) bool {return a.Value < b.Value})
+// fmt.Println(sorted2) //  []mapx.KV[string,int]{Key: "c", Value: 1} mapx.KV[string,int]{Key: "b", Value: 2} mapx.KV[string,int]{Key: "a", Value: 3}]
+func SortMap[K constraints.Ordered, V any](m map[K]V, opts ...func(a, b KV[K, V]) bool) []KV[K, V] {
+	result := make([]KV[K, V], 0, len(m))
+	for key, value := range m {
+		result = append(result, KV[K, V]{Key: key, Value: value})
+	}
+
+	var lessFunc func(i, j int) bool
+
+	if len(opts) > 0 {
+		lessFunc = func(i, j int) bool {
+			return opts[0](result[i], result[j])
+		}
+	} else {
+		lessFunc = func(i, j int) bool {
+			return defaultKeySort(result[i], result[j])
+		}
+	}
+	sort.Slice(result, lessFunc)
+
+	return result
 }
