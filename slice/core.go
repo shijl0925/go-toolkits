@@ -582,6 +582,13 @@ func IndexAll[T comparable](src []T, dst T) []int {
 // }
 
 // JoinSlice join []any slice to string.
+//
+// Example:
+//
+//	s := []string{"a", "b", "c"}
+//	s1 := JoinSlice(",", s) // s1 == "a,b,c"
+//	t := []int{1, 2, 3}
+//	t1 := JoinSlice(",", t) // t1 == "1,2,3"
 func JoinSlice[T any](sep string, s []T) string {
 	var bf strings.Builder
 	for i, v := range s {

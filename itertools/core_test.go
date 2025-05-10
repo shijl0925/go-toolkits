@@ -176,6 +176,71 @@ func Test_Zip(t *testing.T) {
 	}
 }
 
+func Test_CombineToMap(t *testing.T) {
+	tests := []struct {
+		name   string
+		slice1 []int
+		slice2 []string
+		want   map[int]string
+	}{
+		{
+			name:   "equal length slices",
+			slice1: []int{1, 2, 3},
+			slice2: []string{"one", "two", "three"},
+			want: map[int]string{
+				1: "one",
+				2: "two",
+				3: "three",
+			},
+		},
+		{
+			name:   "first slice longer",
+			slice1: []int{1, 2, 3, 4},
+			slice2: []string{"one", "two", "three"},
+			want: map[int]string{
+				1: "one",
+				2: "two",
+				3: "three",
+			},
+		},
+		{
+			name:   "second slice longer",
+			slice1: []int{1, 2},
+			slice2: []string{"one", "two", "three", "four"},
+			want: map[int]string{
+				1: "one",
+				2: "two",
+			},
+		},
+		{
+			name:   "empty first slice",
+			slice1: []int{},
+			slice2: []string{"one", "two", "three"},
+			want:   map[int]string{},
+		},
+		{
+			name:   "empty second slice",
+			slice1: []int{1, 2, 3},
+			slice2: []string{},
+			want:   map[int]string{},
+		},
+		{
+			name:   "both slices empty",
+			slice1: []int{},
+			slice2: []string{},
+			want:   map[int]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := itertools.CombineToMap(tt.slice1, tt.slice2); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CombineToMap() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_GroupBy(t *testing.T) {
 	t.Run("test1", func(t *testing.T) {
 		slice := []string{"A", "B", "DEF", "GH", "IJK"}

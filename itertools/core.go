@@ -60,6 +60,22 @@ func Zip[T any, U any](a []T, b []U) []Tuple[T, U] {
 	return result
 }
 
+// CombineToMap 将两个切片 keys 和 values 合并为一个 map。
+// 键类型 K 必须是 comparable，值类型 V 可以是任意类型。
+// 注意：若 keys 中存在重复键，则后面的值将覆盖前面的值,
+// 若values数量大于 keys 的长度，则多余的键值对将被忽略。
+func CombineToMap[K comparable, V any](keys []K, values []V) map[K]V {
+	length := len(keys)
+	if len(values) < length {
+		length = len(values)
+	}
+	result := make(map[K]V, length)
+	for i := 0; i < length; i++ {
+		result[keys[i]] = values[i]
+	}
+	return result
+}
+
 // All returns true if all elements in a slice satisfy the predicate.
 func All[T any](s []T, fn func(T) bool) bool {
 	for _, v := range s {
