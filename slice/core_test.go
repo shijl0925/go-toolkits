@@ -1,6 +1,7 @@
 package slice_test
 
 import (
+	"fmt"
 	"github.com/shijl0925/go-toolkits/slice"
 	"reflect"
 	"testing"
@@ -587,18 +588,42 @@ func Test_IndexAll(t *testing.T) {
 	}
 }
 
-//type Int int
-//
-//func (i Int) String() string {
-//	return strconv.Itoa(int(i))
-//}
+type Person struct {
+	FirstName string
+	LastName  string
+	Age       int
+}
 
-//func Test_JoinStrings(t *testing.T) {
-//	s1 := []Int{1, 2, 3, 4, 5}
-//	w1 := "1,2,3,4,5"
-//	t.Run("test1", func(t *testing.T) {
-//		if got := slice.JoinStrings(",", s1); !reflect.DeepEqual(got, w1) {
-//			t.Errorf("JoinStrings() expected %v, got %v", w1, got)
-//		}
-//	})
-//}
+func (t Person) String() string {
+	return fmt.Sprintf("%s %s, %d", t.FirstName, t.LastName, t.Age)
+}
+
+func Test_JoinSlice(t *testing.T) {
+	s1 := []int{1, 2, 3, 4, 5}
+	w1 := "1,2,3,4,5"
+	t.Run("test1", func(t *testing.T) {
+		if got := slice.JoinSlice(",", s1); !reflect.DeepEqual(got, w1) {
+			t.Errorf("JoinSlice() expected %v, got %v", w1, got)
+		}
+	})
+
+	s2 := []string{"a", "b", "c", "d"}
+	w2 := "a,b,c,d"
+	t.Run("test2", func(t *testing.T) {
+		if got := slice.JoinSlice(",", s2); !reflect.DeepEqual(got, w2) {
+			t.Errorf("JoinSlice() expected %v, got %v", w2, got)
+		}
+	})
+
+	s3 := []Person{
+		{"Alice", "Smith", 18},
+		{"Bob", "Johnson", 20},
+		{"Charlie", "Brown", 17},
+	}
+	w3 := "Alice Smith, 18;Bob Johnson, 20;Charlie Brown, 17"
+	t.Run("test2", func(t *testing.T) {
+		if got := slice.JoinSlice(";", s3); !reflect.DeepEqual(got, w3) {
+			t.Errorf("JoinSlice() expected %v, got %v", w3, got)
+		}
+	})
+}

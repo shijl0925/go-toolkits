@@ -2,7 +2,9 @@ package slice
 
 import (
 	"fmt"
+	"github.com/shijl0925/go-toolkits"
 	"golang.org/x/exp/constraints"
+	"strings"
 )
 
 type RealNumber interface {
@@ -579,13 +581,15 @@ func IndexAll[T comparable](src []T, dst T) []int {
 // 	return t
 // }
 
-//func JoinStrings[T fmt.Stringer](sep string, s []T) string {
-//	var bf strings.Builder
-//	for i, v := range s {
-//		if i > 0 {
-//			bf.WriteString(sep)
-//		}
-//		bf.WriteString(v.String())
-//	}
-//	return bf.String()
-//}
+// JoinSlice join []any slice to string.
+func JoinSlice[T any](sep string, s []T) string {
+	var bf strings.Builder
+	for i, v := range s {
+		if i > 0 {
+			bf.WriteString(sep)
+		}
+		s, _ := toolkits.SafeString(v)
+		bf.WriteString(s)
+	}
+	return bf.String()
+}
