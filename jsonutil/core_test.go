@@ -166,3 +166,39 @@ func Test_DecodeFromReader(t *testing.T) {
 		}
 	})
 }
+
+func Test_ReadFile(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		var user2 = &Person{}
+		err := jsonutil.ReadFile("testdata/test.json", user2)
+		if err != nil {
+			t.Errorf("ReadFile() error: %v", err)
+		}
+		if user2.FirstName != "Alice" {
+			t.Errorf("ReadFile() expected %v, got %v", "Alice", user2.FirstName)
+		}
+		if user2.LastName != "Smith" {
+			t.Errorf("ReadFile() expected %v, got %v", "Smith", user2.LastName)
+		}
+		if user2.Age != 18 {
+			t.Errorf("ReadFile() expected %v, got %v", 18, user2.Age)
+		}
+	})
+}
+
+func Test_WriteFile(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		filePath := "testdata/test.json"
+		err := jsonutil.WriteFile(filePath, testUser)
+		want := `{"first_name":"Alice","last_name":"Smith","age":18}
+`
+		if err != nil {
+			t.Errorf("WriteFile() error: %v", err)
+		}
+
+		data, _ := ioutil.ReadFile(filePath)
+		if string(data) != want {
+			t.Errorf("WriteFile() expected %v, got %v", want, string(data))
+		}
+	})
+}

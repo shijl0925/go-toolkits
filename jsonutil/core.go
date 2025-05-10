@@ -3,6 +3,7 @@ package jsonutil
 import (
 	"encoding/json"
 	"io"
+	"os"
 	"strings"
 )
 
@@ -104,4 +105,27 @@ func Loads(s string, ptr any) error {
 // fmt.Println(testUser) // {18 Alice Smith}
 func DecodeFromReader(r io.Reader, ptr any) error {
 	return json.NewDecoder(r).Decode(ptr)
+}
+
+// WriteFile write data to JSON file
+func WriteFile(filePath string, data any) error {
+	// 使用 O_CREATE|O_WRONLY|O_TRUNC 确保文件被清空后再写入
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+	return json.NewEncoder(file).Encode(data)
+}
+
+// ReadFile Read JSON file data
+func ReadFile(filePath string, v any) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+	return json.NewDecoder(file).Decode(v)
 }
