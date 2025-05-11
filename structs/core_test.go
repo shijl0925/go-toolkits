@@ -31,6 +31,29 @@ func TestStructToMap_BasicFields(t *testing.T) {
 	}
 }
 
+func TestStructToMap_PointerStructFields(t *testing.T) {
+	type SampleStruct struct {
+		Name string
+		Age  int
+	}
+
+	input := &SampleStruct{
+		Name: "Alice",
+		Age:  30,
+	}
+
+	expected := map[string]any{
+		"Name": "Alice",
+		"Age":  30,
+	}
+
+	result := structs.StructToMap(input)
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
 func TestStructToMap_WithTag(t *testing.T) {
 	type SampleStruct struct {
 		Name string `json:"name"`

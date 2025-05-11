@@ -6,6 +6,8 @@ import (
 
 // StructToMap convert structs to map[string]any by reflect.
 func StructToMap(s any) map[string]any {
+	s = structVal(s)
+
 	result := make(map[string]any)
 
 	val := reflect.ValueOf(s)
@@ -53,4 +55,19 @@ func StructToMap(s any) map[string]any {
 	}
 
 	return result
+}
+
+func structVal(s any) any {
+	v := reflect.ValueOf(s)
+
+	// if pointer get the underlying element≤
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		panic("not struct")
+	}
+
+	return v.Interface()
 }
