@@ -511,7 +511,7 @@ func IntersectSet[T comparable](src, dst []T) []T {
 }
 
 // UnionSet returns the union of two slices.
-// 返回 src 和 dst 的并集, 即 src 和 dst 的并集。
+// 返回 src 和 dst 的并集, 即 src 和 dst中所有元素的集合。
 //
 // Example:
 //
