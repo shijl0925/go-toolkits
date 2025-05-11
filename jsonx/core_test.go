@@ -1,9 +1,9 @@
-package jsonutil_test
+package jsonx_test
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/shijl0925/go-toolkits/jsonutil"
+	"github.com/shijl0925/go-toolkits/jsonx"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -20,7 +20,7 @@ var testUser = Person{"Alice", "Smith", 18}
 func Test_Encode(t *testing.T) {
 	want := `{"first_name":"Alice","last_name":"Smith","age":18}`
 	t.Run("test1", func(t *testing.T) {
-		got, err := jsonutil.Encode(testUser)
+		got, err := jsonx.Encode(testUser)
 		if err != nil {
 			t.Errorf("Encode() error = %v", err)
 		}
@@ -33,7 +33,7 @@ func Test_Encode(t *testing.T) {
 func Test_Dumps(t *testing.T) {
 	want := `{"first_name":"Alice","last_name":"Smith","age":18}`
 	t.Run("test1", func(t *testing.T) {
-		if got := jsonutil.Dumps(testUser); got != want {
+		if got := jsonx.Dumps(testUser); got != want {
 			t.Errorf("Dumps() expected %v, got %v", want, got)
 		}
 	})
@@ -46,7 +46,7 @@ func Test_DumpsPretty(t *testing.T) {
     "age": 18
 }`
 	t.Run("test1", func(t *testing.T) {
-		if got := jsonutil.DumpsPretty(testUser, 4); got != want {
+		if got := jsonx.DumpsPretty(testUser, 4); got != want {
 			t.Errorf("DumpsPretty() expected %v, got %v", want, got)
 		}
 	})
@@ -57,7 +57,7 @@ func Test_EncodeToWriter(t *testing.T) {
 		buf := &bytes.Buffer{}
 		want := `{"first_name":"Alice","last_name":"Smith","age":18}
 `
-		err := jsonutil.EncodeToWriter(testUser, buf)
+		err := jsonx.EncodeToWriter(testUser, buf)
 		if err != nil {
 			t.Errorf("EncodeToWriter() error: %v", err)
 		}
@@ -68,7 +68,7 @@ func Test_EncodeToWriter(t *testing.T) {
 
 	t.Run("test2", func(t *testing.T) {
 		tmpfile, _ := ioutil.TempFile("", "example.json")
-		err := jsonutil.EncodeToWriter(testUser, tmpfile)
+		err := jsonx.EncodeToWriter(testUser, tmpfile)
 		want := `{"first_name":"Alice","last_name":"Smith","age":18}
 `
 
@@ -87,7 +87,7 @@ func Test_Decode(t *testing.T) {
 	var user = &Person{}
 	str := `{"first_name":"Alice","last_name":"Smith","age":18}`
 	t.Run("test1", func(t *testing.T) {
-		err := jsonutil.Decode([]byte(str), user)
+		err := jsonx.Decode([]byte(str), user)
 		if err != nil {
 			t.Errorf("Decode() error = %v", err)
 		}
@@ -107,7 +107,7 @@ func Test_Loads(t *testing.T) {
 	var user = &Person{}
 	str := `{"first_name":"Alice","last_name":"Smith","age":18}`
 	t.Run("test1", func(t *testing.T) {
-		err := jsonutil.Loads(str, user)
+		err := jsonx.Loads(str, user)
 		if err != nil {
 			t.Errorf("Loads() error = %v", err)
 		}
@@ -133,7 +133,7 @@ func Test_DecodeFromReader(t *testing.T) {
 		buf.WriteString(want)
 		fmt.Printf("buf: %s\n", buf.String())
 
-		err := jsonutil.DecodeFromReader(buf, user1)
+		err := jsonx.DecodeFromReader(buf, user1)
 		if err != nil {
 			t.Errorf("DecodeFromReader() error: %v", err)
 		}
@@ -151,7 +151,7 @@ func Test_DecodeFromReader(t *testing.T) {
 	t.Run("test2", func(t *testing.T) {
 		var user2 = &Person{}
 		file, _ := os.Open("testdata/test.json")
-		err := jsonutil.DecodeFromReader(file, user2)
+		err := jsonx.DecodeFromReader(file, user2)
 		if err != nil {
 			t.Errorf("DecodeFromReader() error: %v", err)
 		}
@@ -170,7 +170,7 @@ func Test_DecodeFromReader(t *testing.T) {
 func Test_ReadFile(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		var user2 = &Person{}
-		err := jsonutil.ReadFile("testdata/test.json", user2)
+		err := jsonx.ReadFile("testdata/test.json", user2)
 		if err != nil {
 			t.Errorf("ReadFile() error: %v", err)
 		}
@@ -189,7 +189,7 @@ func Test_ReadFile(t *testing.T) {
 func Test_WriteFile(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		filePath := "testdata/test.json"
-		err := jsonutil.WriteFile(filePath, testUser)
+		err := jsonx.WriteFile(filePath, testUser)
 		want := `{"first_name":"Alice","last_name":"Smith","age":18}
 `
 		if err != nil {

@@ -1,4 +1,4 @@
-package jsonutil
+package jsonx
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ func Encode(v any) ([]byte, error) {
 // Example:
 //
 // testUser = Person{"Alice", "Smith", 18}
-// res, _ := jsonutil.Dumps(testUser) // res == `{"first_name":"Alice","last_name":"Smith","age":18}`
+// res, _ := jsonx.Dumps(testUser) // res == `{"first_name":"Alice","last_name":"Smith","age":18}`
 func Dumps(v any) string {
 	b, err := json.Marshal(v)
 	if err != nil {
@@ -33,7 +33,7 @@ func Dumps(v any) string {
 // Example:
 //
 // testUser = Person{"Alice", "Smith", 18}
-// res, _ := jsonutil.DumpsPretty(testUser, 4)
+// res, _ := jsonx.DumpsPretty(testUser, 4)
 //
 //	res == `{
 //		   "first_name": "Alice",
@@ -60,7 +60,7 @@ func DumpsPretty(v any, indent int) string {
 // testUser = Person{"Alice", "Smith", 18}
 // file, _ := os.OpenFile("test.json", os.O_CREATE|os.O_WRONLY, 0666)
 // defer file.Close()
-// err := jsonutil.EncodeToWriter(testUser, file)
+// err := jsonx.EncodeToWriter(testUser, file)
 // if err != nil {...}
 func EncodeToWriter(v any, w io.Writer) error {
 	return json.NewEncoder(w).Encode(v)
@@ -72,7 +72,7 @@ func EncodeToWriter(v any, w io.Writer) error {
 //
 // var testUser Person
 // data := []byte(`{"first_name":"Alice","last_name":"Smith","age":18}`)
-// err := jsonutil.Decode(data, &testUser)
+// err := jsonx.Decode(data, &testUser)
 // if err != nil {...}
 // fmt.Println(testUser) // {18 Alice Smith}
 func Decode(data []byte, ptr any) error {
@@ -86,7 +86,7 @@ func Decode(data []byte, ptr any) error {
 //
 // var testUser Person
 // str := `{"first_name":"Alice","last_name":"Smith","age":18}`
-// err := jsonutil.Loads(str, &testUser)
+// err := jsonx.Loads(str, &testUser)
 // if err != nil {...}
 // fmt.Println(testUser) // {18 Alice Smith}
 func Loads(s string, ptr any) error {
@@ -100,7 +100,7 @@ func Loads(s string, ptr any) error {
 //
 // var testUser Person
 // file, _ := os.Open("test.json")
-// err := jsonutil.DecodeFromReader(file, &testUser)
+// err := jsonx.DecodeFromReader(file, &testUser)
 // if err != nil {...}
 // fmt.Println(testUser) // {18 Alice Smith}
 func DecodeFromReader(r io.Reader, ptr any) error {
