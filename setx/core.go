@@ -78,6 +78,68 @@ func (s Set[T]) Keys() []T {
 	return result
 }
 
+// Clear removes all elements from the set.
+// 清空集合
+//
+// Example:
+// s := setx.NewSet(3, []int{1, 2, 3})
+// s.Clear()
+// fmt.Println(s.Len()) // 0
+func (s Set[T]) Clear() {
+	for element := range s {
+		delete(s, element)
+	}
+}
+
+// Equal returns true if the set is equal to the other set.
+// 判断两个集合是否相等，如果两个集合的元素数量和元素值都相同，则返回true，否则返回false。
+//
+// Example:
+//
+// s := setx.NewSet(3, []int{1, 2, 3})
+// t := setx.NewSet(3, []int{1, 2, 3})
+// fmt.Println(s.Equal(t)) // true
+// fmt.Println(s.Equal(setx.NewSet(2, []int{1,2}))) // false
+func (s Set[T]) Equal(dst Set[T]) bool {
+	if s.Len() != dst.Len() {
+		return false
+	}
+
+	for element := range s {
+		if !dst.Exists(element) {
+			return false
+		}
+	}
+
+	for element := range dst {
+		if !s.Exists(element) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Update updates the set with the elements of the other set.
+// 将dst集合中的元素添加到src集合中，如果src集合中已经存在该元素，则不添加。
+// 并且返回值是src集合
+//
+// Example:
+//
+// s := setx.NewSet(3, []int{1, 2, 3})
+// t := setx.NewSet(3, []int{1, 2, 4})
+// fmt.Println(s.Update(t)) // map[1:{} 2:{} 3:{} 4:{}]
+// fmt.Println(s) // map[1:{} 2:{} 3:{} 4:{}]
+// fmt.Println(t) // map[1:{} 2:{} 4:{}]
+func (s Set[T]) Update(dst Set[T]) Set[T] {
+	for element := range dst {
+		if !s.Exists(element) {
+			s.Add(element)
+		}
+	}
+	return s
+}
+
 // DiffSet returns the difference between two sets.
 // 返回src集合与dst集合的差集, 即 src 中存在，dst 中不存在的元素。
 // 并且返回值的顺序是不确定的

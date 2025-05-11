@@ -274,3 +274,141 @@ func Test_UnionSet(t *testing.T) {
 		})
 	}
 }
+
+// TestClear_EmptySet 测试清空一个空集合
+func TestClear_EmptySet(t *testing.T) {
+	set := make(setx.Set[int])
+	set.Clear()
+
+	if len(set) != 0 {
+		t.Errorf("Expected empty set after Clear(), got %d elements", len(set))
+	}
+}
+
+// TestClear_NonEmptySet 测试清空一个包含元素的集合
+func TestClear_NonEmptySet(t *testing.T) {
+	set := make(setx.Set[string])
+	set.Add("a")
+	set.Add("b")
+
+	set.Clear()
+
+	if len(set) != 0 {
+		t.Errorf("Expected empty set after Clear(), got %d elements", len(set))
+	}
+}
+
+// TestClear_MultipleElements 测试多个不同类型的元素是否都能被清除
+func TestClear_MultipleElements(t *testing.T) {
+	set := make(setx.Set[interface{}])
+	set.Add(1)
+	set.Add("hello")
+	set.Add(true)
+
+	set.Clear()
+
+	if len(set) != 0 {
+		t.Errorf("Expected empty set after Clear(), got %d elements", len(set))
+	}
+}
+
+// TestSet_Equal 测试 Equal 方法的各种情况
+func TestSet_Equal(t *testing.T) {
+	tests := []struct {
+		name string
+		s    setx.Set[int]
+		dst  setx.Set[int]
+		want bool
+	}{
+		{
+			name: "TC01 - Both empty sets",
+			s:    setx.Set[int]{},
+			dst:  setx.Set[int]{},
+			want: true,
+		},
+		{
+			name: "TC02 - Sets with same elements",
+			s:    setx.Set[int]{1: {}, 2: {}, 3: {}},
+			dst:  setx.Set[int]{1: {}, 2: {}, 3: {}},
+			want: true,
+		},
+		{
+			name: "TC03 - Different lengths",
+			s:    setx.Set[int]{1: {}, 2: {}},
+			dst:  setx.Set[int]{1: {}, 2: {}, 3: {}},
+			want: false,
+		},
+		{
+			name: "TC04 - s has extra element",
+			s:    setx.Set[int]{1: {}, 2: {}, 4: {}},
+			dst:  setx.Set[int]{1: {}, 2: {}, 3: {}},
+			want: false,
+		},
+		{
+			name: "TC05 - dst has extra element",
+			s:    setx.Set[int]{1: {}, 2: {}, 3: {}, 4: {}},
+			dst:  setx.Set[int]{1: {}, 2: {}, 3: {}},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.s.Equal(tt.dst)
+			if got != tt.want {
+				t.Errorf("Equal() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// 辅助函数：比较两个 Set 是否相等
+func assertSetEqual[T comparable](t *testing.T, expected, actual setx.Set[T]) {
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Expected set %v but got %v", expected, actual)
+	}
+}
+
+// TC01: s 为空，dst 包含多个元素
+func TestUpdate_EmptySource(t *testing.T) {
+	dst := setx.NewSet[int](3, []int{1, 2, 3}...)
+	s := make(setx.Set[int])
+
+	expected := setx.NewSet[int](3, []int{1, 2, 3}...)
+	result := s.Update(dst)
+
+	assertSetEqual(t, expected, result)
+}
+
+// TC02: s 已有部分元素，dst 包含新旧混合元素
+func TestUpdate_OverlapElements(t *testing.T) {
+	s := setx.NewSet[int](2, []int{1, 2}...)
+	dst := setx.NewSet[int](3, []int{2, 3, 4}...)
+
+	expected := setx.NewSet[int](4, []int{1, 2, 3, 4}...)
+	result := s.Update(dst)
+
+	assertSetEqual(t, expected, result)
+}
+
+// TC03: dst 为空，s 不变
+func TestUpdate_EmptyDestination(t *testing.T) {
+	s := setx.NewSet[string](2, []string{"a", "b"}...)
+	dst := make(setx.Set[string])
+
+	expected := s // 原始集合不变
+	result := s.Update(dst)
+
+	assertSetEqual(t, expected, result)
+}
+
+// TC04: dst 中所有元素都已存在于 s 中
+func TestUpdate_AllElementsExist(t *testing.T) {
+	s := setx.NewSet[int](3, []int{10, 20, 30}...)
+	dst := setx.NewSet[int](2, []int{10, 20}...)
+
+	expected := s // 不应改变
+	result := s.Update(dst)
+
+	assertSetEqual(t, expected, result)
+}
