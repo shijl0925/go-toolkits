@@ -154,6 +154,28 @@ func Delete[T any](s []T, index int) ([]T, bool) {
 	return append(s[:index], s[index+1:]...), true
 }
 
+// DeleteAt removes and returns the element at a specific index from a slice.
+// 删除位于索引 index 的元素, 原始 slice 会被改变。
+// 注意: 返回的切片仍与原切片共享底层数组。
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 2}
+//	r, _ := DeleteAt(s, 2) // r == []int{1, 2, 2}
+func DeleteAt[T any](s []T, index int) ([]T, bool) { // 性能比Delete好
+	length := len(s)
+	if index < 0 || index >= length {
+		return s, false
+	}
+
+	//从index位置开始，后面的元素依次往前挪1个位置
+	for i := index; i < length-1; i++ {
+		s[i] = s[i+1]
+	}
+
+	return s[:length-1], true
+}
+
 // DeleteMany removes and returns the elements between start and end from a slice.
 // 删除位于索引 start 和 end 之间的元素, 原始 slice 会被改变。
 // 注意: 返回的切片仍与原切片共享底层数组。

@@ -220,6 +220,26 @@ func Test_Delete(t *testing.T) {
 	}
 }
 
+func Test_DeleteAt(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		index    int
+		expected []int
+	}{
+		{"test1", []int{1, 2, 3, 4}, 1, []int{1, 3, 4}},
+		{"test2", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}},
+		{"test4", []int{1, 2, 3, 4, 5, 6}, 2, []int{1, 2, 4, 5, 6}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got, _ := slicex.DeleteAt(tc.slice, tc.index); !reflect.DeepEqual(got, tc.expected) {
+				t.Errorf("DeleteAt() expected %v, got %v", tc.expected, got)
+			}
+		})
+	}
+}
+
 func Test_DeleteMany(t *testing.T) {
 	var tests = []struct {
 		name     string
