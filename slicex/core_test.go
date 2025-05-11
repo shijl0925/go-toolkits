@@ -1,8 +1,8 @@
-package slice_test
+package slicex_test
 
 import (
 	"fmt"
-	"github.com/shijl0925/go-toolkits/slice"
+	"github.com/shijl0925/go-toolkits/slicex"
 	"reflect"
 	"testing"
 )
@@ -18,7 +18,7 @@ func Test_SumSlice(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Sum(tc.slice); got != tc.expected {
+			if got := slicex.Sum(tc.slice); got != tc.expected {
 				t.Errorf("Sum() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -37,7 +37,7 @@ func Test_MaxSlice(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Max(tc.slice); got != tc.expected {
+			if got := slicex.Max(tc.slice); got != tc.expected {
 				t.Errorf("Max() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -56,7 +56,7 @@ func Test_MinSlice(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Min(tc.slice); got != tc.expected {
+			if got := slicex.Min(tc.slice); got != tc.expected {
 				t.Errorf("Min() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -77,7 +77,7 @@ func Test_Insert(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slice.Insert(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slicex.Insert(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Insert() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -98,7 +98,7 @@ func Test_InsertAt(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slice.InsertAtV2(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slicex.InsertAtV2(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Add() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -119,7 +119,7 @@ func Test_InsertMany(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slice.InsertMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slicex.InsertMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("InsertMany() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -140,7 +140,7 @@ func Test_AddMany(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slice.AddMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slicex.AddMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("AddMany() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -151,7 +151,7 @@ func Test_Pop(t *testing.T) {
 	var s, want []string
 	var lastWant string
 	t.Run("test0", func(t *testing.T) {
-		if last, got := slice.Pop(s); !reflect.DeepEqual(got, want) {
+		if last, got := slicex.Pop(s); !reflect.DeepEqual(got, want) {
 			t.Errorf("Pop() expected %v, got %v", want, got)
 			if last != lastWant {
 				t.Errorf("Pop() element expected %v, got %v", lastWant, last)
@@ -170,7 +170,7 @@ func Test_Pop(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if last, got := slice.Pop(tc.slice); !reflect.DeepEqual(got, tc.expected) {
+			if last, got := slicex.Pop(tc.slice); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Pop() expected %v, got %v", tc.expected, got)
 				if last != tc.slice[len(tc.slice)-1] {
 					t.Errorf("Pop() element expected %v, got %v", last, tc.slice[len(tc.slice)-1])
@@ -193,7 +193,7 @@ func Test_Drop(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slice.Drop(tc.slice, tc.n); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slicex.Drop(tc.slice, tc.n); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Drop() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -213,7 +213,7 @@ func Test_Delete(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slice.Delete(tc.slice, tc.index); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slicex.Delete(tc.slice, tc.index); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Delete() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -234,7 +234,7 @@ func Test_DeleteMany(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slice.DeleteMany(tc.slice, tc.start, tc.end); !reflect.DeepEqual(got, tc.expected) {
+			if got, _ := slicex.DeleteMany(tc.slice, tc.start, tc.end); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("DeleteMany() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -254,7 +254,7 @@ func Test_Append(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Append(tc.slice, tc.element); !reflect.DeepEqual(got, tc.expected) {
+			if got := slicex.Append(tc.slice, tc.element); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Append() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -264,7 +264,7 @@ func Test_Append(t *testing.T) {
 	elements := []int{5, 6, 7}
 	want := []int{1, 2, 3, 4, 5, 6, 7}
 	t.Run("test0", func(t *testing.T) {
-		if got := slice.Append(slice1, elements...); !reflect.DeepEqual(got, want) {
+		if got := slicex.Append(slice1, elements...); !reflect.DeepEqual(got, want) {
 			t.Errorf("Append() expected %v, got %v", want, got)
 		}
 	})
@@ -283,7 +283,7 @@ func Test_Extend(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Extend(tc.slice, tc.elements); !reflect.DeepEqual(got, tc.expected) {
+			if got := slicex.Extend(tc.slice, tc.elements); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Extend() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -302,7 +302,7 @@ func Test_Unique(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Unique(tc.slice); !reflect.DeepEqual(got, tc.expected) {
+			if got := slicex.Unique(tc.slice); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Unique() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -312,7 +312,7 @@ func Test_Unique(t *testing.T) {
 func Test_ReverseSelfSlice(t *testing.T) {
 	s1 := []int{1, 2, 3, 4, 5}
 	t.Run("test1", func(t *testing.T) {
-		slice.ReverseSelf(s1)
+		slicex.ReverseSelf(s1)
 		if !reflect.DeepEqual(s1, []int{5, 4, 3, 2, 1}) {
 			t.Errorf("Reverse() expected %v, got %v", 0, s1)
 		}
@@ -320,7 +320,7 @@ func Test_ReverseSelfSlice(t *testing.T) {
 
 	s2 := []string{"one", "two", "three"}
 	t.Run("test2", func(t *testing.T) {
-		slice.ReverseSelf(s2)
+		slicex.ReverseSelf(s2)
 		if !reflect.DeepEqual(s2, []string{"three", "two", "one"}) {
 			t.Errorf("Reverse() expected %v, got %v", []string{"three", "two", "one"}, s2)
 		}
@@ -328,7 +328,7 @@ func Test_ReverseSelfSlice(t *testing.T) {
 
 	s3 := []byte("Google")
 	t.Run("test3", func(t *testing.T) {
-		slice.ReverseSelf(s3)
+		slicex.ReverseSelf(s3)
 		if string(s3) != "elgooG" {
 			t.Errorf("Reverse() expected %v, got %v", "elgooG", string(s3))
 		}
@@ -336,17 +336,17 @@ func Test_ReverseSelfSlice(t *testing.T) {
 }
 func Test_ReverseSlice(t *testing.T) {
 	t.Run("test1", func(t *testing.T) {
-		if got := slice.Reverse([]int{1, 2, 3, 4, 5}); !reflect.DeepEqual(got, []int{5, 4, 3, 2, 1}) {
+		if got := slicex.Reverse([]int{1, 2, 3, 4, 5}); !reflect.DeepEqual(got, []int{5, 4, 3, 2, 1}) {
 			t.Errorf("Reverse() expected %v, got %v", []int{5, 4, 3, 2, 1}, got)
 		}
 	})
 	t.Run("test2", func(t *testing.T) {
-		if got := slice.Reverse([]string{"one", "two", "three"}); !reflect.DeepEqual(got, []string{"three", "two", "one"}) {
+		if got := slicex.Reverse([]string{"one", "two", "three"}); !reflect.DeepEqual(got, []string{"three", "two", "one"}) {
 			t.Errorf("Reverse() expected %v, got %v", []string{"three", "two", "one"}, got)
 		}
 	})
 	t.Run("test3", func(t *testing.T) {
-		if got := slice.Reverse([]byte("Google")); string(got) != "elgooG" {
+		if got := slicex.Reverse([]byte("Google")); string(got) != "elgooG" {
 			t.Errorf("Reverse() expected %v, got %v", "elgooG", string(got))
 		}
 	})
@@ -354,19 +354,19 @@ func Test_ReverseSlice(t *testing.T) {
 
 func Test_RepeatSlice(t *testing.T) {
 	t.Run("test1", func(t *testing.T) {
-		if got := slice.Repeat(1, 5); !reflect.DeepEqual(got, []int{1, 1, 1, 1, 1}) {
+		if got := slicex.Repeat(1, 5); !reflect.DeepEqual(got, []int{1, 1, 1, 1, 1}) {
 			t.Errorf("Repeat() expected %v, got %v", []int{1, 1, 1, 1, 1}, got)
 		}
 	})
 	t.Run("test2", func(t *testing.T) {
 		wanted := [][]int{[]int{1, 2, 3}, []int{1, 2, 3}, []int{1, 2, 3}, []int{1, 2, 3}, []int{1, 2, 3}}
-		if got := slice.Repeat([]int{1, 2, 3}, 5); !reflect.DeepEqual(got, wanted) {
+		if got := slicex.Repeat([]int{1, 2, 3}, 5); !reflect.DeepEqual(got, wanted) {
 			t.Errorf("Repeat() expected %v, got %v", wanted, got)
 		}
 	})
 	t.Run("test3", func(t *testing.T) {
 		wanted := []string{"one", "one", "one"}
-		if got := slice.Repeat("one", 3); !reflect.DeepEqual(got, wanted) {
+		if got := slicex.Repeat("one", 3); !reflect.DeepEqual(got, wanted) {
 			t.Errorf("Repeat() expected %v, got %v", wanted, got)
 		}
 	})
@@ -441,7 +441,7 @@ func Test_Product(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := slice.Product(tt.slices...); !reflect.DeepEqual(got, tt.want) {
+			if got := slicex.Product(tt.slices...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Product() = %v, want %v", got, tt.want)
 			}
 		})
@@ -449,14 +449,14 @@ func Test_Product(t *testing.T) {
 	t.Run("test5", func(t *testing.T) {
 		slices := [][]int{[]int{1, 2, 3}}
 		wanted := [][]int{{1}, {2}, {3}}
-		if got := slice.Product(slices...); !reflect.DeepEqual(got, wanted) {
+		if got := slicex.Product(slices...); !reflect.DeepEqual(got, wanted) {
 			t.Errorf("Product() expected %v, got %v", wanted, got)
 		}
 	})
 	t.Run("test6", func(t *testing.T) {
 		var slices [][]int
 		var wanted [][]int
-		if got := slice.Product(slices...); !reflect.DeepEqual(got, wanted) {
+		if got := slicex.Product(slices...); !reflect.DeepEqual(got, wanted) {
 			t.Errorf("Product() expected %v, got %v", wanted, got)
 		}
 	})
@@ -476,7 +476,7 @@ func Test_DiffSet(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.DiffSet(tc.slice1, tc.slice2); !reflect.DeepEqual(got, tc.expected) {
+			if got := slicex.DiffSet(tc.slice1, tc.slice2); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("DiffSet() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -497,7 +497,7 @@ func Test_IntersectSet(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.IntersectSet(tc.slice1, tc.slice2); !reflect.DeepEqual(got, tc.expected) {
+			if got := slicex.IntersectSet(tc.slice1, tc.slice2); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("IntersectSet() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -518,7 +518,7 @@ func Test_UnionSet(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.UnionSet(tc.slice1, tc.slice2); !reflect.DeepEqual(got, tc.expected) {
+			if got := slicex.UnionSet(tc.slice1, tc.slice2); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("UnionSet() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -539,7 +539,7 @@ func Test_Index(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.Index(tc.slice, tc.e); !reflect.DeepEqual(got, tc.expected) {
+			if got := slicex.Index(tc.slice, tc.e); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("Index() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -560,7 +560,7 @@ func Test_LastIndex(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.LastIndex(tc.slice, tc.e); !reflect.DeepEqual(got, tc.expected) {
+			if got := slicex.LastIndex(tc.slice, tc.e); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("LastIndex() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -581,7 +581,7 @@ func Test_IndexAll(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slice.IndexAll(tc.slice, tc.e); !reflect.DeepEqual(got, tc.expected) {
+			if got := slicex.IndexAll(tc.slice, tc.e); !reflect.DeepEqual(got, tc.expected) {
 				t.Errorf("IndexAll() expected %v, got %v", tc.expected, got)
 			}
 		})
@@ -602,7 +602,7 @@ func Test_JoinSlice(t *testing.T) {
 	s1 := []int{1, 2, 3, 4, 5}
 	w1 := "1,2,3,4,5"
 	t.Run("test1", func(t *testing.T) {
-		if got := slice.JoinSlice(",", s1); !reflect.DeepEqual(got, w1) {
+		if got := slicex.JoinSlice(",", s1); !reflect.DeepEqual(got, w1) {
 			t.Errorf("JoinSlice() expected %v, got %v", w1, got)
 		}
 	})
@@ -610,7 +610,7 @@ func Test_JoinSlice(t *testing.T) {
 	s2 := []string{"a", "b", "c", "d"}
 	w2 := "a,b,c,d"
 	t.Run("test2", func(t *testing.T) {
-		if got := slice.JoinSlice(",", s2); !reflect.DeepEqual(got, w2) {
+		if got := slicex.JoinSlice(",", s2); !reflect.DeepEqual(got, w2) {
 			t.Errorf("JoinSlice() expected %v, got %v", w2, got)
 		}
 	})
@@ -622,7 +622,7 @@ func Test_JoinSlice(t *testing.T) {
 	}
 	w3 := "Alice Smith, 18;Bob Johnson, 20;Charlie Brown, 17"
 	t.Run("test2", func(t *testing.T) {
-		if got := slice.JoinSlice(";", s3); !reflect.DeepEqual(got, w3) {
+		if got := slicex.JoinSlice(";", s3); !reflect.DeepEqual(got, w3) {
 			t.Errorf("JoinSlice() expected %v, got %v", w3, got)
 		}
 	})

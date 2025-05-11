@@ -2,7 +2,7 @@ package setx_test
 
 import (
 	"github.com/shijl0925/go-toolkits/setx"
-	"github.com/shijl0925/go-toolkits/slice"
+	"github.com/shijl0925/go-toolkits/slicex"
 	"reflect"
 	"testing"
 )
@@ -121,7 +121,7 @@ func Test_Keys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.src.Keys()
-			if len(slice.DiffSet(got, tt.want)) != 0 || len(slice.DiffSet(tt.want, got)) != 0 {
+			if len(slicex.DiffSet(got, tt.want)) != 0 || len(slicex.DiffSet(tt.want, got)) != 0 {
 				t.Errorf("Keys() = %v, want %v", got, tt.want)
 			}
 		})
@@ -170,7 +170,7 @@ func Test_DiffSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := setx.DiffSet(tt.src, tt.dst)
-			if len(slice.DiffSet(got, tt.want)) != 0 || len(slice.DiffSet(tt.want, got)) != 0 {
+			if len(slicex.DiffSet(got, tt.want)) != 0 || len(slicex.DiffSet(tt.want, got)) != 0 {
 				t.Errorf("DiffSet() = %v, want %v", got, tt.want)
 			}
 		})
@@ -219,7 +219,7 @@ func Test_IntersectSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := setx.IntersectSet(tt.src, tt.dst)
-			if len(slice.DiffSet(got, tt.want)) != 0 || len(slice.DiffSet(tt.want, got)) != 0 {
+			if len(slicex.DiffSet(got, tt.want)) != 0 || len(slicex.DiffSet(tt.want, got)) != 0 {
 				t.Errorf("IntersectSet() = %v, want %v", got, tt.want)
 			}
 		})
@@ -268,7 +268,7 @@ func Test_UnionSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := setx.UnionSet(tt.src, tt.dst)
-			if len(slice.DiffSet(got, tt.want)) != 0 || len(slice.DiffSet(tt.want, got)) != 0 {
+			if len(slicex.DiffSet(got, tt.want)) != 0 || len(slicex.DiffSet(tt.want, got)) != 0 {
 				t.Errorf("UnionSet() = %v, want %v", got, tt.want)
 			}
 		})

@@ -2,7 +2,7 @@ package mapx_test
 
 import (
 	"github.com/shijl0925/go-toolkits/mapx"
-	"github.com/shijl0925/go-toolkits/slice"
+	"github.com/shijl0925/go-toolkits/slicex"
 	"reflect"
 	"testing"
 )
@@ -43,7 +43,7 @@ func TestKeys(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := mapx.Keys[int, int](tc.input)
-			if len(slice.DiffSet(got, tc.wantRes)) != 0 || len(slice.DiffSet(tc.wantRes, got)) != 0 {
+			if len(slicex.DiffSet(got, tc.wantRes)) != 0 || len(slicex.DiffSet(tc.wantRes, got)) != 0 {
 				t.Errorf("Keys() expected %v, got %v", tc.wantRes, got)
 			}
 		})
@@ -86,7 +86,7 @@ func TestValues(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := mapx.Values[int, int](tc.input)
-			if len(slice.DiffSet(got, tc.wantRes)) != 0 || len(slice.DiffSet(tc.wantRes, got)) != 0 {
+			if len(slicex.DiffSet(got, tc.wantRes)) != 0 || len(slicex.DiffSet(tc.wantRes, got)) != 0 {
 				t.Errorf("Values() expected %v, got %v", tc.wantRes, got)
 			}
 		})
