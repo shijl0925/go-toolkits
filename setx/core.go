@@ -8,6 +8,7 @@ type Set[T comparable] map[T]struct{}
 // Example:
 //
 // s := setx.NewSet(3, 1, 2, 3)
+// // or s:= setx.NewSet(3, []int{1, 2, 3}...)
 // fmt.Println(s) // map[1:{} 2:{} 3:{}]
 func NewSet[T comparable](size int, a ...T) Set[T] {
 	s := make(Set[T], size)

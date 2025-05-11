@@ -49,7 +49,7 @@ func TestAdd(t *testing.T) {
 
 // TestRemove tests the Remove method.
 func TestRemove(t *testing.T) {
-	s := setx.NewSet(0, 1, 2)
+	s := setx.NewSet(2, []int{1, 2}...)
 
 	t.Run("remove existing element", func(t *testing.T) {
 		s.Remove(1)
@@ -85,7 +85,7 @@ func TestLen(t *testing.T) {
 
 // TestExists tests the Exists method.
 func TestExists(t *testing.T) {
-	s := setx.NewSet(0, 1)
+	s := setx.NewSet(1, 1)
 
 	t.Run("existing element", func(t *testing.T) {
 		if !s.Exists(1) {
