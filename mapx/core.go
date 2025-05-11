@@ -1,6 +1,7 @@
 package mapx
 
 import (
+	"fmt"
 	"golang.org/x/exp/constraints"
 	"sort"
 )
@@ -80,4 +81,16 @@ func SortMap[K constraints.Ordered, V any](m map[K]V, opts ...func(a, b KV[K, V]
 	sort.Slice(result, lessFunc)
 
 	return result
+}
+
+// InvertWithErr 接收一个 map[K]V 类型的输入，并返回一个反转后的 map[V]K, 并在遇到重复值时返回错误。
+func InvertWithErr[K, V comparable](m map[K]V) (map[V]K, error) {
+	invMap := make(map[V]K, len(m))
+	for key, value := range m {
+		if _, ok := invMap[value]; ok {
+			return nil, fmt.Errorf("duplicate value found: %v", value)
+		}
+		invMap[value] = key
+	}
+	return invMap, nil
 }

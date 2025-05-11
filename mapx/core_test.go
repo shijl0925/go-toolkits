@@ -144,3 +144,59 @@ func Test_SortMap(t *testing.T) {
 		}
 	})
 }
+
+// TestInvertNilMap tests the case when input is nil.
+func TestInvertNilMap(t *testing.T) {
+	var m map[string]int = nil
+	got, err := mapx.InvertWithErr(m)
+	if err != nil {
+		t.Errorf("InvertWithErr(nil) returned error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("InvertWithErr(nil) = %v, want empty map", got)
+	}
+}
+
+// TestInvertEmptyMap tests the case when input is an empty map.
+func TestInvertEmptyMap(t *testing.T) {
+	m := make(map[string]int)
+	got, err := mapx.InvertWithErr(m)
+	if err != nil {
+		t.Errorf("InvertWithErr(empty) returned error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("InvertWithErr(empty) = %v, want empty map", got)
+	}
+}
+
+// TestInvertUniqueValues tests inversion of a map with unique values.
+func TestInvertUniqueValues(t *testing.T) {
+	m := map[string]int{
+		"a": 1,
+		"b": 2,
+	}
+	want := map[int]string{
+		1: "a",
+		2: "b",
+	}
+	got, err := mapx.InvertWithErr(m)
+	if err != nil {
+		t.Errorf("InvertWithErr(unique values) returned error: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("InvertWithErr(unique values) = %v, want %v", got, want)
+	}
+}
+
+// TestInvertMultipleDuplicates tests inversion where multiple duplicates exist.
+func TestInvertDuplicateValues(t *testing.T) {
+	m := map[int]string{
+		1: "x",
+		2: "y",
+		3: "x",
+	}
+	_, err := mapx.InvertWithErr(m)
+	if err == nil {
+		t.Errorf("InvertWithErr(duplicate values) returned error: %v", err)
+	}
+}
