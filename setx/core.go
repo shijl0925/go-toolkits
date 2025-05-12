@@ -122,7 +122,7 @@ func (s Set[T]) Equal(dst Set[T]) bool {
 
 // Update updates the set with the elements of the other set.
 // 将dst集合中的元素添加到src集合中，如果src集合中已经存在该元素，则不添加。
-// 并且返回值是src集合
+// 并且返回值是更新后的src集合
 //
 // Example:
 //
