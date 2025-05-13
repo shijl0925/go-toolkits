@@ -122,6 +122,43 @@ func SafeToInt(v any) (int, error) {
 	}
 }
 
+func SafeToBool(v any) (bool, error) {
+	if v == nil {
+		return false, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "bool")
+	}
+
+	val := reflect.ValueOf(v)
+	if val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return false, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "bool")
+		}
+		val = val.Elem()
+	}
+
+	switch val.Kind() {
+	case reflect.Bool:
+		return val.Bool(), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return val.Int() != 0, nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return val.Uint() != 0, nil
+	case reflect.Float32, reflect.Float64:
+		return val.Float() != 0, nil
+	case reflect.Complex64, reflect.Complex128:
+		return real(val.Complex()) != 0, nil
+	case reflect.String:
+		s := val.String()
+		if s == "true" {
+			return true, nil
+		} else if s == "false" {
+			return false, nil
+		}
+		return s != "", nil
+	default:
+		return false, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:%#v", "bool", v)
+	}
+}
+
 // IsKindOf checks if the given value is an instance of the given kind.
 // It returns true if the value is an instance of the given kind, false otherwise.
 func IsKindOf(s any, t reflect.Kind) bool {
