@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func SafeString(v any) (str string, err error) {
+func SafeToString(v any) (str string, err error) {
 	if v == nil {
 		return "", nil
 	}
@@ -31,7 +31,7 @@ func SafeString(v any) (str string, err error) {
 			if rv.IsNil() {
 				return "", nil
 			}
-			return SafeString(rv.Elem().Interface())
+			return SafeToString(rv.Elem().Interface())
 		}
 
 		switch rv.Kind() {

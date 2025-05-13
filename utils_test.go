@@ -27,7 +27,7 @@ func (t testError) Error() string {
 	return t.msg
 }
 
-func TestSafeString(t *testing.T) {
+func TestSafeToString(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    any
@@ -127,12 +127,12 @@ func TestSafeString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := toolkits.SafeString(tt.input)
+			got, err := toolkits.SafeToString(tt.input)
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
 			if got != tt.expected {
-				t.Errorf("SafeString(%v) = %q, want %q", tt.input, got, tt.expected)
+				t.Errorf("SafeToString(%v) = %q, want %q", tt.input, got, tt.expected)
 			}
 		})
 	}

@@ -617,7 +617,7 @@ func JoinSlice[T any](sep string, s []T) string {
 		if i > 0 {
 			bf.WriteString(sep)
 		}
-		s, _ := toolkits.SafeString(v)
+		s, _ := toolkits.SafeToString(v)
 		bf.WriteString(s)
 	}
 	return bf.String()

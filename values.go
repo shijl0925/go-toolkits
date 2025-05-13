@@ -242,7 +242,7 @@ func String(v any) (string, error) {
 }
 
 func AsString(v any) (string, error) {
-	res, err := SafeString(v)
+	res, err := SafeToString(v)
 	if err != nil {
 		return "", fmt.Errorf("类型转换失败，预期类型:%s, 实际值:%#v", "string", v)
 	}
