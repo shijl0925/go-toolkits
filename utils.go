@@ -51,6 +51,77 @@ func SafeString(v any) (str string, err error) {
 	return
 }
 
+func SafeToInt(v any) (int, error) {
+	if v == nil {
+		return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "int")
+	}
+
+	val := reflect.ValueOf(v)
+	if val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "int")
+		}
+		val = val.Elem()
+	}
+
+	switch val.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v := val.Int()
+
+		if v < math.MinInt64 || v > math.MaxInt64 {
+			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值超出范围:%d", "int", v)
+		}
+
+		return int(v), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		v := val.Uint()
+
+		if v > uint64(math.MaxInt64) {
+			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值超出范围:%d", "int", v)
+		}
+
+		return int(v), nil
+	case reflect.Float32, reflect.Float64:
+		v := val.Float()
+
+		if math.Abs(v-math.Trunc(v)) > 1e-9 {
+			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值精度丢失:%f", "int", v)
+		}
+
+		if v < float64(math.MinInt64) || v > float64(math.MaxInt64) {
+			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值超出范围:%f", "int", v)
+		}
+
+		return int(v), nil
+	case reflect.Complex64, reflect.Complex128:
+		v := val.Complex()
+		return int(real(v)), nil
+	case reflect.String:
+		s := val.String()
+
+		v, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:%#v", "int", v)
+		}
+
+		if v < math.MinInt64 || v > math.MaxInt64 {
+			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值超出范围:%d", "int", v)
+		}
+
+		return int(v), nil
+	case reflect.Bool:
+		{
+			if val.Bool() {
+				return 1, nil
+			} else {
+				return 0, nil
+			}
+		}
+	default:
+		return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:%#v", "int", v)
+	}
+}
+
 // IsKindOf checks if the given value is an instance of the given kind.
 // It returns true if the value is an instance of the given kind, false otherwise.
 func IsKindOf(s any, t reflect.Kind) bool {
