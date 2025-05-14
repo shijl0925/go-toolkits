@@ -111,12 +111,6 @@ func (s Set[T]) Equal(dst Set[T]) bool {
 		}
 	}
 
-	for element := range dst {
-		if !s.Exists(element) {
-			return false
-		}
-	}
-
 	return true
 }
 
