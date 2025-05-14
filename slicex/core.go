@@ -633,3 +633,180 @@ func JoinSlice[T any](sep string, s []T) string {
 	}
 	return bf.String()
 }
+// Chunk creates a slice of elements split into groups the length of size.
+// 将切片按照给定的大小进行分组，并返回一个二维切片。
+func Chunk[T any](s []T, size int) [][]T {
+	result := [][]T{}
+
+	if len(s) == 0 || size <= 0 {
+		return result
+	}
+
+	for i := 0; i < len(s); i += size {
+		end := i + size
+		if end > len(s) {
+			end = len(s)
+		}
+		result = append(result, s[i:end])
+	}
+
+	return result
+}
+
+// Compact returns a new slice with all falsey values removed. The values false, nil, 0, and "" are falsey.
+// 返回一个新的 slice，其中包含原始 slice 中所有非零值的元素。注意：本函数会改变原始 slice。
+func Compact[T comparable](s []T) []T {
+	var zero T
+	i := 0
+	for _, item := range s {
+		if item != zero {
+			s[i] = item
+			i++
+		}
+	}
+	return s[:i]
+}
+
+// Concat returns a new slice with all slices concatenated.
+func Concat[T any](s ...[]T) []T {
+	var totalLen int
+	for _, slice := range s {
+		totalLen += len(slice)
+	}
+
+	result := make([]T, 0, totalLen)
+
+	for _, item := range s {
+		result = append(result, item...)
+	}
+	return result
+}
+
+// Equal returns true if the two slices are equal.
+// 判断两个 slice 是否相等。
+func Equal[T comparable](s1, s2 []T) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+
+	for i := range s1 {
+		if s1[i] != s2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// EqualUnordered checks if two slices are equal: the same length and all elements' value are equal (unordered).
+// 判断两个 slice 是否相等：长度相同且所有元素值相等（不考虑顺序）。
+//
+// Example:
+//
+//	s1 := []int{1, 2, 3}
+//	s2 := []int{3, 2, 1}
+//	EqualUnordered(s1, s2) // true
+func EqualUnordered[T comparable](s1, s2 []T) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+
+	seen := make(map[T]int, len(s1))
+	for _, v := range s1 {
+		seen[v]++
+	}
+
+	for _, v := range s2 {
+		if seen[v] == 0 {
+			return false
+		}
+		seen[v]--
+	}
+
+	return true
+}
+
+// Counter returns a map of the counts of each value in the slice.
+// 返回一个 map，其中键为 slice 中的每个值，值为该值在 slice 中出现的次数。
+//
+// Example:
+//
+// s := []string{"a", "b", "a"}
+// r := Counter(s) // r == map[string]int{"a": 2, "b": 1}
+func Counter[T comparable](s []T) map[T]int {
+	if len(s) == 0 {
+		return map[T]int{}
+	}
+
+	result := make(map[T]int)
+	for _, v := range s {
+		result[v]++
+	}
+	return result
+}
+
+// Replace returns a new slice with all occurrences of old replaced by new.
+// 返回一个新的 slice，其中包含原始 slice 中所有 old 值被 new 替换后的元素。n 表示替换的次数，-1 表示替换所有。
+func Replace[T comparable](s []T, old, new T, n int) []T {
+	result := make([]T, len(s))
+	copy(result, s)
+
+	for i := range result {
+		if result[i] == old && n != 0 {
+			result[i] = new
+			n--
+		}
+	}
+	return result
+}
+
+// IsAscending checks if a slice is ascending order.
+// 判断一个 slice 是否是升序排列的。
+func IsAscending[T constraints.Ordered](s []T) bool {
+	for i := 1; i < len(s); i++ {
+		if s[i] < s[i-1] {
+			return false
+		}
+	}
+	return true
+}
+
+// IsDescending checks if a slice is descending order.
+// 判断一个 slice 是否是降序排列的。
+func IsDescending[T constraints.Ordered](s []T) bool {
+	for i := 1; i < len(s); i++ {
+		if s[i] > s[i-1] {
+			return false
+		}
+	}
+	return true
+}
+
+// RightPadding adds padding to the right end of a slice.
+func RightPadding[T any](s []T, v T, n int) []T {
+	if n == 0 {
+		return s
+	}
+
+	result := make([]T, len(s)+n)
+	copy(result, s)
+
+	for i := len(s); i < len(result); i++ {
+		result[i] = v
+	}
+	return result
+}
+
+// LeftPadding adds padding to the left begin of a slice.
+func LeftPadding[T any](s []T, v T, n int) []T {
+	if n == 0 {
+		return s
+	}
+	result := make([]T, len(s)+n)
+	copy(result[n:], s)
+
+	for i := 0; i < n; i++ {
+		result[i] = v
+	}
+
+	return result
+}
