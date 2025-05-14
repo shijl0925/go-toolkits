@@ -101,6 +101,9 @@ func GroupBy[T any, U comparable](slice []T, fn func(T) U) map[U][]T {
 	result := make(map[U][]T)
 	for _, v := range slice {
 		key := fn(v)
+		if _, ok := result[key]; !ok {
+			result[key] = []T{}
+		}
 		result[key] = append(result[key], v)
 	}
 	return result
