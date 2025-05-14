@@ -122,6 +122,20 @@ func Drop[T any](s []T, n int) ([]T, error) {
 	return s[:len(s)-n], nil
 }
 
+// DropLeft removes the n elements from the slice and returns the remaining elements.
+// 删除并返回切片的左侧 n 个元素和剩余元素组成的切片, 原始 slice 不会被改变。
+// 注意: 返回的切片仍与原切片共享底层数组。
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r, _ := DropLeft(s, 2) //  r == []int{3, 4, 5}
+func DropLeft[T any](s []T, n int) ([]T, error) {
+	if n < 0 || n > len(s) {
+		return nil, fmt.Errorf("invalid drop number: %d, length of slice is %d", n, len(s))
+	}
+	return s[n:], nil
+}
+
 // Remove returns a slice with the all occurrence of element removed.
 // 返回一个切片，该切片移除了所有等于 element 的元素。
 // 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
