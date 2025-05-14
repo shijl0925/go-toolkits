@@ -2,6 +2,7 @@ package toolkits_test
 
 import (
 	"github.com/shijl0925/go-toolkits"
+	"math"
 	"reflect"
 	"strconv"
 	"testing"
@@ -373,6 +374,107 @@ func TestIsNilValue(t *testing.T) {
 			res := toolkits.IsNilValue(tc.val)
 			if res != tc.res {
 				t.Errorf("IsNilValue(%v) = %v; want %v", tc.val, res, tc.res)
+			}
+		})
+	}
+}
+func TestSafeToInt64(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected int64
+		wantErr  bool
+	}{
+		{
+			name:     "Nil input",
+			input:    nil,
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "Nil pointer",
+			input:    (*int)(nil),
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "Normal int",
+			input:    42,
+			expected: 42,
+			wantErr:  false,
+		},
+		{
+			name:     "MaxInt64 value",
+			input:    int64(math.MaxInt64),
+			expected: math.MaxInt64,
+			wantErr:  false,
+		},
+		{
+			name:     "MinInt64 value",
+			input:    int64(math.MinInt64),
+			expected: math.MinInt64,
+			wantErr:  false,
+		},
+		{
+			name:     "Integer float",
+			input:    3.0,
+			expected: 3,
+			wantErr:  false,
+		},
+		{
+			name:     "Complex number",
+			input:    complex(3, 4),
+			expected: 3,
+			wantErr:  false,
+		},
+		{
+			name:     "Parseable string",
+			input:    "123",
+			expected: 123,
+			wantErr:  false,
+		},
+		{
+			name:     "Unparseable string",
+			input:    "abc",
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "Boolean true",
+			input:    true,
+			expected: 1,
+			wantErr:  false,
+		},
+		{
+			name:     "Boolean false",
+			input:    false,
+			expected: 0,
+			wantErr:  false,
+		},
+		{
+			name:     "Unsupported type",
+			input:    struct{}{},
+			expected: 0,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := toolkits.SafeToInt64(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if result != tt.expected {
+					t.Errorf("Expected %d but got %d", tt.expected, result)
+				}
 			}
 		})
 	}
