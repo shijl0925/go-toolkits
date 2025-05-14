@@ -2,10 +2,26 @@ package toolkits
 
 import (
 	"fmt"
-	"math"
 	"reflect"
 	"strconv"
 	"time"
+)
+
+var (
+	// ErrNilValue indicates that a value is nil.
+	ErrNilValue = fmt.Errorf("nil value")
+
+	// ErrNilPointer indicates that a pointer is nil.
+	ErrNilPointer = fmt.Errorf("nil pointer")
+
+	// ErrType indicates that a type is not supported.
+	ErrType = fmt.Errorf("unsupported type")
+
+	// ErrValOut indicates that a value is out of range.
+	ErrValOut = fmt.Errorf("value out of range")
+
+	// ErrUnsignedInt indicates that a negative value is attempted to be converted to an unsigned integer.
+	ErrUnsignedInt = fmt.Errorf("cannot convert negative value to unsigned integer")
 )
 
 func SafeToString(v any) (str string, err error) {
@@ -46,21 +62,21 @@ func SafeToString(v any) (str string, err error) {
 		case reflect.Bool:
 			str = strconv.FormatBool(rv.Bool())
 		default:
-			return "", fmt.Errorf("unsupported type: %T", v)
+			return "", ErrType
 		}
 	}
 	return
 }
 
-func SafeToInt(v any) (int, error) {
+func SafeToInt64(v any) (int64, error) {
 	if v == nil {
-		return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "int")
+		return 0, ErrNilValue
 	}
 
 	val := reflect.ValueOf(v)
 	if val.Kind() == reflect.Ptr {
 		if val.IsNil() {
-			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "int")
+			return 0, ErrNilPointer
 		}
 		val = val.Elem()
 	}
@@ -68,48 +84,23 @@ func SafeToInt(v any) (int, error) {
 	switch val.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		v := val.Int()
-
-		if v < math.MinInt64 || v > math.MaxInt64 {
-			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值超出范围:%d", "int", v)
-		}
-
-		return int(v), nil
+		return v, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		v := val.Uint()
-
-		if v > uint64(math.MaxInt64) {
-			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值超出范围:%d", "int", v)
-		}
-
-		return int(v), nil
+		return int64(v), nil
 	case reflect.Float32, reflect.Float64:
 		v := val.Float()
-
-		if math.Abs(v-math.Trunc(v)) > 1e-9 {
-			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值精度丢失:%f", "int", v)
-		}
-
-		if v < float64(math.MinInt64) || v > float64(math.MaxInt64) {
-			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值超出范围:%f", "int", v)
-		}
-
-		return int(v), nil
+		return int64(v), nil
 	case reflect.Complex64, reflect.Complex128:
 		v := val.Complex()
-		return int(real(v)), nil
+		return int64(real(v)), nil
 	case reflect.String:
 		s := val.String()
-
 		v, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
-			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:%#v", "int", v)
+			return 0, strconv.ErrSyntax
 		}
-
-		if v < math.MinInt64 || v > math.MaxInt64 {
-			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 值超出范围:%d", "int", v)
-		}
-
-		return int(v), nil
+		return v, nil
 	case reflect.Bool:
 		{
 			if val.Bool() {
@@ -119,19 +110,72 @@ func SafeToInt(v any) (int, error) {
 			}
 		}
 	default:
-		return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:%#v", "int", v)
+		return 0, ErrType
+	}
+}
+
+func SafeToUint64(v any) (uint64, error) {
+	if v == nil {
+		return 0, ErrNilValue
+	}
+	val := reflect.ValueOf(v)
+	if val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return 0, ErrNilPointer
+		}
+		val = val.Elem()
+	}
+
+	switch val.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v := val.Int()
+		if v < 0 {
+			return 0, ErrUnsignedInt
+		}
+		return uint64(v), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return val.Uint(), nil
+	case reflect.Float32, reflect.Float64:
+		v := val.Float()
+		if v < 0 {
+			return 0, ErrUnsignedInt
+		}
+		return uint64(v), nil
+	case reflect.Complex64, reflect.Complex128:
+		v := real(val.Complex())
+		if v < 0 {
+			return 0, ErrUnsignedInt
+		}
+		return uint64(v), nil
+	case reflect.String:
+		s := val.String()
+		v, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			return 0, strconv.ErrSyntax
+		}
+		return v, nil
+	case reflect.Bool:
+		{
+			if val.Bool() {
+				return 1, nil
+			} else {
+				return 0, nil
+			}
+		}
+	default:
+		return 0, ErrType
 	}
 }
 
 func SafeToBool(v any) (bool, error) {
 	if v == nil {
-		return false, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "bool")
+		return false, ErrNilValue
 	}
 
 	val := reflect.ValueOf(v)
 	if val.Kind() == reflect.Ptr {
 		if val.IsNil() {
-			return false, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "bool")
+			return false, ErrNilPointer
 		}
 		val = val.Elem()
 	}
@@ -156,18 +200,18 @@ func SafeToBool(v any) (bool, error) {
 		}
 		return s != "", nil
 	default:
-		return false, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:%#v", "bool", v)
+		return false, ErrType
 	}
 }
 
 func SafeToFloat64(v any) (float64, error) {
 	if v == nil {
-		return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "float64")
+		return 0, ErrNilValue
 	}
 	val := reflect.ValueOf(v)
 	if val.Kind() == reflect.Ptr {
 		if val.IsNil() {
-			return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:nil", "float64")
+			return 0, ErrNilPointer
 		}
 		val = val.Elem()
 	}
@@ -196,7 +240,7 @@ func SafeToFloat64(v any) (float64, error) {
 		}
 		return 0, nil
 	default:
-		return 0, fmt.Errorf("类型转换失败，预期类型:%s, 实际值:%#v", "float64", v)
+		return 0, ErrType
 	}
 }
 
