@@ -647,3 +647,389 @@ func Test_JoinSlice(t *testing.T) {
 		}
 	})
 }
+
+func TestChunk(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  []int
+		size   int
+		expect [][]int
+	}{
+		{
+			name:   "nil slice and zero size",
+			input:  nil,
+			size:   0,
+			expect: [][]int{},
+		},
+		{
+			name:   "empty slice",
+			input:  []int{},
+			size:   5,
+			expect: [][]int{},
+		},
+		{
+			name:   "positive case with remainder",
+			input:  []int{1, 2, 3, 4, 5},
+			size:   2,
+			expect: [][]int{{1, 2}, {3, 4}, {5}},
+		},
+		{
+			name:   "exact division",
+			input:  []int{1, 2, 3, 4},
+			size:   4,
+			expect: [][]int{{1, 2, 3, 4}},
+		},
+		{
+			name:   "size larger than slice length",
+			input:  []int{1, 2},
+			size:   5,
+			expect: [][]int{{1, 2}},
+		},
+		{
+			name:   "zero size with non-empty slice",
+			input:  []int{1, 2, 3},
+			size:   0,
+			expect: [][]int{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slicex.Chunk(tt.input, tt.size)
+			if !reflect.DeepEqual(got, tt.expect) {
+				t.Errorf("ChunkV2(%v, %d) = %v; want %v", tt.input, tt.size, got, tt.expect)
+			}
+		})
+	}
+}
+
+// 测试用例结构体
+type testCompactCase[T comparable] struct {
+	name     string
+	input    []T
+	expected []T
+}
+
+func runCompactTests[T comparable](t *testing.T, tests []testCompactCase[T]) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.Compact(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Compact(%v) = %v; want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCompact(t *testing.T) {
+	// int 类型测试
+	runCompactTests[int](t, []testCompactCase[int]{
+		{"All zeros", []int{0, 0, 0}, []int{}},
+		{"Mixed with zeros", []int{0, 1, 0, 2, 0}, []int{1, 2}},
+		{"No zeros", []int{1, 2, 3}, []int{1, 2, 3}},
+		{"Empty slice", []int{}, []int{}},
+	})
+
+	// string 类型测试
+	runCompactTests[string](t, []testCompactCase[string]{
+		{"All empty strings", []string{"", "", ""}, []string{}},
+		{"Mixed empty strings", []string{"", "a", "", "b"}, []string{"a", "b"}},
+		{"No empty strings", []string{"x", "y"}, []string{"x", "y"}},
+	})
+
+	// bool 类型测试
+	runCompactTests[bool](t, []testCompactCase[bool]{
+		{"All false", []bool{false, false}, []bool{}},
+		{"Mixed", []bool{false, true, false}, []bool{true}},
+	})
+
+	// 指针类型测试
+	runCompactTests[*int](t, []testCompactCase[*int]{
+		{"Nil pointers", []*int{nil, nil}, []*int{}},
+		{"Mixed pointers", []*int{nil, new(int), nil}, []*int{new(int)}},
+	})
+
+	// 结构体类型测试
+	type S struct{}
+	runCompactTests[S](t, []testCompactCase[S]{
+		{"All zero structs", []S{{}, {}, {}}, []S{}},
+	})
+
+	// interface{} 类型测试
+	runCompactTests[any](t, []testCompactCase[any]{
+		{"Mixed interface", []any{nil, "hello", 42}, []any{"hello", 42}},
+	})
+}
+
+// TestConcat_Int 测试整数切片的拼接
+func TestConcat_Int(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    [][]int
+		expected []int
+	}{
+		{
+			name:     "TC01 - 多个非空切片",
+			input:    [][]int{{1, 2}, {3}},
+			expected: []int{1, 2, 3},
+		},
+		{
+			name:     "TC02 - 零个切片",
+			input:    [][]int{},
+			expected: []int{},
+		},
+		{
+			name:     "TC03 - 包含空切片",
+			input:    [][]int{{}, {1}},
+			expected: []int{1},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.Concat(tt.input...)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestConcat_String 测试字符串切片的拼接
+func TestConcat_String(t *testing.T) {
+	input := [][]string{{"a"}, {"b", "c"}}
+	expected := []string{"a", "b", "c"}
+
+	result := slicex.Concat(input...)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+// TestConcat_Struct 测试结构体切片的拼接
+func TestConcat_Struct(t *testing.T) {
+	type S struct{}
+	input := [][]S{{{}, {}}, {{}}}
+	expected := []S{{}, {}, {}}
+
+	result := slicex.Concat(input...)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+// TestEqualUnordered 是 EqualUnordered 的单元测试
+func TestEqualUnordered(t *testing.T) {
+	tests := []struct {
+		name string
+		s1   []int
+		s2   []int
+		want bool
+	}{
+		{
+			name: "TC01 - 整型切片顺序不同",
+			s1:   []int{1, 2, 3},
+			s2:   []int{3, 2, 1},
+			want: true,
+		},
+		{
+			name: "TC02 - 存在一个不同元素",
+			s1:   []int{1, 2, 3},
+			s2:   []int{1, 2, 4},
+			want: false,
+		},
+		{
+			name: "TC03 - 包含重复元素",
+			s1:   []int{1, 2, 2},
+			s2:   []int{2, 1, 2},
+			want: true,
+		},
+		{
+			name: "TC04 - 长度不同",
+			s1:   []int{1, 2},
+			s2:   []int{1, 2, 3},
+			want: false,
+		},
+		{
+			name: "TC05 - 空切片比较",
+			s1:   []int{},
+			s2:   []int{},
+			want: true,
+		},
+		{
+			name: "TC06 - 数量不一致",
+			s1:   []int{1, 2, 3},
+			s2:   []int{3, 2, 2},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := slicex.EqualUnordered(tt.s1, tt.s2); got != tt.want {
+				t.Errorf("EqualUnordered() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCounter(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected any
+	}{
+		{
+			name:     "Empty slice",
+			input:    []int{},
+			expected: map[int]int{},
+		},
+		{
+			name:     "Int slice with duplicates",
+			input:    []int{1, 2, 2, 3},
+			expected: map[int]int{1: 1, 2: 2, 3: 1},
+		},
+		{
+			name:     "String slice with duplicates",
+			input:    []string{"a", "b", "a"},
+			expected: map[string]int{"a": 2, "b": 1},
+		},
+		{
+			name:     "Float64 slice with duplicates",
+			input:    []float64{1.1, 2.2, 1.1},
+			expected: map[float64]int{1.1: 2, 2.2: 1},
+		},
+		{
+			name:     "Struct slice",
+			input:    []struct{}{{}, {}, {}},
+			expected: map[struct{}]int{{}: 3},
+		},
+		{
+			name:     "Interface slice",
+			input:    []any{1, "a", 1, "a"},
+			expected: map[any]int{1: 2, "a": 2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			switch in := tt.input.(type) {
+			case []int:
+				got := slicex.Counter(in)
+				if !reflect.DeepEqual(got, tt.expected) {
+					t.Errorf("Counter() = %v, want %v", got, tt.expected)
+				}
+			case []string:
+				got := slicex.Counter(in)
+				if !reflect.DeepEqual(got, tt.expected) {
+					t.Errorf("Counter() = %v, want %v", got, tt.expected)
+				}
+			case []float64:
+				got := slicex.Counter(in)
+				if !reflect.DeepEqual(got, tt.expected) {
+					t.Errorf("Counter() = %v, want %v", got, tt.expected)
+				}
+			case []struct{}:
+				got := slicex.Counter(in)
+				if !reflect.DeepEqual(got, tt.expected) {
+					t.Errorf("Counter() = %v, want %v", got, tt.expected)
+				}
+			case []any:
+				got := slicex.Counter(in)
+				if !reflect.DeepEqual(got, tt.expected) {
+					t.Errorf("Counter() = %v, want %v", got, tt.expected)
+				}
+			default:
+				t.Fatalf("Unsupported input type: %T", in)
+			}
+		})
+	}
+}
+
+func TestReplace(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		old      string
+		new      string
+		n        int
+		expected []string
+	}{
+		{
+			name:     "test00",
+			input:    []string{"a", "b", "a", "c", "d", "a"},
+			old:      "a",
+			new:      "x",
+			n:        0,
+			expected: []string{"a", "b", "a", "c", "d", "a"},
+		},
+		{
+			name:     "test01",
+			input:    []string{"a", "b", "a", "c", "d", "a"},
+			old:      "a",
+			new:      "x",
+			n:        1,
+			expected: []string{"x", "b", "a", "c", "d", "a"},
+		},
+		{
+			name:     "test02",
+			input:    []string{"a", "b", "a", "c", "d", "a"},
+			old:      "a",
+			new:      "x",
+			n:        2,
+			expected: []string{"x", "b", "x", "c", "d", "a"},
+		},
+		{
+			name:     "test03",
+			input:    []string{"a", "b", "a", "c", "d", "a"},
+			old:      "a",
+			new:      "x",
+			n:        3,
+			expected: []string{"x", "b", "x", "c", "d", "x"},
+		},
+		{
+			name:     "test04",
+			input:    []string{"a", "b", "a", "c", "d", "a"},
+			old:      "a",
+			new:      "x",
+			n:        4,
+			expected: []string{"x", "b", "x", "c", "d", "x"},
+		},
+		{
+			name:     "test05",
+			input:    []string{"a", "b", "a", "c", "d", "a"},
+			old:      "a",
+			new:      "x",
+			n:        -1,
+			expected: []string{"x", "b", "x", "c", "d", "x"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := slicex.Replace(tt.input, tt.old, tt.new, tt.n); !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("Replace() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func Test_RightPadding(t *testing.T) {
+	input := []int{1, 2, 3, 4, 5}
+	expected := []int{1, 2, 3, 4, 5, 0, 0, 0}
+
+	result := slicex.RightPadding(input, 0, 3)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RightPadding() expected %v, got %v", expected, result)
+	}
+}
+
+func Test_LeftPadding(t *testing.T) {
+	input := []int{1, 2, 3, 4, 5}
+	expected := []int{0, 0, 0, 1, 2, 3, 4, 5}
+
+	result := slicex.LeftPadding(input, 0, 3)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("LeftPadding() expected %v, got %v", expected, result)
+	}
+}
