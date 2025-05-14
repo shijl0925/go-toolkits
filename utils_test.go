@@ -36,107 +36,134 @@ func TestSafeToString(t *testing.T) {
 		name     string
 		input    any
 		expected string
+		wantErr  bool
 	}{
 		{
 			name:     "nil input",
 			input:    nil,
 			expected: "",
+			wantErr:  false,
 		},
 		{
 			name:     "string",
 			input:    "hello",
 			expected: "hello",
+			wantErr:  false,
 		},
 		{
 			name:     "*string",
 			input:    func() *string { s := "world"; return &s }(),
 			expected: "world",
+			wantErr:  false,
 		},
 		{
 			name:     "[]byte",
 			input:    []byte("bytes"),
 			expected: "bytes",
+			wantErr:  false,
 		},
 		{
 			name:     "time.Duration",
 			input:    time.Second * 5,
 			expected: strconv.FormatInt(int64(time.Second*5), 10),
+			wantErr:  false,
 		},
 		{
 			name:     "int",
 			input:    123,
 			expected: "123",
+			wantErr:  false,
 		},
 		{
 			name:     "int64",
 			input:    int64(987654321),
 			expected: "987654321",
+			wantErr:  false,
 		},
 		{
 			name:     "uint",
 			input:    uint(456),
 			expected: "456",
+			wantErr:  false,
 		},
 		{
 			name:     "uint64",
 			input:    uint64(1234567890),
 			expected: "1234567890",
+			wantErr:  false,
 		},
 		{
 			name:     "float32",
 			input:    float32(3.14),
 			expected: "3.14",
+			wantErr:  false,
 		},
 		{
 			name:     "float64",
 			input:    2.71828,
 			expected: "2.71828",
+			wantErr:  false,
 		},
 		{
 			name:     "bool true",
 			input:    true,
 			expected: "true",
+			wantErr:  false,
 		},
 		{
 			name:     "bool false",
 			input:    false,
 			expected: "false",
+			wantErr:  false,
 		},
 		{
 			name:     "Stringer interface",
 			input:    testStringer{val: "custom_string"},
 			expected: "custom_string",
+			wantErr:  false,
 		},
 		{
 			name:     "error interface",
 			input:    testError{msg: "an_error"},
 			expected: "an_error",
+			wantErr:  false,
 		},
 		{
 			name:     "nil pointer",
 			input:    (*int)(nil),
 			expected: "",
+			wantErr:  false,
 		},
 		{
 			name:     "non-nil pointer to int",
 			input:    func() *int { i := 789; return &i }(),
 			expected: "789",
+			wantErr:  false,
 		},
-		//{
-		//	name:     "unsupported type",
-		//	input:    struct{}{},
-		//	expected: "",
-		//},
+		{
+			name:     "unsupported type",
+			input:    struct{}{},
+			expected: "",
+			wantErr:  true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := toolkits.SafeToString(tt.input)
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if got != tt.expected {
-				t.Errorf("SafeToString(%v) = %q, want %q", tt.input, got, tt.expected)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if got != tt.expected {
+					t.Errorf("SafeToString(%v) = %q, want %q", tt.input, got, tt.expected)
+				}
 			}
 		})
 	}
@@ -381,6 +408,15 @@ func TestIsNilValue(t *testing.T) {
 		})
 	}
 }
+
+func intPtr(i int) *int {
+	return &i
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
 func TestSafeToInt64(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -401,8 +437,20 @@ func TestSafeToInt64(t *testing.T) {
 			wantErr:  true,
 		},
 		{
+			name:     "non-nil pointer",
+			input:    intPtr(42),
+			expected: 42,
+			wantErr:  false,
+		},
+		{
 			name:     "Normal int",
 			input:    42,
+			expected: 42,
+			wantErr:  false,
+		},
+		{
+			name:     "uint",
+			input:    uint(42),
 			expected: 42,
 			wantErr:  false,
 		},
@@ -500,6 +548,12 @@ func TestSafeToBytes(t *testing.T) {
 			input:    (*int)(nil),
 			expected: nil,
 			wantErr:  toolkits.ErrNilPointer,
+		},
+		{
+			name:     "non-nil pointer",
+			input:    stringPtr("hello"),
+			expected: []byte("hello"),
+			wantErr:  nil,
 		},
 		{
 			name:     "string",

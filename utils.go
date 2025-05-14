@@ -21,8 +21,8 @@ var (
 	// ErrType indicates that a type is not supported.
 	ErrType = fmt.Errorf("unsupported type")
 
-	// ErrValOut indicates that a value is out of range.
-	ErrValOut = fmt.Errorf("value out of range")
+	// ErrParse indicates that a value cannot be parsed.
+	ErrParse = fmt.Errorf("parse error")
 
 	// ErrUnsignedInt indicates that a negative value is attempted to be converted to an unsigned integer.
 	ErrUnsignedInt = fmt.Errorf("cannot convert negative value to unsigned integer")
@@ -77,37 +77,37 @@ func SafeToInt64(v any) (int64, error) {
 		return 0, ErrNilValue
 	}
 
-	val := reflect.ValueOf(v)
-	if val.Kind() == reflect.Ptr {
-		if val.IsNil() {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
 			return 0, ErrNilPointer
 		}
-		val = val.Elem()
+		rv = rv.Elem()
 	}
 
-	switch val.Kind() {
+	switch rv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v := val.Int()
+		v := rv.Int()
 		return v, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		v := val.Uint()
+		v := rv.Uint()
 		return int64(v), nil
 	case reflect.Float32, reflect.Float64:
-		v := val.Float()
+		v := rv.Float()
 		return int64(v), nil
 	case reflect.Complex64, reflect.Complex128:
-		v := val.Complex()
+		v := rv.Complex()
 		return int64(real(v)), nil
 	case reflect.String:
-		s := val.String()
+		s := rv.String()
 		v, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
-			return 0, strconv.ErrSyntax
+			return 0, ErrParse
 		}
 		return v, nil
 	case reflect.Bool:
 		{
-			if val.Bool() {
+			if rv.Bool() {
 				return 1, nil
 			} else {
 				return 0, nil
@@ -122,45 +122,45 @@ func SafeToUint64(v any) (uint64, error) {
 	if v == nil {
 		return 0, ErrNilValue
 	}
-	val := reflect.ValueOf(v)
-	if val.Kind() == reflect.Ptr {
-		if val.IsNil() {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
 			return 0, ErrNilPointer
 		}
-		val = val.Elem()
+		rv = rv.Elem()
 	}
 
-	switch val.Kind() {
+	switch rv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v := val.Int()
+		v := rv.Int()
 		if v < 0 {
 			return 0, ErrUnsignedInt
 		}
 		return uint64(v), nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return val.Uint(), nil
+		return rv.Uint(), nil
 	case reflect.Float32, reflect.Float64:
-		v := val.Float()
+		v := rv.Float()
 		if v < 0 {
 			return 0, ErrUnsignedInt
 		}
 		return uint64(v), nil
 	case reflect.Complex64, reflect.Complex128:
-		v := real(val.Complex())
+		v := real(rv.Complex())
 		if v < 0 {
 			return 0, ErrUnsignedInt
 		}
 		return uint64(v), nil
 	case reflect.String:
-		s := val.String()
+		s := rv.String()
 		v, err := strconv.ParseUint(s, 10, 64)
 		if err != nil {
-			return 0, strconv.ErrSyntax
+			return 0, ErrParse
 		}
 		return v, nil
 	case reflect.Bool:
 		{
-			if val.Bool() {
+			if rv.Bool() {
 				return 1, nil
 			} else {
 				return 0, nil
@@ -176,27 +176,27 @@ func SafeToBool(v any) (bool, error) {
 		return false, ErrNilValue
 	}
 
-	val := reflect.ValueOf(v)
-	if val.Kind() == reflect.Ptr {
-		if val.IsNil() {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
 			return false, ErrNilPointer
 		}
-		val = val.Elem()
+		rv = rv.Elem()
 	}
 
-	switch val.Kind() {
+	switch rv.Kind() {
 	case reflect.Bool:
-		return val.Bool(), nil
+		return rv.Bool(), nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return val.Int() != 0, nil
+		return rv.Int() != 0, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return val.Uint() != 0, nil
+		return rv.Uint() != 0, nil
 	case reflect.Float32, reflect.Float64:
-		return val.Float() != 0, nil
+		return rv.Float() != 0, nil
 	case reflect.Complex64, reflect.Complex128:
-		return real(val.Complex()) != 0, nil
+		return real(rv.Complex()) != 0, nil
 	case reflect.String:
-		s := val.String()
+		s := rv.String()
 		if s == "true" {
 			return true, nil
 		} else if s == "false" {
@@ -212,24 +212,24 @@ func SafeToFloat64(v any) (float64, error) {
 	if v == nil {
 		return 0, ErrNilValue
 	}
-	val := reflect.ValueOf(v)
-	if val.Kind() == reflect.Ptr {
-		if val.IsNil() {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
 			return 0, ErrNilPointer
 		}
-		val = val.Elem()
+		rv = rv.Elem()
 	}
-	switch val.Kind() {
+	switch rv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return float64(val.Int()), nil
+		return float64(rv.Int()), nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return float64(val.Uint()), nil
+		return float64(rv.Uint()), nil
 	case reflect.Float32, reflect.Float64:
-		return val.Float(), nil
+		return rv.Float(), nil
 	case reflect.Complex64, reflect.Complex128:
-		return real(val.Complex()), nil
+		return real(rv.Complex()), nil
 	case reflect.String:
-		v := val.String()
+		v := rv.String()
 		if v == "" {
 			return 0, nil
 		}
@@ -239,7 +239,7 @@ func SafeToFloat64(v any) (float64, error) {
 		}
 		return floatValue, nil
 	case reflect.Bool:
-		if val.Bool() {
+		if rv.Bool() {
 			return 1, nil
 		}
 		return 0, nil
@@ -248,48 +248,47 @@ func SafeToFloat64(v any) (float64, error) {
 	}
 }
 
-
 func SafeToBytes(v any) ([]byte, error) {
 	if v == nil {
 		return nil, ErrNilValue
 	}
 
-	val := reflect.ValueOf(v)
+	rv := reflect.ValueOf(v)
 
-	if val.Kind() == reflect.Ptr {
-		if val.IsNil() {
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
 			return nil, ErrNilPointer
 		}
-		val = val.Elem()
+		rv = rv.Elem()
 	}
 
-	switch val.Kind() {
+	switch rv.Kind() {
 	case reflect.String:
-		return []byte(val.String()), nil
+		return []byte(rv.String()), nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		number := val.Int()
+		number := rv.Int()
 		buf := bytes.NewBuffer(nil)
 		err := binary.Write(buf, binary.BigEndian, number)
 		return buf.Bytes(), err
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		number := val.Uint()
+		number := rv.Uint()
 		buf := bytes.NewBuffer(nil)
 		err := binary.Write(buf, binary.BigEndian, number)
 		return buf.Bytes(), err
 	case reflect.Float32:
-		number := float32(val.Float())
+		number := float32(rv.Float())
 		bits := math.Float32bits(number)
 		bs := make([]byte, 4)
 		binary.BigEndian.PutUint32(bs, bits)
 		return bs, nil
 	case reflect.Float64:
-		number := val.Float()
+		number := rv.Float()
 		bits := math.Float64bits(number)
 		bs := make([]byte, 8)
 		binary.BigEndian.PutUint64(bs, bits)
 		return bs, nil
 	case reflect.Bool:
-		return strconv.AppendBool([]byte{}, val.Bool()), nil
+		return strconv.AppendBool([]byte{}, rv.Bool()), nil
 	default:
 		return json.Marshal(v)
 	}
@@ -324,6 +323,7 @@ func SafeToInterface(v reflect.Value) (interface{}, bool) {
 		return nil, false
 	}
 }
+
 // IsKindOf checks if the given value is an instance of the given kind.
 // It returns true if the value is an instance of the given kind, false otherwise.
 func IsKindOf(s any, t reflect.Kind) bool {
