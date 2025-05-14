@@ -509,7 +509,7 @@ func toMap[T comparable](s []T) map[T]struct{} {
 //	dst := []int{1, 2, 3}
 //	r := DiffSet(src, dst) // r == []int{4, 5}
 func DiffSet[T comparable](src, dst []T) []T {
-	dstMap := toMap(src)
+	dstMap := toMap(dst)
 
 	result := make([]T, 0, len(src))
 
