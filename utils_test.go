@@ -1,6 +1,9 @@
 package toolkits_test
 
 import (
+	"bytes"
+	"encoding/binary"
+	"encoding/json"
 	"github.com/shijl0925/go-toolkits"
 	"math"
 	"reflect"
@@ -475,6 +478,201 @@ func TestSafeToInt64(t *testing.T) {
 				if result != tt.expected {
 					t.Errorf("Expected %d but got %d", tt.expected, result)
 				}
+			}
+		})
+	}
+}
+func TestSafeToBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected []byte
+		wantErr  error
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: nil,
+			wantErr:  toolkits.ErrNilValue,
+		},
+		{
+			name:     "nil pointer",
+			input:    (*int)(nil),
+			expected: nil,
+			wantErr:  toolkits.ErrNilPointer,
+		},
+		{
+			name:     "string",
+			input:    "hello",
+			expected: []byte("hello"),
+			wantErr:  nil,
+		},
+		{
+			name:  "int",
+			input: int(123),
+			expected: func() []byte {
+				buf := new(bytes.Buffer)
+				_ = binary.Write(buf, binary.BigEndian, int64(123))
+				return buf.Bytes()
+			}(),
+			wantErr: nil,
+		},
+		{
+			name:  "uint",
+			input: uint(123),
+			expected: func() []byte {
+				buf := new(bytes.Buffer)
+				_ = binary.Write(buf, binary.BigEndian, uint64(123))
+				return buf.Bytes()
+			}(),
+			wantErr: nil,
+		},
+		{
+			name:  "float32",
+			input: float32(123.45),
+			expected: func() []byte {
+				bits := math.Float32bits(float32(123.45))
+				bs := make([]byte, 4)
+				binary.BigEndian.PutUint32(bs, bits)
+				return bs
+			}(),
+			wantErr: nil,
+		},
+		{
+			name:  "float64",
+			input: 123.45,
+			expected: func() []byte {
+				bits := math.Float64bits(123.45)
+				bs := make([]byte, 8)
+				binary.BigEndian.PutUint64(bs, bits)
+				return bs
+			}(),
+			wantErr: nil,
+		},
+		{
+			name:     "bool true",
+			input:    true,
+			expected: []byte("true"),
+			wantErr:  nil,
+		},
+		{
+			name:     "bool false",
+			input:    false,
+			expected: []byte("false"),
+			wantErr:  nil,
+		},
+		{
+			name:     "struct",
+			input:    struct{ Name string }{Name: "test"},
+			expected: []byte(`{"Name":"test"}`),
+			wantErr:  nil,
+		},
+		{
+			name:     "unmarshalable type (e.g., chan)",
+			input:    make(chan int),
+			expected: nil,
+			wantErr:  &json.UnsupportedTypeError{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := toolkits.SafeToBytes(tt.input)
+
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("expected error %v but got nil", tt.wantErr)
+				} else if tt.wantErr != err && !reflect.TypeOf(tt.wantErr).AssignableTo(reflect.TypeOf(err)) {
+					t.Errorf("expected error %v but got %v", tt.wantErr, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if !bytes.Equal(got, tt.expected) {
+				t.Errorf("got %v, expected %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSafeToInterface(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected interface{}
+		ok       bool
+	}{
+		{
+			name:     "Invalid Value",
+			input:    nil,
+			expected: nil,
+			ok:       false,
+		},
+		{
+			name:     "Struct CanInterface",
+			input:    struct{ X int }{X: 42},
+			expected: struct{ X int }{X: 42},
+			ok:       true,
+		},
+		{
+			name:     "Bool",
+			input:    true,
+			expected: true,
+			ok:       true,
+		},
+		{
+			name:     "Int",
+			input:    123,
+			expected: 123,
+			ok:       true,
+		},
+		{
+			name:     "Uint",
+			input:    uint(456),
+			expected: uint(456),
+			ok:       true,
+		},
+		{
+			name:     "Float",
+			input:    3.14,
+			expected: 3.14,
+			ok:       true,
+		},
+		{
+			name:     "Complex",
+			input:    complex(1, 2),
+			expected: complex(1, 2),
+			ok:       true,
+		},
+		{
+			name:     "String",
+			input:    "hello",
+			expected: "hello",
+			ok:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var val reflect.Value
+			if tt.input == nil {
+				val = reflect.Value{}
+			} else {
+				val = reflect.ValueOf(tt.input)
+			}
+
+			got, ok := toolkits.SafeToInterface(val)
+			if ok != tt.ok {
+				t.Errorf("expected ok=%v, got %v", tt.ok, ok)
+			}
+
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("expected value %v (%T), got %v (%T)", tt.expected, tt.expected, got, got)
 			}
 		})
 	}
