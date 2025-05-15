@@ -358,3 +358,7 @@ func IsNilValue(v reflect.Value) bool {
 		return false
 	}
 }
+
+func IsNil(v interface{}) bool {
+	return v == nil || IsNilValue(reflect.ValueOf(v))
+}
