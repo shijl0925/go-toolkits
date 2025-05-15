@@ -141,10 +141,10 @@ func TestSafeToString(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "unsupported type",
+			name:     "struct type",
 			input:    struct{}{},
-			expected: "",
-			wantErr:  true,
+			expected: "{}",
+			wantErr:  false,
 		},
 	}
 
