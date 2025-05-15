@@ -92,20 +92,22 @@ func removeTail[T any](s []T) []T {
 }
 
 // Pop removes and returns the last element from a slice.
-// 从切片 s 中弹出最后一个元素，并返回该元素和剩余切片。
-// 如果 slice 为空，则返回一个零值和空切片。
-// 注意：返回的切片仍与原切片共享底层数组。
+// 从切片 s 中弹出最后一个元素，并返回该元素和弹出状态。
+// 如果 slice 为空，则返回一个零值和false。
+// 注意：原始 slice 会被改变。
 //
 // Example:
 //
 //	s := []int{1, 2, 3, 4, 5}
-//	r, t := Pop(s) //  r == 5, t == []int{1, 2, 3, 4}
-func Pop[T any](s []T) (T, []T) {
+//	r, ok := Pop(s) //  r == 5, ok ==true, s == []int{1, 2, 3, 4}
+func Pop[T any](s []T) (T, bool) {
 	if len(s) == 0 {
 		var zero T
-		return zero, s
+		return zero, false
 	}
-	return s[len(s)-1], s[:len(s)-1]
+	v := s[len(s)-1]
+	s = removeTail(s)
+	return v, true
 }
 
 // Drop removes the n elements from the slice and returns the remaining elements.
