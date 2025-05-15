@@ -1022,3 +1022,135 @@ func Test_LeftPadding(t *testing.T) {
 		t.Errorf("LeftPadding() expected %v, got %v", expected, result)
 	}
 }
+func Test_Contains(t *testing.T) {
+	tests := []struct {
+		name     string
+		src      []int
+		dst      int
+		expected bool
+	}{
+		{
+			name:     "TC01",
+			src:      []int{1, 2, 3, 4, 5},
+			dst:      2,
+			expected: true,
+		},
+		{
+			name:     "TC02",
+			src:      []int{1, 2, 3, 4, 5},
+			dst:      0,
+			expected: false,
+		},
+		{
+			name:     "TC03",
+			src:      []int{},
+			dst:      5,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slicex.Contains(tt.src, tt.dst)
+			if got != tt.expected {
+				t.Errorf("ContainsAll() expected %v, got %v", tt.expected, got)
+			}
+		})
+	}
+}
+
+func Test_ContainsAny(t *testing.T) {
+	tests := []struct {
+		name     string
+		src      []int
+		dst      []int
+		expected bool
+	}{
+		{
+			name:     "TC01",
+			src:      []int{1, 2, 3, 4, 5},
+			dst:      []int{2, 4},
+			expected: true,
+		},
+		{
+			name:     "TC02",
+			src:      []int{1, 2, 3, 4, 5},
+			dst:      []int{2, 6},
+			expected: true,
+		},
+		{
+			name:     "TC03",
+			src:      []int{1, 2, 3, 4, 5},
+			dst:      []int{},
+			expected: false,
+		},
+		{
+			name:     "TC04",
+			src:      []int{},
+			dst:      []int{1, 2, 3, 4, 5},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slicex.ContainsAny(tt.src, tt.dst)
+			if got != tt.expected {
+				t.Errorf("ContainsAny() expected %v, got %v", tt.expected, got)
+			}
+		})
+	}
+}
+
+func Test_ContainsAll(t *testing.T) {
+	tests := []struct {
+		name     string
+		src      []int
+		dst      []int
+		expected bool
+	}{
+		{
+			name:     "TC01",
+			src:      []int{1, 2, 3, 4, 5},
+			dst:      []int{2, 4},
+			expected: true,
+		},
+		{
+			name:     "TC02",
+			src:      []int{1, 2, 3, 4, 5},
+			dst:      []int{2, 6},
+			expected: false,
+		},
+		{
+			name:     "TC03",
+			src:      []int{1, 2, 3, 4, 5},
+			dst:      []int{},
+			expected: true,
+		},
+		{
+			name:     "TC04",
+			src:      []int{},
+			dst:      []int{1, 2, 3, 4, 5},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slicex.ContainsAll(tt.src, tt.dst)
+			if got != tt.expected {
+				t.Errorf("ContainsAll() expected %v, got %v", tt.expected, got)
+			}
+		})
+	}
+}
+
+func TestFlattenDeep(t *testing.T) {
+	input := [][][]string{{{"a", "b"}}, {{"c", "d"}}}
+	expected := []string{"a", "b", "c", "d"}
+
+	result := slicex.FlattenDeep(input)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("FlattenDeep() expected %v, got %v", expected, result)
+	}
+}
