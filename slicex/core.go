@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/shijl0925/go-toolkits"
 	"golang.org/x/exp/constraints"
+	"reflect"
 	"strings"
 )
 
@@ -811,4 +812,44 @@ func LeftPadding[T any](s []T, v T, n int) []T {
 	}
 
 	return result
+}
+
+func flattenRecursive(value reflect.Value, result reflect.Value) reflect.Value {
+	for i := 0; i < value.Len(); i++ {
+		item := value.Index(i)
+		kind := item.Kind()
+
+		if kind == reflect.Slice {
+			result = flattenRecursive(item, result)
+		} else {
+			result = reflect.Append(result, item)
+		}
+	}
+
+	return result
+}
+
+// FlattenDeep flattens slice recursive.
+// 递归地展平切片
+//
+// Example:
+//
+// s := [][]int{{1, 2}, {3, 4}, {5, 6}}
+// r := FlattenDeep(s)   // r == []int{1, 2, 3, 4, 5, 6}
+func FlattenDeep(slice any) any {
+	rv := reflect.ValueOf(slice)
+
+	// 获取切片的最里层元素类型
+	rt := rv.Type()
+	for {
+		if rt.Kind() != reflect.Slice {
+			break
+		}
+		rt = rt.Elem()
+	}
+
+	tmp := reflect.MakeSlice(reflect.SliceOf(rt), 0, 0)
+	result := flattenRecursive(rv, tmp)
+
+	return result.Interface()
 }
