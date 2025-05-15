@@ -2,10 +2,13 @@ package jsonx_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/shijl0925/go-toolkits/jsonx"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -39,21 +42,95 @@ func Test_Dumps(t *testing.T) {
 	})
 }
 
+func TestDumps_InvalidInput(t *testing.T) {
+	type hasChan struct {
+		C chan int
+	}
+
+	t.Run("Invalid type (chan)", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("Expected panic due to invalid type, but did not get one")
+			}
+		}()
+
+		jsonx.Dumps(hasChan{C: make(chan int)})
+	})
+}
+
 func Test_DumpsPretty(t *testing.T) {
-	want := `{
-    "first_name": "Alice",
-    "last_name": "Smith",
-    "age": 18
-}`
-	t.Run("test1", func(t *testing.T) {
-		if got := jsonx.DumpsPretty(testUser, 4); got != want {
-			t.Errorf("DumpsPretty() expected %v, got %v", want, got)
-		}
+	tests := []struct {
+		name     string
+		input    any
+		indent   int
+		expected string
+	}{
+		{
+			name:     "Positive Indent - Simple Map",
+			input:    map[string]int{"a": 1, "b": 2},
+			indent:   2,
+			expected: "{\n  \"a\": 1,\n  \"b\": 2\n}",
+		},
+		{
+			name:     "Zero Indent - Uses Dumps",
+			input:    []int{1, 2, 3},
+			indent:   0,
+			expected: "[1,2,3]",
+		},
+		{
+			name:     "Negative Indent - Uses Dumps",
+			input:    struct{}{},
+			indent:   -1,
+			expected: "{}",
+		},
+		{
+			name:     "Nil Input",
+			input:    nil,
+			indent:   4,
+			expected: "null",
+		},
+		{
+			name:     "Nested Structure",
+			input:    map[string]any{"a": 1, "b": map[string]int{"c": 3}},
+			indent:   3,
+			expected: "{\n   \"a\": 1,\n   \"b\": {\n      \"c\": 3\n   }\n}",
+		},
+		{
+			name:     "Nested Structure with Indent",
+			input:    testUser,
+			indent:   4,
+			expected: "{\n    \"first_name\": \"Alice\",\n    \"last_name\": \"Smith\",\n    \"age\": 18\n}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := jsonx.DumpsPretty(tt.input, tt.indent)
+			if got != tt.expected {
+				t.Errorf("DumpsPretty() = %s, want %s", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDumpsPretty_InvalidInput(t *testing.T) {
+	type hasChan struct {
+		C chan int
+	}
+
+	t.Run("Invalid type (chan)", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("Expected panic due to invalid type, but did not get one")
+			}
+		}()
+
+		jsonx.DumpsPretty(hasChan{C: make(chan int)}, 2)
 	})
 }
 
 func Test_EncodeToWriter(t *testing.T) {
-	t.Run("test1", func(t *testing.T) {
+	t.Run("TC01 - Valid JSON file", func(t *testing.T) {
 		buf := &bytes.Buffer{}
 		want := `{"first_name":"Alice","last_name":"Smith","age":18}
 `
@@ -66,7 +143,7 @@ func Test_EncodeToWriter(t *testing.T) {
 		}
 	})
 
-	t.Run("test2", func(t *testing.T) {
+	t.Run("TC02 - Valid JSON file", func(t *testing.T) {
 		tmpfile, _ := ioutil.TempFile("", "example.json")
 		err := jsonx.EncodeToWriter(testUser, tmpfile)
 		want := `{"first_name":"Alice","last_name":"Smith","age":18}
@@ -168,7 +245,7 @@ func Test_DecodeFromReader(t *testing.T) {
 }
 
 func Test_ReadFile(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
+	t.Run("Valid JSON file", func(t *testing.T) {
 		var user2 = &Person{}
 		err := jsonx.ReadFile("testdata/test.json", user2)
 		if err != nil {
@@ -185,9 +262,60 @@ func Test_ReadFile(t *testing.T) {
 		}
 	})
 }
+func Test_ReadFile_InvalidFile(t *testing.T) {
+	t.Run("Invalid File", func(t *testing.T) {
+		var data Person
+		err := jsonx.ReadFile("nonexistent.json", &data)
+		if err == nil {
+			t.Errorf("Expected error, but got nil")
+		}
+	})
+
+	t.Run("Invalid JSON content", func(t *testing.T) {
+		// 创建临时文件并写入非法 JSON 内容
+		tmpfile, err := os.CreateTemp("", "test_invalid_*.json")
+		if err != nil {
+			t.Errorf("Error creating temporary file: %v", err)
+		}
+		defer os.Remove(tmpfile.Name())
+
+		_, err = tmpfile.WriteString("invalid json content")
+		if err != nil {
+			t.Errorf("Error writing to temporary file: %v", err)
+		}
+		tmpfile.Close()
+
+		var data Person
+		err = jsonx.ReadFile(tmpfile.Name(), &data)
+		if err == nil {
+			t.Errorf("Expected error, but got nil")
+		}
+	})
+}
 
 func Test_WriteFile(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
+	t.Run("TC01 - Valid JSON file", func(t *testing.T) {
+		tempDir := t.TempDir()
+		filePath := filepath.Join(tempDir, "test.json")
+		data := map[string]string{"key": "value"}
+
+		err := jsonx.WriteFile(filePath, data)
+		if err != nil {
+			t.Errorf("WriteFile() error: %v", err)
+		}
+
+		// 验证文件内容
+		content, _ := os.ReadFile(filePath)
+		var result map[string]string
+		err = json.Unmarshal(content, &result)
+		if err != nil {
+			t.Errorf("Error unmarshalling JSON: %v", err)
+		}
+		if !reflect.DeepEqual(result, data) {
+			t.Errorf("WriteFile() expected %v, got %v", data, result)
+		}
+	})
+	t.Run("TC02 - Valid JSON file", func(t *testing.T) {
 		filePath := "testdata/test.json"
 		err := jsonx.WriteFile(filePath, testUser)
 		want := `{"first_name":"Alice","last_name":"Smith","age":18}
@@ -201,4 +329,25 @@ func Test_WriteFile(t *testing.T) {
 			t.Errorf("WriteFile() expected %v, got %v", want, string(data))
 		}
 	})
+}
+
+// 测试用例：无效路径导致 OpenFile 失败
+func TestWriteFile_OpenFileError(t *testing.T) {
+	invalidPath := "/invalid/path/test.json"
+	err := jsonx.WriteFile(invalidPath, map[string]string{"key": "value"})
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
+	}
+}
+
+// 测试用例：不可序列化数据导致 Encode 失败
+func TestWriteFile_EncodeError(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "test.json")
+
+	// channel 类型不能被 JSON 序列化
+	err := jsonx.WriteFile(filePath, make(chan int))
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
+	}
 }

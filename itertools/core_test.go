@@ -26,6 +26,65 @@ func Test_MapSliceArray(t *testing.T) {
 	}
 }
 
+// TestFind 是 Find 函数的单元测试。
+func TestFind(t *testing.T) {
+	t.Run("Nil slice returns false", func(t *testing.T) {
+		var s []int = nil
+		result := itertools.Find(s, func(x int) bool { return x > 0 })
+		if result {
+			t.Errorf("Expected false, got true")
+		}
+	})
+
+	t.Run("Empty slice returns false", func(t *testing.T) {
+		s := []int{}
+		result := itertools.Find(s, func(x int) bool { return x > 0 })
+		if result {
+			t.Errorf("Expected false, got true")
+		}
+	})
+
+	t.Run("No element matches condition", func(t *testing.T) {
+		s := []int{1, 2, 3}
+		result := itertools.Find(s, func(x int) bool { return x > 5 })
+		if result {
+			t.Errorf("Expected false, got true")
+		}
+	})
+
+	t.Run("First element matches", func(t *testing.T) {
+		s := []int{1, 2, 3}
+		result := itertools.Find(s, func(x int) bool { return x == 1 })
+		if !result {
+			t.Errorf("Expected true, got false")
+		}
+	})
+
+	t.Run("Middle element matches", func(t *testing.T) {
+		s := []int{1, 2, 3}
+		result := itertools.Find(s, func(x int) bool { return x == 2 })
+		if !result {
+			t.Errorf("Expected true, got false")
+		}
+	})
+
+	t.Run("Last element matches", func(t *testing.T) {
+		s := []int{1, 2, 3}
+		result := itertools.Find(s, func(x int) bool { return x == 3 })
+		if !result {
+			t.Errorf("Expected true, got false")
+		}
+	})
+
+	t.Run("Multiple elements match", func(t *testing.T) {
+		s := []string{"a", "ab", "abc"}
+		result := itertools.Find(s, func(x string) bool { return len(x) >= 2 })
+		if !result {
+			t.Errorf("Expected true, got false")
+		}
+	})
+}
+
 func Test_FilterSlice(t *testing.T) {
 	var tests = []struct {
 		name     string
