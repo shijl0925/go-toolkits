@@ -28,6 +28,9 @@ var (
 	ErrUnsignedInt = fmt.Errorf("cannot convert negative value to unsigned integer")
 )
 
+// SafeToString converts a value to a string.
+// for number, string, []byte, will convert to string
+// for other type (slice, map, array, struct) will call json.Marshal.
 func SafeToString(v any) (str string, err error) {
 	if v == nil {
 		return "", nil
@@ -66,7 +69,11 @@ func SafeToString(v any) (str string, err error) {
 		case reflect.Bool:
 			str = strconv.FormatBool(rv.Bool())
 		default:
-			return "", ErrType
+			b, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			return string(b), nil
 		}
 	}
 	return
