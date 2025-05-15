@@ -148,33 +148,22 @@ func Test_AddMany(t *testing.T) {
 }
 
 func Test_Pop(t *testing.T) {
-	var s, want []string
-	var lastWant string
-	t.Run("test0", func(t *testing.T) {
-		if last, got := slicex.Pop(s); !reflect.DeepEqual(got, want) {
-			t.Errorf("Pop() expected %v, got %v", want, got)
-			if last != lastWant {
-				t.Errorf("Pop() element expected %v, got %v", lastWant, last)
-			}
-		}
-
-	})
 	var tests = []struct {
 		name     string
 		slice    []int
-		expected []int
+		expected int
+		ok       bool
 	}{
-		{"test1", []int{1, 2, 3, 4}, []int{1, 2, 3}},
-		{"test2", []int{1, 2, 3, 4, 5}, []int{1, 2, 3, 4}},
-		{"test3", []int{1, 2, 3, 4, 5, 6}, []int{1, 2, 3, 4, 5}},
+		{"test1", []int{1, 2, 3, 4}, 4, true},
+		{"test2", []int{1, 2, 3, 4, 5}, 5, true},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, true},
+		{"test4", []int{}, 0, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if last, got := slicex.Pop(tc.slice); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("Pop() expected %v, got %v", tc.expected, got)
-				if last != tc.slice[len(tc.slice)-1] {
-					t.Errorf("Pop() element expected %v, got %v", last, tc.slice[len(tc.slice)-1])
-				}
+			last, ok := slicex.Pop(tc.slice)
+			if last != tc.expected || ok != tc.ok {
+				t.Errorf("Pop() expected %v(%v), got %v(%v)", tc.expected, tc.ok, last, ok)
 			}
 		})
 	}
