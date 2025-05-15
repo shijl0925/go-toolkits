@@ -114,6 +114,44 @@ func (s Set[T]) Equal(dst Set[T]) bool {
 	return true
 }
 
+// Iterate call function by every element of set
+func (s Set[T]) Iterate(fn func(item T)) {
+	for element := range s {
+		fn(element)
+	}
+}
+
+// ToSlice returns a slice containing all values of the set.
+func (s Set[T]) ToSlice() []T {
+	if s.Len() == 0 {
+		return []T{}
+	}
+
+	result := make([]T, 0, s.Len())
+	s.Iterate(func(item T) {
+		result = append(result, item)
+	})
+
+	return result
+}
+
+// IsEmpty checks the set is empty or not
+func (s Set[T]) IsEmpty() bool {
+	return s.Len() == 0
+}
+
+// Pop delete one element of set then return it, if set is empty, return nil-value of T and false.
+func (s Set[T]) Pop() (v T, ok bool) {
+	if s.Len() > 0 {
+		for element := range s {
+			v = element
+			delete(s, element)
+			return v, true
+		}
+	}
+	return v, false
+}
+
 // Update updates the set with the elements of the other set.
 // 将dst集合中的元素添加到src集合中，如果src集合中已经存在该元素，则不添加。
 // 并且返回值是更新后的src集合
