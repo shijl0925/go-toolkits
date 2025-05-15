@@ -26,6 +26,38 @@ func Values[K comparable, V any](m map[K]V) []V {
 	return values
 }
 
+// HasKey checks if map has key or not.
+func HasKey[K comparable, V any](m map[K]V, key K) bool {
+	_, ok := m[key]
+	return ok
+}
+
+// Merge maps, when the key is same, next value will overwrite previous value.
+func Merge[K comparable, V any](maps ...map[K]V) map[K]V {
+	size := 0
+	for _, m := range maps {
+		size += len(m)
+	}
+
+	result := make(map[K]V, size)
+
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+
+	return result
+}
+
+// GetOrDefault returns the value of the given key or a default value if the key is not present.
+func GetOrDefault[K comparable, V any](m map[K]V, key K, defaultValue V) V {
+	if value, ok := m[key]; ok {
+		return value
+	}
+	return defaultValue
+}
+
 type KV[K any, V any] struct {
 	Key   K
 	Value V
