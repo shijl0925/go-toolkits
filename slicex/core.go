@@ -470,6 +470,30 @@ func ContainsAll[T comparable](src, dst []T) bool {
 	return true
 }
 
+//func ContainsAllV2[T comparable](src, dst []T) bool { //性能没ContainsAll好
+//	if len(dst) == 0 {
+//		return true
+//	}
+//
+//	if len(src) == 0 {
+//		return false
+//	}
+//
+//	count := make(map[T]int, len(src))
+//	for _, value := range src {
+//		count[value]++
+//	}
+//
+//	for _, value := range dst {
+//		if count[value] == 0 {
+//			return false
+//		}
+//		count[value]--
+//	}
+//
+//	return true
+//}
+
 // Unique removes duplicate elements from a slice.
 // 删除 slice 中的重复元素, 原始 slice 不会被改变 。
 //
