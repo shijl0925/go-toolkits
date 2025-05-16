@@ -118,7 +118,7 @@ func Test_SortMap(t *testing.T) {
 			{Key: "zeta", Value: 13},
 		}
 
-		if mapx.SortByKey(balVal, func(a, b string) bool { return a < b }); !reflect.DeepEqual(got, want1) {
+		if got := mapx.SortByKey(balVal, func(a, b string) bool { return a < b }); !reflect.DeepEqual(got, want1) {
 			t.Errorf("SortMap() = %v, want %v", got, want1)
 		}
 	})
@@ -135,7 +135,7 @@ func Test_SortMap(t *testing.T) {
 			{Key: "iota", Value: 79},
 			{Key: "epsilon", Value: 90},
 		}
-		if mapx.SortByValue(balVal, func(a, b int) bool {return a < b}); !reflect.DeepEqual(got, want1) {
+		if got := mapx.SortByValue(balVal, func(a, b int) bool {return a < b}); !reflect.DeepEqual(got, want1) {
 			t.Errorf("SortMap() = %v, want %v", got, want1)
 		}
 	})
