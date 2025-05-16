@@ -2,7 +2,7 @@ package mapx_test
 
 import (
 	"github.com/shijl0925/go-toolkits/mapx"
-	"github.com/shijl0925/go-toolkits/slicex"
+	"github.com/shijl0925/go-toolkits/setx"
 	"reflect"
 	"testing"
 )
@@ -43,7 +43,7 @@ func TestKeys(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := mapx.Keys[int, int](tc.input)
-			if len(slicex.DiffSet(got, tc.wantRes)) != 0 || len(slicex.DiffSet(tc.wantRes, got)) != 0 {
+			if !setx.NewFromSlice(got).Equal(setx.NewFromSlice(tc.wantRes)) {
 				t.Errorf("Keys() expected %v, got %v", tc.wantRes, got)
 			}
 		})
@@ -86,7 +86,7 @@ func TestValues(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := mapx.Values[int, int](tc.input)
-			if len(slicex.DiffSet(got, tc.wantRes)) != 0 || len(slicex.DiffSet(tc.wantRes, got)) != 0 {
+			if !setx.NewFromSlice(got).Equal(setx.NewFromSlice(tc.wantRes)) {
 				t.Errorf("Values() expected %v, got %v", tc.wantRes, got)
 			}
 		})
@@ -135,7 +135,7 @@ func Test_SortMap(t *testing.T) {
 			{Key: "iota", Value: 79},
 			{Key: "epsilon", Value: 90},
 		}
-		if got := mapx.SortByValue(balVal, func(a, b int) bool {return a < b}); !reflect.DeepEqual(got, want1) {
+		if got := mapx.SortByValue(balVal, func(a, b int) bool { return a < b }); !reflect.DeepEqual(got, want1) {
 			t.Errorf("SortMap() = %v, want %v", got, want1)
 		}
 	})

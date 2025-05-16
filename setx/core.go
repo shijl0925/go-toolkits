@@ -2,27 +2,35 @@ package setx
 
 type Set[T comparable] map[T]struct{}
 
-// NewSet creates a new set from a list of elements.
+// New creates a new set from a list of elements.
 // 构造函数
 //
 // Example:
 //
-// s := setx.NewSet(3, 1, 2, 3)
-// // or s:= setx.NewSet(3, []int{1, 2, 3}...)
+// s := setx.New(1, 2, 3)
+// // or s:= setx.New([]int{1, 2, 3}...)
 // fmt.Println(s) // map[1:{} 2:{} 3:{}]
-func NewSet[T comparable](size int, a ...T) Set[T] {
-	s := make(Set[T], size)
+func New[T comparable](a ...T) Set[T] {
+	s := make(Set[T], len(a))
 	for _, v := range a {
 		s.Add(v)
 	}
 	return s
 }
 
+func NewFromSlice[T comparable](s []T) Set[T] {
+	set := make(Set[T], len(s))
+	for _, v := range s {
+		set.Add(v)
+	}
+	return set
+}
+
 // Add adds an element to the set.
 //
 // Example:
 //
-// s := setx.NewSet(3, 1, 2, 3)
+// s := setx.New(1, 2, 3)
 // s.Add(4)
 // fmt.Println(s) // map[1:{} 2:{} 3:{} 4:{}]
 func (s Set[T]) Add(element T) {
@@ -33,7 +41,7 @@ func (s Set[T]) Add(element T) {
 //
 // Example:
 //
-// s := setx.NewSet(3, 1, 2, 3)
+// s := setx.New(1, 2, 3)
 // s.Remove(3)
 // fmt.Println(s) // map[1:{} 2:{}]
 func (s Set[T]) Remove(element T) {
@@ -44,7 +52,7 @@ func (s Set[T]) Remove(element T) {
 //
 // Example:
 //
-// s := setx.NewSet(3, 1, 2, 3)
+// s := setx.New(1, 2, 3)
 // fmt.Println(s.Len()) // 3
 func (s Set[T]) Len() int {
 	return len(s)
@@ -54,7 +62,7 @@ func (s Set[T]) Len() int {
 //
 // Example:
 //
-// s := setx.NewSet(3, 1, 2, 3)
+// s := setx.New(1, 2, 3)
 // fmt.Println(s.Exists(3)) // true
 // fmt.Println(s.Exists(0)) // false
 func (s Set[T]) Exists(element T) bool {
@@ -68,7 +76,7 @@ func (s Set[T]) Exists(element T) bool {
 //
 // Example:
 //
-// s := setx.NewSet(3, 1, 2, 3)
+// s := setx.New(1, 2, 3)
 // fmt.Println(s.Keys()) // [1 2 3] or [3 1 2] or [2 3 1]
 func (s Set[T]) Keys() []T {
 	result := make([]T, 0, s.Len())
@@ -82,7 +90,7 @@ func (s Set[T]) Keys() []T {
 // 清空集合
 //
 // Example:
-// s := setx.NewSet(3, []int{1, 2, 3})
+// s := setx.New([]int{1, 2, 3}...)
 // s.Clear()
 // fmt.Println(s.Len()) // 0
 func (s Set[T]) Clear() {
@@ -96,10 +104,10 @@ func (s Set[T]) Clear() {
 //
 // Example:
 //
-// s := setx.NewSet(3, []int{1, 2, 3})
-// t := setx.NewSet(3, []int{1, 2, 3})
+// s := setx.New([]int{1, 2, 3}...)
+// t := setx.New([]int{1, 2, 3}...)
 // fmt.Println(s.Equal(t)) // true
-// fmt.Println(s.Equal(setx.NewSet(2, []int{1,2}))) // false
+// fmt.Println(s.Equal(setx.New([]int{1,2}...))) // false
 func (s Set[T]) Equal(dst Set[T]) bool {
 	if s.Len() != dst.Len() {
 		return false
@@ -158,8 +166,8 @@ func (s Set[T]) Pop() (v T, ok bool) {
 //
 // Example:
 //
-// s := setx.NewSet(3, []int{1, 2, 3})
-// t := setx.NewSet(3, []int{1, 2, 4})
+// s := setx.New([]int{1, 2, 3}...)
+// t := setx.New([]int{1, 2, 4}...)
 // fmt.Println(s.Update(t)) // map[1:{} 2:{} 3:{} 4:{}]
 // fmt.Println(s) // map[1:{} 2:{} 3:{} 4:{}]
 // fmt.Println(t) // map[1:{} 2:{} 4:{}]
@@ -172,16 +180,16 @@ func (s Set[T]) Update(dst Set[T]) Set[T] {
 	return s
 }
 
-// DiffSet returns the difference between two sets.
+// Difference returns the difference between two sets.
 // 返回src集合与dst集合的差集, 即 src 中存在，dst 中不存在的元素。
 // 并且返回值的顺序是不确定的
 //
 // Example:
 //
-// s := setx.NewSet(3, 1, 2, 3)
-// t := setx.NewSet(3, 1, 2, 4)
-// fmt.Println(setx.DiffSet(s, t)) // [3]
-func DiffSet[T comparable](src, dst Set[T]) []T {
+// s := setx.New(1, 2, 3)
+// t := setx.New(1, 2, 4)
+// fmt.Println(setx.Difference(s, t)) // [3]
+func Difference[T comparable](src, dst Set[T]) []T {
 	result := make([]T, 0, src.Len())
 
 	for element := range src {
@@ -193,16 +201,16 @@ func DiffSet[T comparable](src, dst Set[T]) []T {
 	return result
 }
 
-// IntersectSet returns the intersection between two sets.
+// Intersect returns the intersection between two sets.
 // 返回src集合与dst集合的交集, 即 src 和 dst 都存在的元素。
 // 并且返回值的顺序是不确定的
 //
 // Example:
 //
-// s := setx.NewSet(3, 1, 2, 3)
-// t := setx.NewSet(3, 1, 2, 4)
-// fmt.Println(setx.IntersectSet(s, t)) // [1 2]
-func IntersectSet[T comparable](src, dst Set[T]) []T {
+// s := setx.New(1, 2, 3)
+// t := setx.New(1, 2, 4)
+// fmt.Println(setx.Intersect(s, t)) // [1 2]
+func Intersect[T comparable](src, dst Set[T]) []T {
 	result := make([]T, 0, src.Len())
 
 	for element := range src {
@@ -214,16 +222,16 @@ func IntersectSet[T comparable](src, dst Set[T]) []T {
 	return result
 }
 
-// UnionSet returns the union between two sets.
+// Union returns the union between two sets.
 // 返回src集合与dst集合的并集, 即 src 和 dst中所有元素的集合。
 // 并且返回值的顺序是不确定的
 //
 // Example:
 //
-// s := setx.NewSet(3, 1, 2, 3)
-// t := setx.NewSet(3, 1, 2, 4)
-// fmt.Println(setx.UnionSet(s, t)) // [1 2 3 4]
-func UnionSet[T comparable](src, dst Set[T]) []T {
+// s := setx.New(1, 2, 3)
+// t := setx.New(1, 2, 4)
+// fmt.Println(setx.Union(s, t)) // [1 2 3 4]
+func Union[T comparable](src, dst Set[T]) []T {
 	for element := range src {
 		if !dst.Exists(element) {
 			dst.Add(element)

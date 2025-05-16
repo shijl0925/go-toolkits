@@ -3,6 +3,7 @@ package slicex
 import (
 	"fmt"
 	"github.com/shijl0925/go-toolkits"
+	"github.com/shijl0925/go-toolkits/setx"
 	"golang.org/x/exp/constraints"
 	"reflect"
 	"strings"
@@ -527,15 +528,15 @@ func toMap[T comparable](s []T) map[T]struct{} {
 	return result
 }
 
-// DiffSet returns the difference between two slices.
+// Difference returns the difference between two slices.
 // 返回 src 和 dst 的差集, 即 src 中存在，dst 中不存在的元素。
 //
 // Example:
 //
 //	src := []int{1, 2, 3, 4, 5}
 //	dst := []int{1, 2, 3}
-//	r := DiffSet(src, dst) // r == []int{4, 5}
-func DiffSet[T comparable](src, dst []T) []T {
+//	r := Difference(src, dst)
+func Difference[T comparable](src, dst []T) setx.Set[T] {
 	dstMap := toMap(dst)
 
 	result := make([]T, 0, len(src))
@@ -546,18 +547,18 @@ func DiffSet[T comparable](src, dst []T) []T {
 		}
 	}
 
-	return result
+	return setx.NewFromSlice(result)
 }
 
-// IntersectSet returns the intersection between two slices.
+// Intersect returns the intersection between two slices.
 // 返回 src 和 dst 的交集, 即 src 中存在，dst 中也存在元素。
 //
 // Example:
 //
 //	src := []int{1, 2, 3, 4, 5}
 //	dst := []int{4, 5, 6, 7, 8}
-//	r := IntersectSet(src, dst) // r == []int{4, 5}
-func IntersectSet[T comparable](src, dst []T) []T {
+//	r := Intersect(src, dst)
+func Intersect[T comparable](src, dst []T) setx.Set[T] {
 	dstMap := toMap(dst)
 
 	result := make([]T, 0, len(src))
@@ -567,20 +568,20 @@ func IntersectSet[T comparable](src, dst []T) []T {
 			result = append(result, value)
 		}
 	}
-	return result
+	return setx.NewFromSlice(result)
 }
 
-// UnionSet returns the union of two slices.
+// Union returns the union of two slices.
 // 返回 src 和 dst 的并集, 即 src 和 dst中所有元素的集合。
 //
 // Example:
 //
 //	src := []int{1, 2, 3, 4, 5}
 //	dst := []int{4, 5, 6, 7, 8}
-//	r := UnionSet(src, dst) // r == []int{1, 2, 3, 4, 5, 6, 7, 8}
-func UnionSet[T comparable](src, dst []T) []T {
+//	r := Union(src, dst) // r == []int{1, 2, 3, 4, 5, 6, 7, 8}
+func Union[T comparable](src, dst []T) setx.Set[T] {
 	result := append(src, dst...)
-	return Unique(result)
+	return setx.NewFromSlice(result)
 }
 
 // Index 返回和 dst 相等的第一个元素下标
@@ -660,6 +661,7 @@ func JoinSlice[T any](sep string, s []T) string {
 	}
 	return bf.String()
 }
+
 // Chunk creates a slice of elements split into groups the length of size.
 // 将切片按照给定的大小进行分组，并返回一个二维切片。
 func Chunk[T any](s []T, size int) [][]T {
