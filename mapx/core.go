@@ -64,21 +64,6 @@ type KV[K any, V any] struct {
 }
 
 // SortByKey 按 key 排序。
-func SortByKey[K constraints.Ordered, V any](a, b KV[K, V]) bool {
-	return a.Key < b.Key
-}
-
-// SortByValue 根据 value 排序。
-func SortByValue[K any, V constraints.Ordered](a, b KV[K, V]) bool {
-	return a.Value < b.Value
-}
-
-// defaultKeySort 是 SortMap 的默认排序逻辑
-func defaultKeySort[K constraints.Ordered, V any](a, b KV[K, V]) bool {
-	return a.Key < b.Key
-}
-
-// SortMap 对 map[K]V 进行排序。
 //
 // Example:
 //
@@ -88,29 +73,42 @@ func defaultKeySort[K constraints.Ordered, V any](a, b KV[K, V]) bool {
 //		"c": 1,
 //	}
 //
-// sorted1 := SortMap(m)
-// fmt.Println(sorted1) // []mapx.KV[string,int]{Key: "a", Value: 3} mapx.KV[string,int]{Key: "b", Value: 2} mapx.KV[string,int]{Key: "c", Value: 1}]
-//
-// sorted2 := SortMap(m, func(a, b mapx.KV[string, int]) bool {return a.Value < b.Value})
-// fmt.Println(sorted2) //  []mapx.KV[string,int]{Key: "c", Value: 1} mapx.KV[string,int]{Key: "b", Value: 2} mapx.KV[string,int]{Key: "a", Value: 3}]
-func SortMap[K constraints.Ordered, V any](m map[K]V, opts ...func(a, b KV[K, V]) bool) []KV[K, V] {
+// result := SortByKey(m, func(a, b string) bool { return a < b })
+// fmt.Println(result) // []mapx.KV[string,int]{Key: "a", Value: 3} mapx.KV[string,int]{Key: "b", Value: 2} mapx.KV[string,int]{Key: "c", Value: 1}]
+func SortByKey[K constraints.Ordered, V any](m map[K]V, less func(a, b K) bool) []KV[K, V] {
 	result := make([]KV[K, V], 0, len(m))
-	for key, value := range m {
-		result = append(result, KV[K, V]{Key: key, Value: value})
+
+	keys := Keys[K, V](m)
+	sort.Slice(keys, func(i, j int) bool { return less(keys[i], keys[j]) })
+
+	for _, k := range keys {
+		result = append(result, KV[K, V]{Key: k, Value: m[k]})
 	}
 
-	var lessFunc func(i, j int) bool
+	return result
+}
 
-	if len(opts) > 0 {
-		lessFunc = func(i, j int) bool {
-			return opts[0](result[i], result[j])
-		}
-	} else {
-		lessFunc = func(i, j int) bool {
-			return defaultKeySort(result[i], result[j])
-		}
+// SortByValue 按 value 排序。
+//
+// Example:
+//
+//	m := map[string]int{
+//		"b": 2,
+//		"a": 3,
+//		"c": 1,
+//	}
+//
+// result := SortByValue(m, func(a, b int) bool {return a < b})
+// fmt.Println(result) //  []mapx.KV[string,int]{Key: "c", Value: 1} mapx.KV[string,int]{Key: "b", Value: 2} mapx.KV[string,int]{Key: "a", Value: 3}]
+func SortByValue[K comparable, V constraints.Ordered](m map[K]V, less func(a, b V) bool) []KV[K, V] {
+	result := make([]KV[K, V], 0, len(m))
+
+	keys := Keys[K, V](m)
+	sort.Slice(keys, func(i, j int) bool { return less(m[keys[i]], m[keys[j]]) })
+
+	for _, k := range keys {
+		result = append(result, KV[K, V]{Key: k, Value: m[k]})
 	}
-	sort.Slice(result, lessFunc)
 
 	return result
 }
