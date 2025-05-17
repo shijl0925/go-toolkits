@@ -251,3 +251,103 @@ func TestFormatMap(t *testing.T) {
 		})
 	}
 }
+
+// TestReverse_EmptyString tests reversing an empty string.
+func TestReverse_EmptyString(t *testing.T) {
+	input := ""
+	expected := ""
+	result := stringx.Reverse(input)
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+// TestReverse_SingleCharacter tests reversing a single character string.
+func TestReverse_SingleCharacter(t *testing.T) {
+	input := "a"
+	expected := "a"
+	result := stringx.Reverse(input)
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+// TestReverse_EvenLengthString tests reversing a string with even length.
+func TestReverse_EvenLengthString(t *testing.T) {
+	input := "ab"
+	expected := "ba"
+	result := stringx.Reverse(input)
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+// TestReverse_OddLengthString tests reversing a string with odd length.
+func TestReverse_OddLengthString(t *testing.T) {
+	input := "abc"
+	expected := "cba"
+	result := stringx.Reverse(input)
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+// TestReverse_NormalString tests reversing a normal English string.
+func TestReverse_NormalString(t *testing.T) {
+	input := "hello"
+	expected := "olleh"
+	result := stringx.Reverse(input)
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+// TestReverse_UnicodeString tests reversing a string containing Unicode characters.
+func TestReverse_UnicodeString(t *testing.T) {
+	input := "你好"
+	expected := "好你"
+	result := stringx.Reverse(input)
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+// TestReverse_NumericString tests reversing a numeric string.
+func TestReverse_NumericString(t *testing.T) {
+	input := "123456"
+	expected := "654321"
+	result := stringx.Reverse(input)
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+// TestSubstring 使用多种边界情况和典型情况来验证 Substring 函数的行为
+func TestSubstring(t *testing.T) {
+	tests := []struct {
+		name     string
+		s        string
+		offset   int
+		length   uint
+		expected string
+	}{
+		{"TC01: Normal case", "abcdef", 2, 3, "cde"},
+		{"TC02: Negative offset", "abcdef", -2, 2, "ef"},
+		{"TC03: Offset too small", "abcdef", -10, 2, ""},
+		{"TC04: Length exceeds", "abcdef", 4, 10, "ef"},
+		{"TC05: Offset equals length", "abcdef", 6, 1, ""},
+		{"TC06: Offset greater than length", "abcdef", 7, 1, ""},
+		{"TC07: Empty string", "", 0, 1, ""},
+		{"TC08: Offset at -len(s)", "abcdef", -6, 3, "abc"},
+		{"TC09: Negative offset with large length", "abcdef", -5, 10, "bcdef"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := stringx.Substring(tt.s, tt.offset, tt.length)
+			if result != tt.expected {
+				t.Errorf("Substring(%q, %d, %d) = %q; want %q", tt.s, tt.offset, tt.length, result, tt.expected)
+			}
+		})
+	}
+}

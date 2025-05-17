@@ -17,6 +17,32 @@ func Capitalize(s string) string {
 	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
 }
 
+// Reverse reverses a string.
+// 反转字符串
+func Reverse(s string) string {
+	r := []byte(s)
+	for i, j := 0, len(r)-1; i < j; i, j = i+1, j-1 {
+		r[i], r[j] = r[j], r[i]
+	}
+	return string(r)
+}
+
+func Substring(s string, offset int, length uint) string {
+	r := []byte(s)
+	size := len(r)
+	if offset < 0 {
+		offset += size
+	}
+	if offset < 0 || offset >= size {
+		return ""
+	}
+	end := offset + int(length)
+	if end > size {
+		end = size
+	}
+	return string(r[offset:end])
+}
+
 // IsLower returns true if all characters in the string are lower case.
 // 判断字符串是否全部为小写。
 func IsLower(s string) bool {
@@ -90,7 +116,7 @@ func SwapCase(s string) string {
 //
 //	FormatMap("Hello, {name}!", map[string]any{"name": "John"}) // returns "Hello, John!"
 func FormatMap(format string, m map[string]any) string {
-	var pairs []string
+	pairs := make(map[string]string)
 	pos := 0
 	for {
 		idx := strings.Index(format[pos:], "{")
@@ -116,11 +142,16 @@ func FormatMap(format string, m map[string]any) string {
 
 		if value, ok := m[key]; ok {
 			if strVal, ok := value.(string); ok {
-				pairs = append(pairs, "{"+key+"}", strVal)
+				strKey := "{" + key + "}"
+				pairs[strKey] = strVal
 			}
 		}
 		pos = end + 1
 	}
-	result := strings.NewReplacer(pairs...).Replace(format)
-	return result
+
+	for key, value := range pairs {
+		format = strings.ReplaceAll(format, key, value)
+	}
+
+	return format
 }
