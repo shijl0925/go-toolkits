@@ -12,17 +12,13 @@ type Set[T comparable] map[T]struct{}
 // fmt.Println(s) // map[1:{} 2:{} 3:{}]
 func New[T comparable](a ...T) Set[T] {
 	s := make(Set[T], len(a))
-	for _, v := range a {
-		s.Add(v)
-	}
+	s.Add(a...)
 	return s
 }
 
 func NewFromSlice[T comparable](s []T) Set[T] {
 	set := make(Set[T], len(s))
-	for _, v := range s {
-		set.Add(v)
-	}
+	set.Add(s...)
 	return set
 }
 
@@ -35,6 +31,9 @@ func NewFromSlice[T comparable](s []T) Set[T] {
 // fmt.Println(s) // map[1:{} 2:{} 3:{} 4:{}]
 func (s Set[T]) Add(elements ...T) {
 	for _, element := range elements {
+		if s.Exists(element) {
+			continue
+		}
 		s[element] = struct{}{}
 	}
 }
