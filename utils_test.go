@@ -31,6 +31,11 @@ func (t testError) Error() string {
 	return t.msg
 }
 
+// 定义一个不可 marshal 的结构体（包含函数字段）
+type UnmarshalableStruct struct {
+	F func()
+}
+
 func TestSafeToString(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -145,6 +150,12 @@ func TestSafeToString(t *testing.T) {
 			input:    struct{}{},
 			expected: "{}",
 			wantErr:  false,
+		},
+		{
+			name:     "unmarshalable struct",
+			input:    UnmarshalableStruct{},
+			expected: "",
+			wantErr:  true,
 		},
 	}
 
@@ -654,79 +665,585 @@ func TestSafeToBytes(t *testing.T) {
 	}
 }
 
-func TestSafeToInterface(t *testing.T) {
+// 测试无效值
+func Test_SafeToInterface_Invalid(t *testing.T) {
+	var v reflect.Value
+	result, ok := toolkits.SafeToInterface(v)
+	if result != nil || ok {
+		t.Errorf("Expected (nil, false), got (%v, %v)", result, ok)
+	}
+}
+
+// 测试 CanInterface 为 true 的情况
+func Test_SafeToInterface_CanInterface(t *testing.T) {
+	v := reflect.ValueOf(42)
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result.(int) != 42 {
+		t.Errorf("Expected (42, true), got (%v, %v)", result, ok)
+	}
+}
+
+// 测试布尔值
+func Test_SafeToInterface_Bool(t *testing.T) {
+	v := reflect.ValueOf(true)
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result.(bool) != true {
+		t.Errorf("Expected (true, true), got (%v, %v)", result, ok)
+	}
+}
+
+// 测试 Int 类型
+func Test_SafeToInterface_Int(t *testing.T) {
+	var i int64 = 123
+	v := reflect.ValueOf(&i).Elem()
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result.(int64) != 123 {
+		t.Errorf("Expected (123, true), got (%v, %v)", result, ok)
+	}
+}
+
+// 测试 Uint 类型
+func Test_SafeToInterface_Uint(t *testing.T) {
+	var u uint = 456
+	v := reflect.ValueOf(&u).Elem()
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result.(uint) != 456 {
+		t.Errorf("Expected (456, true), got (%v, %v)", result, ok)
+	}
+}
+
+// 测试 Float 类型
+func Test_SafeToInterface_Float(t *testing.T) {
+	v := reflect.ValueOf(3.14)
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result.(float64) != 3.14 {
+		t.Errorf("Expected (3.14, true), got (%v, %v)", result, ok)
+	}
+}
+
+// 测试 Complex 类型
+func Test_SafeToInterface_Complex(t *testing.T) {
+	c := complex(1, 2)
+	v := reflect.ValueOf(c)
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result.(complex128) != c {
+		t.Errorf("Expected (%v, true), got (%v, %v)", c, result, ok)
+	}
+}
+
+// 测试字符串
+func Test_SafeToInterface_String(t *testing.T) {
+	v := reflect.ValueOf("hello")
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result.(string) != "hello" {
+		t.Errorf("Expected ('hello', true), got (%q, %v)", result, ok)
+	}
+}
+
+// 测试指针类型
+func Test_SafeToInterface_Ptr(t *testing.T) {
+	s := "abc"
+	v := reflect.ValueOf(&s).Elem()
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result.(string) != "abc" {
+		t.Errorf("Expected ('abc', true), got (%q, %v)", result, ok)
+	}
+}
+
+// 测试接口类型
+func Test_SafeToInterface_Interface(t *testing.T) {
+	var i interface{} = "xyz"
+	v := reflect.ValueOf(i)
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result.(string) != "xyz" {
+		t.Errorf("Expected ('xyz', true), got (%q, %v)", result, ok)
+	}
+}
+
+// 测试结构体类型
+func Test_SafeToInterface_Struct(t *testing.T) {
+	type S struct{ X int }
+	s := S{X: 10}
+	v := reflect.ValueOf(s)
+	result, ok := toolkits.SafeToInterface(v)
+	if !ok || result != s {
+		t.Errorf("Expected (nil, false), got (%v, %v)", result, ok)
+	}
+}
+
+func TestSafeToUint64(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    interface{}
-		expected interface{}
-		ok       bool
+		input    any
+		expected uint64
+		wantErr  bool
 	}{
 		{
-			name:     "Invalid Value",
+			name:     "nil input",
 			input:    nil,
-			expected: nil,
-			ok:       false,
+			expected: 0,
+			wantErr:  true,
 		},
 		{
-			name:     "Struct CanInterface",
-			input:    struct{ X int }{X: 42},
-			expected: struct{ X int }{X: 42},
-			ok:       true,
+			name:     "nil pointer",
+			input:    (*int)(nil),
+			expected: 0,
+			wantErr:  true,
 		},
 		{
-			name:     "Bool",
-			input:    true,
-			expected: true,
-			ok:       true,
+			name:     "negative int",
+			input:    -1,
+			expected: 0,
+			wantErr:  true,
 		},
 		{
-			name:     "Int",
+			name:     "positive int",
 			input:    123,
 			expected: 123,
-			ok:       true,
+			wantErr:  false,
 		},
 		{
-			name:     "Uint",
+			name:     "uint",
 			input:    uint(456),
-			expected: uint(456),
-			ok:       true,
+			expected: 456,
+			wantErr:  false,
 		},
 		{
-			name:     "Float",
-			input:    3.14,
-			expected: 3.14,
-			ok:       true,
+			name:     "float64 positive",
+			input:    78.9,
+			expected: 78,
+			wantErr:  false,
 		},
 		{
-			name:     "Complex",
-			input:    complex(1, 2),
-			expected: complex(1, 2),
-			ok:       true,
+			name:     "float64 negative",
+			input:    -1.0,
+			expected: 0,
+			wantErr:  true,
 		},
 		{
-			name:     "String",
-			input:    "hello",
-			expected: "hello",
-			ok:       true,
+			name:     "complex128 positive real",
+			input:    complex(100, 0),
+			expected: 100,
+			wantErr:  false,
+		},
+		{
+			name:     "complex128 negative real",
+			input:    complex(-1, 0),
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "string valid number",
+			input:    "123",
+			expected: 123,
+			wantErr:  false,
+		},
+		{
+			name:     "string invalid",
+			input:    "abc",
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "bool true",
+			input:    true,
+			expected: 1,
+			wantErr:  false,
+		},
+		{
+			name:     "bool false",
+			input:    false,
+			expected: 0,
+			wantErr:  false,
+		},
+		{
+			name:     "unsupported type slice",
+			input:    []int{},
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "pointer to int",
+			input:    new(int),
+			expected: 0,
+			wantErr:  false,
+		},
+		{
+			name:     "pointer to nil int",
+			input:    func() *int { var v *int; return v }(),
+			expected: 0,
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var val reflect.Value
-			if tt.input == nil {
-				val = reflect.Value{}
+			got, err := toolkits.SafeToUint64(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
 			} else {
-				val = reflect.ValueOf(tt.input)
-			}
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
 
-			got, ok := toolkits.SafeToInterface(val)
-			if ok != tt.ok {
-				t.Errorf("expected ok=%v, got %v", tt.ok, ok)
+				if got != tt.expected {
+					t.Errorf("SafeToUint64(%v) = %q, want %q", tt.input, got, tt.expected)
+				}
 			}
+		})
+	}
+}
 
-			if !reflect.DeepEqual(got, tt.expected) {
-				t.Errorf("expected value %v (%T), got %v (%T)", tt.expected, tt.expected, got, got)
+func TestSafeToBool(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected bool
+		wantErr  bool
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: false,
+			wantErr:  true,
+		},
+		{
+			name:     "nil pointer",
+			input:    (*int)(nil),
+			expected: false,
+			wantErr:  true,
+		},
+		{
+			name:     "pointer to int",
+			input:    new(int),
+			expected: false,
+			wantErr:  false,
+		},
+		{
+			name:     "bool true",
+			input:    true,
+			expected: true,
+			wantErr:  false,
+		},
+		{
+			name:     "bool false",
+			input:    false,
+			expected: false,
+			wantErr:  false,
+		},
+		{
+			name:     "int zero",
+			input:    0,
+			expected: false,
+			wantErr:  false,
+		},
+		{
+			name:     "int non-zero",
+			input:    1,
+			expected: true,
+			wantErr:  false,
+		},
+		{
+			name:     "uint zero",
+			input:    uint(0),
+			expected: false,
+			wantErr:  false,
+		},
+		{
+			name:     "uint non-zero",
+			input:    uint(1),
+			expected: true,
+			wantErr:  false,
+		},
+		{
+			name:     "float zero",
+			input:    0.0,
+			expected: false,
+			wantErr:  false,
+		},
+		{
+			name:     "float non-zero",
+			input:    0.1,
+			expected: true,
+			wantErr:  false,
+		},
+		{
+			name:     "complex real zero",
+			input:    complex(0, 0),
+			expected: false,
+			wantErr:  false,
+		},
+		{
+			name:     "complex real non-zero",
+			input:    complex(0.1, 0),
+			expected: true,
+			wantErr:  false,
+		},
+		{
+			name:     "string true",
+			input:    "true",
+			expected: true,
+			wantErr:  false,
+		},
+		{
+			name:     "string false",
+			input:    "false",
+			expected: false,
+			wantErr:  false,
+		},
+		{
+			name:     "string empty",
+			input:    "",
+			expected: false,
+			wantErr:  false,
+		},
+		{
+			name:     "string non-empty",
+			input:    "hello",
+			expected: true,
+			wantErr:  false,
+		},
+		{
+			name:     "unsupported slice",
+			input:    []int{},
+			expected: false,
+			wantErr:  true,
+		},
+		{
+			name:     "unsupported struct",
+			input:    struct{}{},
+			expected: false,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := toolkits.SafeToBool(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if got != tt.expected {
+					t.Errorf("SafeToBool(%v) = %v, want %v", tt.input, got, tt.expected)
+				}
+			}
+		})
+	}
+}
+
+func TestSafeToFloat64(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected float64
+		wantErr  bool
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "nil pointer",
+			input:    (*int)(nil),
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "int value",
+			input:    int(123),
+			expected: 123,
+			wantErr:  false,
+		},
+		{
+			name:     "uint value",
+			input:    uint(456),
+			expected: 456,
+			wantErr:  false,
+		},
+		{
+			name:     "float32 value",
+			input:    float32(3.14),
+			expected: float64(float32(3.14)),
+			wantErr:  false,
+		},
+		{
+			name:     "float64 value",
+			input:    3.14,
+			expected: 3.14,
+			wantErr:  false,
+		},
+		{
+			name:     "complex64 value",
+			input:    complex(100, 0),
+			expected: 100,
+			wantErr:  false,
+		},
+		{
+			name:     "string numeric",
+			input:    "123.45",
+			expected: 123.45,
+			wantErr:  false,
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: 0,
+			wantErr:  false,
+		},
+		{
+			name:     "invalid string",
+			input:    "abc",
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "bool true",
+			input:    true,
+			expected: 1,
+			wantErr:  false,
+		},
+		{
+			name:     "bool false",
+			input:    false,
+			expected: 0,
+			wantErr:  false,
+		},
+		{
+			name:     "unsupported slice type",
+			input:    []int{},
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "non-nil pointer to int",
+			input:    func() *int { i := 10; return &i }(),
+			expected: 10,
+			wantErr:  false,
+		},
+		{
+			name:     "interface with string",
+			input:    interface{}("123"),
+			expected: 123,
+			wantErr:  false,
+		},
+		{
+			name:     "interface with int",
+			input:    interface{}(123),
+			expected: 123,
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := toolkits.SafeToFloat64(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if got != tt.expected {
+					t.Errorf("SafeToFloat64(%v) = %v, want %v", tt.input, got, tt.expected)
+				}
+			}
+		})
+	}
+}
+
+// 测试 IsNil
+func TestIsNil(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected bool
+	}{
+		{
+			name:     "Interface is nil",
+			input:    nil,
+			expected: true,
+		},
+		{
+			name:     "Nil Pointer",
+			input:    (*int)(nil),
+			expected: true,
+		},
+		{
+			name:     "Initialized Pointer",
+			input:    new(int),
+			expected: false,
+		},
+		{
+			name:     "Nil Slice",
+			input:    []int(nil),
+			expected: true,
+		},
+		{
+			name:     "Initialized Slice",
+			input:    []int{1, 2},
+			expected: false,
+		},
+		{
+			name:     "Nil Map",
+			input:    map[string]int(nil),
+			expected: true,
+		},
+		{
+			name:     "Initialized Map",
+			input:    map[string]int{"a": 1},
+			expected: false,
+		},
+		{
+			name:     "Nil Chan",
+			input:    (chan int)(nil),
+			expected: true,
+		},
+		{
+			name:     "Initialized Chan",
+			input:    make(chan int),
+			expected: false,
+		},
+		{
+			name:     "Nil Func",
+			input:    (func())(nil),
+			expected: true,
+		},
+		{
+			name:     "Initialized Func",
+			input:    func() {},
+			expected: false,
+		},
+		{
+			name:     "Int Value",
+			input:    42,
+			expected: false,
+		},
+		{
+			name:     "Struct Value",
+			input:    struct{}{},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toolkits.IsNil(tt.input)
+			if got != tt.expected {
+				t.Errorf("IsNil(%v) = %v; want %v", tt.input, got, tt.expected)
 			}
 		})
 	}
