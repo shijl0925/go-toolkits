@@ -33,8 +33,10 @@ func NewFromSlice[T comparable](s []T) Set[T] {
 // s := setx.New(1, 2, 3)
 // s.Add(4)
 // fmt.Println(s) // map[1:{} 2:{} 3:{} 4:{}]
-func (s Set[T]) Add(element T) {
-	s[element] = struct{}{}
+func (s Set[T]) Add(elements ...T) {
+	for _, element := range elements {
+		s[element] = struct{}{}
+	}
 }
 
 // Remove removes an element from the set.

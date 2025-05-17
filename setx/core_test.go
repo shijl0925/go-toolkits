@@ -2,6 +2,7 @@ package setx_test
 
 import (
 	"github.com/shijl0925/go-toolkits/setx"
+	"github.com/shijl0925/go-toolkits/slicex"
 	"reflect"
 	"testing"
 )
@@ -173,6 +174,211 @@ func Test_DiffSet(t *testing.T) {
 				t.Errorf("Difference() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+// TestIterate 测试 Iterate 方法的行为
+func TestIterate(t *testing.T) {
+	t.Run("TC01 - Empty Set", func(t *testing.T) {
+		set := setx.New([]int{}...)
+		called := false
+		set.Iterate(func(item int) {
+			called = true
+		})
+		if called {
+			t.Errorf("expected fn not to be called on empty set")
+		}
+	})
+
+	t.Run("TC02 - Non-empty Set", func(t *testing.T) {
+		set := setx.New([]string{}...)
+		set.Add("a", "b", "c")
+
+		expected := map[string]bool{
+			"a": true,
+			"b": true,
+			"c": true,
+		}
+		calls := make(map[string]bool)
+
+		set.Iterate(func(item string) {
+			calls[item] = true
+		})
+
+		if len(calls) != len(expected) {
+			t.Errorf("expected %d calls, got %d", len(expected), len(calls))
+		}
+		for k := range expected {
+			if !calls[k] {
+				t.Errorf("expected key %q to be called", k)
+			}
+		}
+	})
+
+	t.Run("TC03 - Nil Set", func(t *testing.T) {
+		set := setx.New([]float64{}...) // nil map
+		called := false
+		set.Iterate(func(item float64) {
+			called = true
+		})
+		if called {
+			t.Errorf("expected fn not to be called on nil set")
+		}
+	})
+}
+
+func TestIsEmpty(t *testing.T) {
+	t.Run("TC01 - Empty Set", func(t *testing.T) {
+		set := setx.New([]int{}...)
+		if !set.IsEmpty() {
+			t.Errorf("expected set to be empty")
+		}
+	})
+
+	t.Run("TC02 - Non-empty Set", func(t *testing.T) {
+		set := setx.New([]string{}...)
+		set.Add("a", "b", "c")
+		if set.IsEmpty() {
+			t.Errorf("expected set to be non-empty")
+		}
+	})
+}
+
+func TestSet_Pop_Empty(t *testing.T) {
+	set := setx.New([]int{}...)
+	val, ok := set.Pop()
+
+	if ok {
+		t.Errorf("expected ok to be false, got true")
+	}
+
+	var zero int
+	if !reflect.DeepEqual(val, zero) {
+		t.Errorf("expected value to be zero value of int (%v), got %v", zero, val)
+	}
+}
+
+func TestSet_Pop_NonEmpty(t *testing.T) {
+	set := setx.NewFromSlice([]string{"a", "b", "c"})
+
+	initialLen := set.Len()
+	val, ok := set.Pop()
+
+	if !ok {
+		t.Fatalf("expected ok to be true, got false")
+	}
+
+	if _, exists := set[val]; exists {
+		t.Errorf("expected value %q to be removed from the set", val)
+	}
+
+	if set.Len() != initialLen-1 {
+		t.Errorf("expected length to decrease by 1, got %d", set.Len())
+	}
+}
+
+func TestSet_Pop_MultipleTimes(t *testing.T) {
+	set := setx.NewFromSlice([]int{1, 2, 3})
+
+	expectedLen := 3
+	for expectedLen > 0 {
+		val, ok := set.Pop()
+		if !ok {
+			t.Errorf("expected ok to be true on iteration %d", 3-expectedLen+1)
+		}
+		if _, exists := set[val]; exists {
+			t.Errorf("expected value %v to be removed", val)
+		}
+		expectedLen--
+		if set.Len() != expectedLen {
+			t.Errorf("expected length %d after pop, got %d", expectedLen, set.Len())
+		}
+	}
+
+	// 最后一次 Pop 应该失败
+	val, ok := set.Pop()
+	if ok {
+		t.Errorf("expected ok to be false after popping all elements")
+	}
+	var zero int
+	if !reflect.DeepEqual(val, zero) {
+		t.Errorf("expected zero value after popping empty set, got %v", val)
+	}
+}
+
+func TestSet_Pop_GenericType(t *testing.T) {
+	type customStruct struct {
+		ID   int
+		Name string
+	}
+
+	set := setx.NewFromSlice([]customStruct{
+		{ID: 1, Name: "Alice"},
+		{ID: 2, Name: "Bob"},
+	})
+
+	initialLen := set.Len()
+	val, ok := set.Pop()
+
+	if !ok {
+		t.Fatal("expected ok to be true for generic type")
+	}
+
+	if _, exists := set[val]; exists {
+		t.Errorf("expected value %+v to be removed", val)
+	}
+
+	if set.Len() != initialLen-1 {
+		t.Errorf("expected length to decrease by 1, got %d", set.Len())
+	}
+}
+
+// 测试用例：空集合
+func TestSet_ToSlice_Empty(t *testing.T) {
+	s := setx.New([]int{}...)
+	result := s.ToSlice()
+	if len(result) != 0 {
+		t.Errorf("Expected empty slice, got %v", result)
+	}
+}
+
+// 测试用例：非空集合
+func TestSet_ToSlice_NonEmpty(t *testing.T) {
+	expected := []string{"a", "b", "c"}
+	s := setx.New(expected...)
+
+	result := s.ToSlice()
+	if !slicex.EqualUnordered(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+// 测试用例：验证泛型支持（int 类型）
+func TestSet_ToSlice_Generic_Int(t *testing.T) {
+	expected := []int{1, 2, 3}
+	s := setx.NewFromSlice(expected)
+
+	result := s.ToSlice()
+	if !slicex.EqualUnordered(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+// 测试用例：验证泛型支持（struct 类型）
+func TestSet_ToSlice_Generic_Struct(t *testing.T) {
+	type user struct {
+		ID   int
+		Name string
+	}
+	expected := []user{
+		{ID: 1, Name: "Alice"},
+		{ID: 2, Name: "Bob"},
+	}
+	s := setx.NewFromSlice(expected)
+
+	result := s.ToSlice()
+	if !slicex.EqualUnordered(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
 	}
 }
 
