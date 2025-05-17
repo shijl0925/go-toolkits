@@ -20,7 +20,7 @@ func Capitalize(s string) string {
 // Reverse reverses a string.
 // 反转字符串
 func Reverse(s string) string {
-	r := []byte(s)
+	r := []rune(s)
 	for i, j := 0, len(r)-1; i < j; i, j = i+1, j-1 {
 		r[i], r[j] = r[j], r[i]
 	}
@@ -28,7 +28,7 @@ func Reverse(s string) string {
 }
 
 func Substring(s string, offset int, length uint) string {
-	r := []byte(s)
+	r := []rune(s)
 	size := len(r)
 	if offset < 0 {
 		offset += size
