@@ -2,7 +2,6 @@ package slicex_test
 
 import (
 	"fmt"
-	"github.com/shijl0925/go-toolkits/setx"
 	"github.com/shijl0925/go-toolkits/slicex"
 	"reflect"
 	"testing"
@@ -472,7 +471,7 @@ func Test_Product(t *testing.T) {
 	})
 }
 
-func Test_DiffSet(t *testing.T) {
+func Test_Difference(t *testing.T) {
 	var tests = []struct {
 		name     string
 		slice1   []int
@@ -486,14 +485,14 @@ func Test_DiffSet(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slicex.Difference(tc.slice1, tc.slice2); !setx.NewFromSlice(tc.expected).Equal(got) {
+			if got := slicex.Difference(tc.slice1, tc.slice2); !slicex.EqualUnordered(got, tc.expected) {
 				t.Errorf("Difference() expected %v, got %v", tc.expected, got)
 			}
 		})
 	}
 }
 
-func Test_IntersectSet(t *testing.T) {
+func Test_Intersect(t *testing.T) {
 	var tests = []struct {
 		name     string
 		slice1   []int
@@ -507,14 +506,14 @@ func Test_IntersectSet(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slicex.Intersect(tc.slice1, tc.slice2); !setx.NewFromSlice(tc.expected).Equal(got) {
+			if got := slicex.Intersect(tc.slice1, tc.slice2); !slicex.EqualUnordered(got, tc.expected) {
 				t.Errorf("Intersect() expected %v, got %v", tc.expected, got)
 			}
 		})
 	}
 }
 
-func Test_UnionSet(t *testing.T) {
+func Test_Union(t *testing.T) {
 	var tests = []struct {
 		name     string
 		slice1   []int
@@ -528,7 +527,7 @@ func Test_UnionSet(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := slicex.Union(tc.slice1, tc.slice2); !setx.NewFromSlice(tc.expected).Equal(got) {
+			if got := slicex.Union(tc.slice1, tc.slice2); !slicex.EqualUnordered(got, tc.expected) {
 				t.Errorf("Union() expected %v, got %v", tc.expected, got)
 			}
 		})

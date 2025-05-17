@@ -3,7 +3,6 @@ package slicex
 import (
 	"fmt"
 	"github.com/shijl0925/go-toolkits"
-	"github.com/shijl0925/go-toolkits/setx"
 	"golang.org/x/exp/constraints"
 	"reflect"
 	"strings"
@@ -535,8 +534,8 @@ func toMap[T comparable](s []T) map[T]struct{} {
 //
 //	src := []int{1, 2, 3, 4, 5}
 //	dst := []int{1, 2, 3}
-//	r := Difference(src, dst)
-func Difference[T comparable](src, dst []T) setx.Set[T] {
+//	r := Difference(src, dst)  // r == []int{4, 5}
+func Difference[T comparable](src, dst []T) []T {
 	dstMap := toMap(dst)
 
 	result := make([]T, 0, len(src))
@@ -547,7 +546,7 @@ func Difference[T comparable](src, dst []T) setx.Set[T] {
 		}
 	}
 
-	return setx.NewFromSlice(result)
+	return result
 }
 
 // Intersect returns the intersection between two slices.
@@ -557,8 +556,8 @@ func Difference[T comparable](src, dst []T) setx.Set[T] {
 //
 //	src := []int{1, 2, 3, 4, 5}
 //	dst := []int{4, 5, 6, 7, 8}
-//	r := Intersect(src, dst)
-func Intersect[T comparable](src, dst []T) setx.Set[T] {
+//	r := Intersect(src, dst) // r == []int{4, 5}
+func Intersect[T comparable](src, dst []T) []T {
 	dstMap := toMap(dst)
 
 	result := make([]T, 0, len(src))
@@ -568,7 +567,7 @@ func Intersect[T comparable](src, dst []T) setx.Set[T] {
 			result = append(result, value)
 		}
 	}
-	return setx.NewFromSlice(result)
+	return result
 }
 
 // Union returns the union of two slices.
@@ -578,10 +577,10 @@ func Intersect[T comparable](src, dst []T) setx.Set[T] {
 //
 //	src := []int{1, 2, 3, 4, 5}
 //	dst := []int{4, 5, 6, 7, 8}
-//	r := Union(src, dst) // r == []int{1, 2, 3, 4, 5, 6, 7, 8}
-func Union[T comparable](src, dst []T) setx.Set[T] {
+//	r := Union(src, dst)  // r == []int{1, 2, 3, 4, 5, 6, 7, 8}
+func Union[T comparable](src, dst []T) []T {
 	result := append(src, dst...)
-	return setx.NewFromSlice(result)
+	return Unique(result)
 }
 
 // Index 返回和 dst 相等的第一个元素下标
