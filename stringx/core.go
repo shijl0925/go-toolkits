@@ -109,10 +109,10 @@ func FormatMap(format string, m map[string]any) string {
 			break
 		}
 		key := format[idx+1 : end]
-		if key == "" {
-			pos = end + 1
-			continue
-		}
+		//if key == "" {
+		//	pos = end + 1
+		//	continue
+		//}
 
 		if value, ok := m[key]; ok {
 			if strVal, ok := value.(string); ok {

@@ -70,36 +70,102 @@ func Test_Insert(t *testing.T) {
 		element  int
 		index    int
 		expected []int
+		wantErr  bool
 	}{
-		{"test1", []int{}, 1, 0, []int{1}},
-		{"test2", []int{1, 2, 3, 4}, 2, 1, []int{1, 2, 2, 3, 4}},
-		{"test3", []int{1, 2, 3, 4, 5, 6}, 7, 6, []int{1, 2, 3, 4, 5, 6, 7}},
+		{"test1", []int{}, 1, 0, []int{1}, false},
+		{"test2", []int{1, 2, 3, 4}, 2, 1, []int{1, 2, 2, 3, 4}, false},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 7, 6, []int{1, 2, 3, 4, 5, 6, 7}, false},
+		{"test4", []int{1, 2, 3, 4}, 2, -1, []int{1, 2, 3, 4}, true},
+		{"test5", []int{1, 2, 3, 4}, 2, 5, []int{1, 2, 3, 4}, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slicex.Insert(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("Insert() expected %v, got %v", tc.expected, got)
+			got, err := slicex.Insert(tc.slice, tc.element, tc.index)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if !reflect.DeepEqual(got, tc.expected) {
+					t.Errorf("Insert() expected %v, got %v", tc.expected, got)
+				}
 			}
 		})
 	}
 }
 
-func Test_InsertAt(t *testing.T) {
+func Test_InsertAtV1(t *testing.T) {
 	var tests = []struct {
 		name     string
 		slice    []int
 		element  int
 		index    int
 		expected []int
+		wantErr  bool
 	}{
-		{"test1", []int{}, 1, 0, []int{1}},
-		{"test2", []int{1, 2, 3, 4}, 2, 1, []int{1, 2, 2, 3, 4}},
-		{"test3", []int{1, 2, 3, 4, 5, 6}, 7, 6, []int{1, 2, 3, 4, 5, 6, 7}},
+		{"test1", []int{}, 1, 0, []int{1}, false},
+		{"test2", []int{1, 2, 3, 4}, 2, 1, []int{1, 2, 2, 3, 4}, false},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 7, 6, []int{1, 2, 3, 4, 5, 6, 7}, false},
+		{"test4", []int{1, 2, 3, 4}, 2, -1, []int{1, 2, 3, 4}, true},
+		{"test5", []int{1, 2, 3, 4}, 2, 5, []int{1, 2, 3, 4}, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slicex.InsertAtV2(tc.slice, tc.element, tc.index); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("Add() expected %v, got %v", tc.expected, got)
+			got, err := slicex.InsertAtV1(tc.slice, tc.element, tc.index)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if !reflect.DeepEqual(got, tc.expected) {
+					t.Errorf("InsertAtV1() expected %v, got %v", tc.expected, got)
+				}
+			}
+		})
+	}
+}
+
+func Test_InsertAtV2(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    []int
+		element  int
+		index    int
+		expected []int
+		wantErr  bool
+	}{
+		{"test1", []int{}, 1, 0, []int{1}, false},
+		{"test2", []int{1, 2, 3, 4}, 2, 1, []int{1, 2, 2, 3, 4}, false},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 7, 6, []int{1, 2, 3, 4, 5, 6, 7}, false},
+		{"test4", []int{1, 2, 3, 4}, 2, -1, []int{1, 2, 3, 4}, true},
+		{"test5", []int{1, 2, 3, 4}, 2, 5, []int{1, 2, 3, 4}, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := slicex.InsertAtV2(tc.slice, tc.element, tc.index)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if !reflect.DeepEqual(got, tc.expected) {
+					t.Errorf("InsertAtV2() expected %v, got %v", tc.expected, got)
+				}
 			}
 		})
 	}
@@ -112,15 +178,30 @@ func Test_InsertMany(t *testing.T) {
 		elements []int
 		index    int
 		expected []int
+		wantErr  bool
 	}{
-		{"test1", []int{}, []int{1}, 0, []int{1}},
-		{"test2", []int{1, 2, 3, 4}, []int{2, 3}, 1, []int{1, 2, 3, 2, 3, 4}},
-		{"test3", []int{1, 2, 3, 4, 5, 6}, []int{7}, 6, []int{1, 2, 3, 4, 5, 6, 7}},
+		{"test1", []int{}, []int{1}, 0, []int{1}, false},
+		{"test2", []int{1, 2, 3, 4}, []int{2, 3}, 1, []int{1, 2, 3, 2, 3, 4}, false},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, []int{7}, 6, []int{1, 2, 3, 4, 5, 6, 7}, false},
+		{"test4", []int{1, 2, 3, 4}, []int{2, 3}, -1, []int{1, 2, 3, 4}, true},
+		{"test5", []int{1, 2, 3, 4}, []int{2, 3}, 5, []int{1, 2, 3, 4}, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slicex.InsertMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("InsertMany() expected %v, got %v", tc.expected, got)
+			got, err := slicex.InsertMany(tc.slice, tc.elements, tc.index)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if !reflect.DeepEqual(got, tc.expected) {
+					t.Errorf("InsertMany() expected %v, got %v", tc.expected, got)
+				}
 			}
 		})
 	}
@@ -133,15 +214,29 @@ func Test_AddMany(t *testing.T) {
 		elements []int
 		index    int
 		expected []int
+		wantErr  bool
 	}{
-		{"test1", []int{}, []int{1}, 0, []int{1}},
-		{"test2", []int{1, 2, 3, 4}, []int{2, 3}, 1, []int{1, 2, 3, 2, 3, 4}},
-		{"test3", []int{1, 2, 3, 4, 5, 6}, []int{7}, 6, []int{1, 2, 3, 4, 5, 6, 7}},
+		{"test1", []int{}, []int{1}, 0, []int{1}, false},
+		{"test2", []int{1, 2, 3, 4}, []int{2, 3}, 1, []int{1, 2, 3, 2, 3, 4}, false},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, []int{7}, 6, []int{1, 2, 3, 4, 5, 6, 7}, false},
+		{"test4", []int{1, 2, 3, 4}, []int{2, 3}, -1, []int{1, 2, 3, 4}, true},
+		{"test5", []int{1, 2, 3, 4}, []int{2, 3}, 5, []int{1, 2, 3, 4}, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slicex.AddMany(tc.slice, tc.elements, tc.index); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("AddMany() expected %v, got %v", tc.expected, got)
+			got, err := slicex.AddMany(tc.slice, tc.elements, tc.index)
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if !reflect.DeepEqual(got, tc.expected) {
+					t.Errorf("AddMany() expected %v, got %v", tc.expected, got)
+				}
 			}
 		})
 	}
@@ -175,17 +270,172 @@ func Test_Drop(t *testing.T) {
 		slice    []int
 		n        int
 		expected []int
+		wantErr  bool
 	}{
-		{"test1", []int{1, 2, 3, 4}, 0, []int{1, 2, 3, 4}},
-		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{1, 2, 3}},
-		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, []int{}},
+		{"test1", []int{1, 2, 3, 4}, 0, []int{1, 2, 3, 4}, false},
+		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{1, 2, 3}, false},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, []int{}, false},
+		{"test4", []int{1, 2, 3, 4}, 5, nil, true},
+		{"test5", []int{1, 2, 3, 4}, -1, nil, true},
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slicex.Drop(tc.slice, tc.n); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("Drop() expected %v, got %v", tc.expected, got)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := slicex.Drop(tt.slice, tt.n)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if !reflect.DeepEqual(result, tt.expected) {
+					t.Errorf("Drop() expected %v, but got %v", tt.expected, result)
+				}
 			}
 		})
+	}
+}
+
+func TestDropLeft(t *testing.T) {
+	tests := []struct {
+		name     string
+		s        []int
+		n        int
+		expected []int
+		wantErr  bool
+	}{
+		{
+			name:     "Normal case, n=2",
+			s:        []int{1, 2, 3, 4},
+			n:        2,
+			expected: []int{3, 4},
+			wantErr:  false,
+		},
+		{
+			name:     "n=0, no removal",
+			s:        []int{1, 2, 3, 4},
+			n:        0,
+			expected: []int{1, 2, 3, 4},
+			wantErr:  false,
+		},
+		{
+			name:     "n equals length of slice",
+			s:        []int{1, 2, 3, 4},
+			n:        4,
+			expected: []int{},
+			wantErr:  false,
+		},
+		{
+			name:     "n negative",
+			s:        []int{1, 2, 3, 4},
+			n:        -1,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "n greater than length",
+			s:        []int{1, 2, 3, 4},
+			n:        5,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "Empty slice, n=0",
+			s:        []int{},
+			n:        0,
+			expected: []int{},
+			wantErr:  false,
+		},
+		{
+			name:     "Empty slice, n=1",
+			s:        []int{},
+			n:        1,
+			expected: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := slicex.DropLeft(tt.s, tt.n)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if !reflect.DeepEqual(result, tt.expected) {
+					t.Errorf("DropLeft() expected %v, but got %v", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestRemove(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []int
+		element  int
+		expected []int
+	}{
+		{
+			name:     "Empty slice",
+			input:    []int{},
+			element:  5,
+			expected: []int{},
+		},
+		{
+			name:     "Int slice with one match",
+			input:    []int{1, 2, 3, 4, 5},
+			element:  3,
+			expected: []int{1, 2, 4, 5},
+		},
+		{
+			name:     "All elements match",
+			input:    []int{1, 1, 1},
+			element:  1,
+			expected: []int{},
+		},
+		{
+			name:     "Multiple matches in middle",
+			input:    []int{2, 2, 3, 2},
+			element:  2,
+			expected: []int{3},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.Remove(tt.input, tt.element)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Remove() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestRemove_String(t *testing.T) {
+	input := []string{"a", "b", "c", "b"}
+	result := slicex.Remove(input, "b")
+	expected := []string{"a", "c"}
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestRemove_Struct(t *testing.T) {
+	type S struct{ X int }
+	input := []S{{1}, {2}, {1}}
+	result := slicex.Remove(input, S{1})
+	expected := []S{{2}}
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
 
@@ -195,15 +445,19 @@ func Test_Delete(t *testing.T) {
 		slice    []int
 		index    int
 		expected []int
+		ok       bool
 	}{
-		{"test1", []int{1, 2, 3, 4}, 1, []int{1, 3, 4}},
-		{"test2", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}},
-		{"test4", []int{1, 2, 3, 4, 5, 6}, 2, []int{1, 2, 4, 5, 6}},
+		{"test1", []int{1, 2, 3, 4}, 1, []int{1, 3, 4}, true},
+		{"test2", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}, true},
+		{"test4", []int{1, 2, 3, 4, 5, 6}, 2, []int{1, 2, 4, 5, 6}, true},
+		{"test5", []int{}, 0, []int{}, false},
+		{"test6", []int{1, 2, 3, 4}, 4, []int{1, 2, 3, 4}, false},
+		{"test2", []int{1, 2, 3, 4}, 0, []int{2, 3, 4}, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slicex.Delete(tc.slice, tc.index); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("Delete() expected %v, got %v", tc.expected, got)
+			if got, ok := slicex.Delete(tc.slice, tc.index); !reflect.DeepEqual(got, tc.expected) || ok != tc.ok {
+				t.Errorf("Delete() expected %v, %v, got %v, %v", tc.expected, tc.ok, got, ok)
 			}
 		})
 	}
@@ -215,15 +469,19 @@ func Test_DeleteAt(t *testing.T) {
 		slice    []int
 		index    int
 		expected []int
+		ok       bool
 	}{
-		{"test1", []int{1, 2, 3, 4}, 1, []int{1, 3, 4}},
-		{"test2", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}},
-		{"test4", []int{1, 2, 3, 4, 5, 6}, 2, []int{1, 2, 4, 5, 6}},
+		{"test1", []int{1, 2, 3, 4}, 1, []int{1, 3, 4}, true},
+		{"test2", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}, true},
+		{"test4", []int{1, 2, 3, 4, 5, 6}, 2, []int{1, 2, 4, 5, 6}, true},
+		{"test5", []int{}, 0, []int{}, false},
+		{"test6", []int{1, 2, 3, 4}, 4, []int{1, 2, 3, 4}, false},
+		{"test2", []int{1, 2, 3, 4}, 0, []int{2, 3, 4}, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slicex.DeleteAt(tc.slice, tc.index); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("DeleteAt() expected %v, got %v", tc.expected, got)
+			if got, ok := slicex.DeleteAt(tc.slice, tc.index); !reflect.DeepEqual(got, tc.expected) || ok != tc.ok {
+				t.Errorf("DeleteAt() expected %v, %v, got %v, %v", tc.expected, tc.ok, got, ok)
 			}
 		})
 	}
@@ -236,15 +494,22 @@ func Test_DeleteMany(t *testing.T) {
 		start    int
 		end      int
 		expected []int
+		ok       bool
 	}{
-		{"test1", []int{1, 2, 3, 4}, 1, 2, []int{1, 3, 4}},
-		{"test2", []int{1, 2, 3, 4, 5}, 2, 4, []int{1, 2, 5}},
-		{"test3", []int{1, 2, 3, 4, 5, 6}, 4, 5, []int{1, 2, 3, 4, 6}},
+		{"test1", []int{1, 2, 3, 4}, 1, 2, []int{1, 3, 4}, true},
+		{"test2", []int{1, 2, 3, 4, 5}, 2, 4, []int{1, 2, 5}, true},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 4, 5, []int{1, 2, 3, 4, 6}, true},
+		{"test4", []int{}, 1, 2, []int{}, true},
+		{"test5", []int{1, 2, 3, 4}, -1, 2, []int{3, 4}, true},
+		{"test6", []int{1, 2, 3, 4}, 1, 4, []int{1}, true},
+		{"test6", []int{1, 2, 3, 4}, 1, 5, []int{1}, true},
+		{"test7", []int{1, 2, 3, 4}, -1, 5, []int{}, true},
+		{"test8", []int{1, 2, 3, 4}, 3, 2, []int{1, 2, 3, 4}, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, _ := slicex.DeleteMany(tc.slice, tc.start, tc.end); !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("DeleteMany() expected %v, got %v", tc.expected, got)
+			if got, ok := slicex.DeleteMany(tc.slice, tc.start, tc.end); !reflect.DeepEqual(got, tc.expected) || ok != tc.ok {
+				t.Errorf("DeleteMany() expected %v, %v, got %v, %v", tc.expected, tc.ok, got, ok)
 			}
 		})
 	}
@@ -1013,6 +1278,16 @@ func Test_RightPadding(t *testing.T) {
 	}
 }
 
+func Test_RightPaddingZero(t *testing.T) {
+	input := []int{1, 2, 3, 4, 5}
+	expected := []int{1, 2, 3, 4, 5}
+
+	result := slicex.RightPadding(input, 0, 0)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RightPadding() expected %v, got %v", expected, result)
+	}
+}
+
 func Test_LeftPadding(t *testing.T) {
 	input := []int{1, 2, 3, 4, 5}
 	expected := []int{0, 0, 0, 1, 2, 3, 4, 5}
@@ -1022,6 +1297,17 @@ func Test_LeftPadding(t *testing.T) {
 		t.Errorf("LeftPadding() expected %v, got %v", expected, result)
 	}
 }
+
+func Test_LeftPaddingZero(t *testing.T) {
+	input := []int{1, 2, 3, 4, 5}
+	expected := []int{1, 2, 3, 4, 5}
+
+	result := slicex.LeftPadding(input, 0, 0)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("LeftPadding() expected %v, got %v", expected, result)
+	}
+}
+
 func Test_Contains(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1152,5 +1438,501 @@ func TestFlattenDeep(t *testing.T) {
 	result := slicex.FlattenDeep(input)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("FlattenDeep() expected %v, got %v", expected, result)
+	}
+}
+
+// TestRemoveHead_Int 测试整型切片
+func TestRemoveHead_Int(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []int
+		expected []int
+	}{
+		{
+			name:     "Normal case",
+			input:    []int{1, 2, 3},
+			expected: []int{2, 3},
+		},
+		{
+			name:     "Empty slice",
+			input:    []int{},
+			expected: []int{},
+		},
+		{
+			name:     "Nil slice",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name:     "Single element",
+			input:    []int{42},
+			expected: []int{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.RemoveHead(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("RemoveHead(%v) = %v; want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestRemoveHead_String 测试字符串切片
+func TestRemoveHead_String(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name:     "Multiple elements",
+			input:    []string{"a", "b", "c"},
+			expected: []string{"b", "c"},
+		},
+		{
+			name:     "Empty slice",
+			input:    []string{},
+			expected: []string{},
+		},
+		{
+			name:     "Nil slice",
+			input:    nil,
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.RemoveHead(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("RemoveHead(%v) = %v; want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestRemoveHead_Struct 测试结构体切片
+func TestRemoveHead_Struct(t *testing.T) {
+	type dummy struct {
+		X int
+	}
+	tests := []struct {
+		name     string
+		input    []dummy
+		expected []dummy
+	}{
+		{
+			name:     "Multiple structs",
+			input:    []dummy{{X: 1}, {X: 2}},
+			expected: []dummy{{X: 2}},
+		},
+		{
+			name:     "Empty slice",
+			input:    []dummy{},
+			expected: []dummy{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.RemoveHead(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("RemoveHead(%+v) = %+v; want %+v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestRemoveTail_Int 测试整数切片的 RemoveTail 函数。
+func TestRemoveTail_Int(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []int
+		expected []int
+	}{
+		{
+			name:     "Empty slice",
+			input:    []int{},
+			expected: []int{},
+		},
+		{
+			name:     "Single element",
+			input:    []int{1},
+			expected: []int{},
+		},
+		{
+			name:     "Multiple elements",
+			input:    []int{1, 2, 3},
+			expected: []int{1, 2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.RemoveTail(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("RemoveTail(%v) = %v; expected %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestRemoveTail_String 测试字符串切片的 RemoveTail 函数。
+func TestRemoveTail_String(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name:     "Empty slice",
+			input:    []string{},
+			expected: []string{},
+		},
+		{
+			name:     "Single element",
+			input:    []string{"hello"},
+			expected: []string{},
+		},
+		{
+			name:     "Multiple elements",
+			input:    []string{"a", "b", "c"},
+			expected: []string{"a", "b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.RemoveTail(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("RemoveTail(%v) = %v; expected %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestRemoveTail_Bool 测试布尔值切片的 RemoveTail 函数。
+func TestRemoveTail_Bool(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []bool
+		expected []bool
+	}{
+		{
+			name:     "Empty slice",
+			input:    []bool{},
+			expected: []bool{},
+		},
+		{
+			name:     "Single element",
+			input:    []bool{true},
+			expected: []bool{},
+		},
+		{
+			name:     "Multiple elements",
+			input:    []bool{false, false, true},
+			expected: []bool{false, false},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.RemoveTail(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("RemoveTail(%v) = %v; expected %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestRemoveTail_Struct 测试结构体切片的 RemoveTail 函数。
+func TestRemoveTail_Struct(t *testing.T) {
+	type User struct {
+		ID   int
+		Name string
+	}
+
+	tests := []struct {
+		name     string
+		input    []User
+		expected []User
+	}{
+		{
+			name:     "Empty slice",
+			input:    []User{},
+			expected: []User{},
+		},
+		{
+			name:     "Single element",
+			input:    []User{{ID: 1, Name: "Alice"}},
+			expected: []User{},
+		},
+		{
+			name:     "Multiple elements",
+			input:    []User{{ID: 1, Name: "Alice"}, {ID: 2, Name: "Bob"}},
+			expected: []User{{ID: 1, Name: "Alice"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slicex.RemoveTail(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("RemoveTail(%v) = %v; expected %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestEqual(t *testing.T) {
+	tests := []struct {
+		name string
+		s1   any
+		s2   any
+		want bool
+	}{
+		{
+			name: "TC01 - Same int slices",
+			s1:   []int{1, 2, 3},
+			s2:   []int{1, 2, 3},
+			want: true,
+		},
+		{
+			name: "TC02 - Different last element in int slices",
+			s1:   []int{1, 2, 3},
+			s2:   []int{1, 2, 4},
+			want: false,
+		},
+		{
+			name: "TC03 - Different second string element",
+			s1:   []string{"a", "b"},
+			s2:   []string{"a", "c"},
+			want: false,
+		},
+		{
+			name: "TC04 - Both empty slices",
+			s1:   []int{},
+			s2:   []int{},
+			want: true,
+		},
+		{
+			name: "TC05 - Length mismatch",
+			s1:   []int{1, 2},
+			s2:   []int{},
+			want: false,
+		},
+		{
+			name: "TC06 - Same bool slices",
+			s1:   []bool{true, false},
+			s2:   []bool{true, false},
+			want: true,
+		},
+		{
+			name: "TC07 - Different bool values",
+			s1:   []bool{true},
+			s2:   []bool{false},
+			want: false,
+		},
+		{
+			name: "TC08 - Same float64 slices",
+			s1:   []float64{1.1, 2.2},
+			s2:   []float64{1.1, 2.2},
+			want: true,
+		},
+		{
+			name: "TC09 - Different float64 values",
+			s1:   []float64{1.1, 2.2},
+			s2:   []float64{1.1, 2.3},
+			want: false,
+		},
+		{
+			name: "TC10 - Same interface{} slices",
+			s1:   []interface{}{1, "a"},
+			s2:   []interface{}{1, "a"},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			switch s1 := tt.s1.(type) {
+			case []int:
+				s2 := tt.s2.([]int)
+				got := slicex.Equal(s1, s2)
+				if got != tt.want {
+					t.Errorf("Equal() = %v, want %v", got, tt.want)
+				}
+			case []string:
+				s2 := tt.s2.([]string)
+				got := slicex.Equal(s1, s2)
+				if got != tt.want {
+					t.Errorf("Equal() = %v, want %v", got, tt.want)
+				}
+			case []bool:
+				s2 := tt.s2.([]bool)
+				got := slicex.Equal(s1, s2)
+				if got != tt.want {
+					t.Errorf("Equal() = %v, want %v", got, tt.want)
+				}
+			case []float64:
+				s2 := tt.s2.([]float64)
+				got := slicex.Equal(s1, s2)
+				if got != tt.want {
+					t.Errorf("Equal() = %v, want %v", got, tt.want)
+				}
+			case []interface{}:
+				s2 := tt.s2.([]interface{})
+				got := slicex.Equal(s1, s2)
+				if got != tt.want {
+					t.Errorf("Equal() = %v, want %v", got, tt.want)
+				}
+			default:
+				t.Fatalf("Unsupported slice type in test: %T", tt.s1)
+			}
+		})
+	}
+}
+
+// TestIsAscending_Types_Int 测试 int 类型
+func TestIsAscending_Types_Int(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []int
+		expected bool
+	}{
+		{"Empty slice", []int{}, true},
+		{"Single element", []int{1}, true},
+		{"Strictly increasing", []int{1, 2, 3}, true},
+		{"Decreasing in middle", []int{1, 3, 2}, false},
+		{"All equal", []int{2, 2, 2}, true},
+		{"Fully decreasing", []int{3, 2, 1}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := slicex.IsAscending(tt.input); got != tt.expected {
+				t.Errorf("IsAscending(%v) = %v; want %v", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+// TestIsAscending_Types_String 测试 string 类型
+func TestIsAscending_Types_String(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected bool
+	}{
+		{"Empty slice", []string{}, true},
+		{"Single element", []string{"a"}, true},
+		{"Lexicographical order", []string{"a", "b", "c"}, true},
+		{"Out of order", []string{"a", "c", "b"}, false},
+		{"All same", []string{"x", "x", "x"}, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := slicex.IsAscending(tt.input); got != tt.expected {
+				t.Errorf("IsAscending(%v) = %v; want %v", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+// TestIsAscending_Types_Float 测试 float64 类型
+func TestIsAscending_Types_Float(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []float64
+		expected bool
+	}{
+		{"Empty slice", []float64{}, true},
+		{"Single element", []float64{1.1}, true},
+		{"Strictly increasing", []float64{1.1, 1.2, 1.3}, true},
+		{"Decreasing in middle", []float64{1.1, 1.3, 1.2}, false},
+		{"All equal", []float64{2.2, 2.2, 2.2}, true},
+		{"Fully decreasing", []float64{3.3, 2.2, 1.1}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := slicex.IsAscending(tt.input); got != tt.expected {
+				t.Errorf("IsAscending(%v) = %v; want %v", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+// TestIsDescending 是 IsDescending 函数的单元测试
+func TestIsDescending(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected bool
+	}{
+		{
+			name:     "Empty slice",
+			input:    []int{},
+			expected: true,
+		},
+		{
+			name:     "Single element (int)",
+			input:    []int{5},
+			expected: true,
+		},
+		{
+			name:     "Fully descending (int)",
+			input:    []int{5, 4, 3, 2, 1},
+			expected: true,
+		},
+		{
+			name:     "Descending with equal elements (int)",
+			input:    []int{5, 5, 4, 4, 3},
+			expected: true,
+		},
+		{
+			name:     "Not descending (int)",
+			input:    []int{5, 6, 4},
+			expected: false,
+		},
+		{
+			name:     "Descending (string)",
+			input:    []string{"z", "y", "x"},
+			expected: true,
+		},
+		{
+			name:     "Ascending (string)",
+			input:    []string{"a", "b", "c"},
+			expected: false,
+		},
+		{
+			name:     "Descending (float64)",
+			input:    []float64{5.5, 4.4, 3.3},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var result bool
+			switch v := tt.input.(type) {
+			case []int:
+				result = slicex.IsDescending(v)
+			case []string:
+				result = slicex.IsDescending(v)
+			case []float64:
+				result = slicex.IsDescending(v)
+			default:
+				t.Fatalf("Unsupported type in test: %T", v)
+			}
+
+			if result != tt.expected {
+				t.Errorf("Expected %v, got %v for input %v", tt.expected, result, tt.input)
+			}
+		})
 	}
 }

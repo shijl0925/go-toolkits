@@ -62,30 +62,30 @@ func Min[T constraints.Ordered](s []T) T {
 	return result
 }
 
-// removeHead removes the first element from a slice and returns the remaining elements.
+// RemoveHead removes the first element from a slice and returns the remaining elements.
 // 返回一个新的切片，其中去除了原切片的第一个元素, 原始 slice 不会被改变。
 // 如果原切片为空，则返回原切片本身。
 //
 // Example:
 //
 //	s := []int{1, 2, 3, 4, 5}
-//	r := removeHead(s) //  r == []int{2, 3, 4, 5}
-func removeHead[T any](s []T) []T {
+//	r := RemoveHead(s) //  r == []int{2, 3, 4, 5}
+func RemoveHead[T any](s []T) []T {
 	if len(s) == 0 {
 		return s
 	}
 	return s[1:]
 }
 
-// removeTail removes the last element from a slice and returns the remaining elements.
+// RemoveTail removes the last element from a slice and returns the remaining elements.
 // 返回一个新的切片, 其中去除了原切片的最后一个元素, 原始 slice 不会被改变。
 // 如果原切片为空，则返回原切片本身。
 //
 // Example:
 //
 //	s := []int{1, 2, 3, 4, 5}
-//	r := removeTail(s) //  r == []int{1, 2, 3, 4}
-func removeTail[T any](s []T) []T {
+//	r := RemoveTail(s) //  r == []int{1, 2, 3, 4}
+func RemoveTail[T any](s []T) []T {
 	if len(s) == 0 {
 		return s
 	}
@@ -107,7 +107,7 @@ func Pop[T any](s []T) (T, bool) {
 		return zero, false
 	}
 	v := s[len(s)-1]
-	s = removeTail(s)
+	s = RemoveTail(s)
 	return v, true
 }
 
@@ -203,10 +203,13 @@ func DeleteAt[T any](s []T, index int) ([]T, bool) { // 性能比Delete好
 //	r, _ := DeleteMany(s, 2, 4) // r == []int{1, 2, 5, 6}
 func DeleteMany[T any](s []T, start, end int) ([]T, bool) {
 	if len(s) == 0 {
-		return s, false
+		return s, true
 	}
-	if start < 0 || end > len(s) {
-		return s, false
+	if start < 0 {
+		start = 0
+	}
+	if end > len(s) {
+		end = len(s)
 	}
 	if end < start {
 		return s, false
