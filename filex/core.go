@@ -24,7 +24,7 @@ func IsExist(path string) bool {
 
 // CreateFile create a file in path.
 func CreateFile(path string) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0600)
+	f, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0600)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func CreateDir(absPath string) error {
 	if IsExist(absPath) {
 		return nil
 	}
-	err := os.MkdirAll(absPath, os.ModePerm)
+	err := os.MkdirAll(absPath, 0750)
 	if err != nil {
 		// 忽略已存在
 		if os.IsExist(err) {
@@ -110,7 +110,7 @@ func CopyDir(srcPath string, dstPath string) error {
 
 // CopyFile copy src file to dist file.
 func CopyFile(srcPath string, dstPath string) error {
-	srcFile, err := os.Open(srcPath)
+	srcFile, err := os.Open(filepath.Clean(srcPath))
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func CopyFile(srcPath string, dstPath string) error {
 	//	return fmt.Errorf("failed to create destination directory: %w", err)
 	//}
 
-	distFile, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	distFile, err := os.OpenFile(filepath.Clean(dstPath), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func RemoveDir(path string) error {
 }
 
 func ReadLines(path string) ([]string, error) {
-	file, err := os.Open(path)
+	file, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,7 @@ func ReadLines(path string) ([]string, error) {
 
 // ReadFileToString return string of file content.
 func ReadFileToString(path string) (string, error) {
-	bytes, err := os.ReadFile(path)
+	bytes, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return "", fmt.Errorf("reading file %s: %w", path, err)
 	}

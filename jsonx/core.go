@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -110,7 +111,7 @@ func DecodeFromReader(r io.Reader, ptr any) error {
 // WriteFile write data to JSON file
 func WriteFile(filePath string, data any) error {
 	// 使用 O_CREATE|O_WRONLY|O_TRUNC 确保文件被清空后再写入
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)
+	file, err := os.OpenFile(filepath.Clean(filePath), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -121,7 +122,7 @@ func WriteFile(filePath string, data any) error {
 
 // ReadFile Read JSON file data
 func ReadFile(filePath string, v any) error {
-	file, err := os.Open(filePath)
+	file, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return err
 	}
