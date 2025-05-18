@@ -2,7 +2,6 @@ package mapx
 
 import (
 	"fmt"
-	"golang.org/x/exp/constraints"
 	"sort"
 )
 
@@ -58,7 +57,7 @@ func GetOrDefault[K comparable, V any](m map[K]V, key K, defaultValue V) V {
 	return defaultValue
 }
 
-type KV[K any, V any] struct {
+type KV[K comparable, V any] struct {
 	Key   K
 	Value V
 }
@@ -75,14 +74,14 @@ type KV[K any, V any] struct {
 //
 // result := SortByKey(m, func(a, b string) bool { return a < b })
 // fmt.Println(result) // []mapx.KV[string,int]{Key: "a", Value: 3} mapx.KV[string,int]{Key: "b", Value: 2} mapx.KV[string,int]{Key: "c", Value: 1}]
-func SortByKey[K constraints.Ordered, V any](m map[K]V, less func(a, b K) bool) []KV[K, V] {
-	result := make([]KV[K, V], 0, len(m))
+func SortByKey[K comparable, V any](m map[K]V, less func(a, b K) bool) []KV[K, V] {
+	result := make([]KV[K, V], len(m))
 
 	keys := Keys[K, V](m)
 	sort.Slice(keys, func(i, j int) bool { return less(keys[i], keys[j]) })
 
-	for _, k := range keys {
-		result = append(result, KV[K, V]{Key: k, Value: m[k]})
+	for i, k := range keys {
+		result[i] = KV[K, V]{Key: k, Value: m[k]}
 	}
 
 	return result
@@ -100,15 +99,13 @@ func SortByKey[K constraints.Ordered, V any](m map[K]V, less func(a, b K) bool) 
 //
 // result := SortByValue(m, func(a, b int) bool {return a < b})
 // fmt.Println(result) //  []mapx.KV[string,int]{Key: "c", Value: 1} mapx.KV[string,int]{Key: "b", Value: 2} mapx.KV[string,int]{Key: "a", Value: 3}]
-func SortByValue[K comparable, V constraints.Ordered](m map[K]V, less func(a, b V) bool) []KV[K, V] {
+func SortByValue[K comparable, V any](m map[K]V, less func(a, b V) bool) []KV[K, V] {
 	result := make([]KV[K, V], 0, len(m))
-
-	keys := Keys[K, V](m)
-	sort.Slice(keys, func(i, j int) bool { return less(m[keys[i]], m[keys[j]]) })
-
-	for _, k := range keys {
-		result = append(result, KV[K, V]{Key: k, Value: m[k]})
+	for k, v := range m {
+		result = append(result, KV[K, V]{Key: k, Value: v})
 	}
+
+	sort.Slice(result, func(i, j int) bool { return less(result[i].Value, result[j].Value) })
 
 	return result
 }

@@ -328,9 +328,11 @@ func TestSubstring(t *testing.T) {
 		name     string
 		s        string
 		offset   int
-		length   uint
+		length   int
 		expected string
 	}{
+		{"TC00: Normal case", "abcdef", 2, -1, ""},
+		{"TC00: Normal case", "abcdef", 2, 0, ""},
 		{"TC01: Normal case", "abcdef", 2, 3, "cde"},
 		{"TC02: Negative offset", "abcdef", -2, 2, "ef"},
 		{"TC03: Offset too small", "abcdef", -10, 2, ""},

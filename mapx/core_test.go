@@ -260,52 +260,188 @@ func TestGetOrDefault_GenericType(t *testing.T) {
 	}
 }
 
-func Test_SortMap(t *testing.T) {
-	balVal := map[string]int{
-		"alpha":   34,
-		"beta":    12,
-		"gamma":   56,
-		"delta":   78,
-		"epsilon": 90,
-		"zeta":    13,
-		"eta":     35,
-		"theta":   57,
-		"iota":    79,
+func TestSortByKey_EmptyMap(t *testing.T) {
+	m := map[int]string{}
+	result := mapx.SortByKey(m, func(a, b int) bool { return a < b })
+	if len(result) != 0 {
+		t.Errorf("Expected an empty slice, got %v", result)
 	}
-	t.Run("test1", func(t *testing.T) {
-		want1 := []mapx.KV[string, int]{
-			{Key: "alpha", Value: 34},
-			{Key: "beta", Value: 12},
-			{Key: "delta", Value: 78},
-			{Key: "epsilon", Value: 90},
-			{Key: "eta", Value: 35},
-			{Key: "gamma", Value: 56},
-			{Key: "iota", Value: 79},
-			{Key: "theta", Value: 57},
-			{Key: "zeta", Value: 13},
-		}
+}
 
-		if got := mapx.SortByKey(balVal, func(a, b string) bool { return a < b }); !reflect.DeepEqual(got, want1) {
-			t.Errorf("SortMap() = %v, want %v", got, want1)
-		}
-	})
+func TestSortByKey_IntKeysAscending(t *testing.T) {
+	m := map[int]string{
+		3: "three",
+		1: "one",
+		2: "two",
+	}
+	expected := []mapx.KV[int, string]{
+		{Key: 1, Value: "one"},
+		{Key: 2, Value: "two"},
+		{Key: 3, Value: "three"},
+	}
+	result := mapx.SortByKey(m, func(a, b int) bool { return a < b })
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("SortByKey() expected %v, got %v", expected, result)
+	}
+}
 
-	t.Run("SortMap with custom comparator", func(t *testing.T) {
-		want1 := []mapx.KV[string, int]{
-			{Key: "beta", Value: 12},
-			{Key: "zeta", Value: 13},
-			{Key: "alpha", Value: 34},
-			{Key: "eta", Value: 35},
-			{Key: "gamma", Value: 56},
-			{Key: "theta", Value: 57},
-			{Key: "delta", Value: 78},
-			{Key: "iota", Value: 79},
-			{Key: "epsilon", Value: 90},
+func TestSortByKey_StringKeysDescending(t *testing.T) {
+	m := map[string]int{
+		"apple":  1,
+		"banana": 2,
+		"cherry": 3,
+	}
+	expected := []mapx.KV[string, int]{
+		{"cherry", 3},
+		{"banana", 2},
+		{"apple", 1},
+	}
+	result := mapx.SortByKey(m, func(a, b string) bool { return a > b })
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("SortByKey() expected %v, got %v", expected, result)
+	}
+}
+
+func TestSortByKey_CustomType(t *testing.T) {
+	type CustomKey struct {
+		ID   int
+		Name string
+	}
+	m := map[CustomKey]string{
+		{ID: 2, Name: "B"}: "ValueB",
+		{ID: 1, Name: "A"}: "ValueA",
+		{ID: 3, Name: "C"}: "ValueC",
+	}
+	expected := []mapx.KV[CustomKey, string]{
+		{Key: CustomKey{ID: 1, Name: "A"}, Value: "ValueA"},
+		{Key: CustomKey{ID: 2, Name: "B"}, Value: "ValueB"},
+		{Key: CustomKey{ID: 3, Name: "C"}, Value: "ValueC"},
+	}
+	result := mapx.SortByKey(m, func(a, b CustomKey) bool { return a.ID < b.ID })
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("SortByKey() expected %v, got %v", expected, result)
+	}
+}
+
+// 测试用例 1：空 map
+func Test_SortByValue_EmptyMap(t *testing.T) {
+	input := map[string]int{}
+	result := mapx.SortByValue(input, func(a, b int) bool { return a < b })
+
+	if len(result) != 0 {
+		t.Errorf("Expected empty slice, got %v", result)
+	}
+}
+
+// 测试用例 2：单个元素
+func Test_SortByValue_SingleElement(t *testing.T) {
+	input := map[string]int{"a": 1}
+	expected := []mapx.KV[string, int]{{Key: "a", Value: 1}}
+
+	result := mapx.SortByValue(input, func(a, b int) bool { return a < b })
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("SortByValue() expected %v, got %v", expected, result)
+	}
+}
+
+// 测试用例 3：多个整数，升序排序
+func Test_SortByValue_MultipleInts_Asc(t *testing.T) {
+	input := map[string]int{
+		"a": 3,
+		"b": 1,
+		"c": 2,
+	}
+	expected := []mapx.KV[string, int]{
+		{"b", 1},
+		{"c", 2},
+		{"a", 3},
+	}
+
+	result := mapx.SortByValue(input, func(a, b int) bool { return a < b })
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("SortByValue() expected %v, got %v", expected, result)
+	}
+}
+
+// 测试用例 4：多个整数，降序排序
+func Test_SortByValue_MultipleInts_Desc(t *testing.T) {
+	input := map[string]int{
+		"a": 3,
+		"b": 1,
+		"c": 2,
+	}
+	expected := []mapx.KV[string, int]{
+		{"a", 3},
+		{"c", 2},
+		{"b", 1},
+	}
+
+	result := mapx.SortByValue(input, func(a, b int) bool { return a > b })
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("SortByValue() expected %v, got %v", expected, result)
+	}
+}
+
+// 测试用例 5：字符串值，字典序排序
+func Test_SortByValue_Strings(t *testing.T) {
+	input := map[int]string{
+		1: "banana",
+		2: "apple",
+		3: "cherry",
+	}
+	expected := []mapx.KV[int, string]{
+		{2, "apple"},
+		{1, "banana"},
+		{3, "cherry"},
+	}
+
+	expectedKeys := []int{2, 1, 3} // apple < banana < cherry
+
+	result := mapx.SortByValue(input, func(a, b string) bool { return a < b })
+
+	for i, kv := range result {
+		if kv.Key != expectedKeys[i] {
+			t.Errorf("Expected key %d at index %d, got %d", expectedKeys[i], i, kv.Key)
 		}
-		if got := mapx.SortByValue(balVal, func(a, b int) bool { return a < b }); !reflect.DeepEqual(got, want1) {
-			t.Errorf("SortMap() = %v, want %v", got, want1)
+	}
+
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("SortByValue() expected %v, got %v", expected, result)
+	}
+}
+
+// 测试用例 6：自定义结构体
+type Person struct {
+	Name string
+	Age  int
+}
+
+func Test_SortByValue_CustomStruct(t *testing.T) {
+	input := map[string]Person{
+		"a": {"Alice", 30},
+		"b": {"Bob", 25},
+		"c": {"Charlie", 35},
+	}
+	expected := []mapx.KV[string, Person]{
+		{"b", Person{"Bob", 25}},
+		{"a", Person{"Alice", 30}},
+		{"c", Person{"Charlie", 35}},
+	}
+
+	expectedAges := []int{25, 30, 35}
+
+	result := mapx.SortByValue(input, func(a, b Person) bool { return a.Age < b.Age })
+
+	for i, age := range expectedAges {
+		if result[i].Value.Age != age {
+			t.Errorf("Expected age %d at index %d, got %d", age, i, result[i].Value.Age)
 		}
-	})
+	}
+
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("SortByValue() expected %v, got %v", expected, result)
+	}
 }
 
 // TestInvertNilMap tests the case when input is nil.

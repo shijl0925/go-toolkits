@@ -27,7 +27,10 @@ func Reverse(s string) string {
 	return string(r)
 }
 
-func Substring(s string, offset int, length uint) string {
+func Substring(s string, offset int, length int) string {
+	if length <= 0 {
+		return ""
+	}
 	r := []rune(s)
 	size := len(r)
 	if offset < 0 {
@@ -36,7 +39,7 @@ func Substring(s string, offset int, length uint) string {
 	if offset < 0 || offset >= size {
 		return ""
 	}
-	end := offset + int(length)
+	end := offset + length
 	if end > size {
 		end = size
 	}
