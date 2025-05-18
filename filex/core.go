@@ -40,7 +40,7 @@ func CreateDir(absPath string) error {
 	if IsExist(absPath) {
 		return nil
 	}
-	err := os.MkdirAll(absPath, 0755)
+	err := os.MkdirAll(absPath, os.ModePerm)
 	if err != nil {
 		// 忽略已存在
 		if os.IsExist(err) {
@@ -108,7 +108,7 @@ func CopyDir(srcPath string, dstPath string) error {
 	return nil
 }
 
-// CopyFile copy src file to dest file.
+// CopyFile copy src file to dist file.
 func CopyFile(srcPath string, dstPath string) error {
 	srcFile, err := os.Open(srcPath)
 	if err != nil {
@@ -116,16 +116,25 @@ func CopyFile(srcPath string, dstPath string) error {
 	}
 	defer srcFile.Close()
 
-	distFile, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	// 确保目标目录存在
+	//dstDir := filepath.Dir(dstPath)
+	//if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
+	//	return fmt.Errorf("failed to create destination directory: %w", err)
+	//}
+
+	distFile, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
 	defer distFile.Close()
 
-	_, err = io.Copy(distFile, srcFile)
+	// 使用缓冲拷贝
+	buf := make([]byte, 64*1024) // 64KB buffer
+	_, err = io.CopyBuffer(distFile, srcFile, buf)
 	if err != nil {
-		return err
+		return fmt.Errorf("error copying file content: %w", err)
 	}
+
 	return nil
 }
 

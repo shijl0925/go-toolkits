@@ -57,6 +57,14 @@ func GetOrDefault[K comparable, V any](m map[K]V, key K, defaultValue V) V {
 	return defaultValue
 }
 
+// SetIfAbsent set the value of the given key with the default value when the key is not present.
+// 设置 map 的 key 的 value，如果 key 不存在，则添加 key 和 value。
+func SetIfAbsent[K comparable, V any](m map[K]V, key K, defaultValue V) {
+	if _, ok := m[key]; !ok {
+		m[key] = defaultValue
+	}
+}
+
 type KV[K comparable, V any] struct {
 	Key   K
 	Value V
@@ -112,12 +120,12 @@ func SortByValue[K comparable, V any](m map[K]V, less func(a, b V) bool) []KV[K,
 
 // InvertWithErr 接收一个 map[K]V 类型的输入，并返回一个反转后的 map[V]K, 并在遇到重复值时返回错误。
 func InvertWithErr[K, V comparable](m map[K]V) (map[V]K, error) {
-	invMap := make(map[V]K, len(m))
+	result := make(map[V]K, len(m))
 	for key, value := range m {
-		if _, ok := invMap[value]; ok {
-			return nil, fmt.Errorf("duplicate value found: %v", value)
+		if _, ok := result[value]; ok {
+			return nil, fmt.Errorf("duplicate value found: %v (from key: %v)", value, key)
 		}
-		invMap[value] = key
+		result[value] = key
 	}
-	return invMap, nil
+	return result, nil
 }

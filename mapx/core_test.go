@@ -260,6 +260,58 @@ func TestGetOrDefault_GenericType(t *testing.T) {
 	}
 }
 
+func TestSetIfAbsent(t *testing.T) {
+	tests := []struct {
+		name       string
+		inputMap   map[string]int
+		key        string
+		defaultVal int
+		expected   map[string]int
+	}{
+		{
+			name:       "EmptyMap_KeyNotPresent",
+			inputMap:   make(map[string]int),
+			key:        "a",
+			defaultVal: 1,
+			expected: map[string]int{
+				"a": 1,
+			},
+		},
+		{
+			name: "NonEmptyMap_KeyNotPresent",
+			inputMap: map[string]int{
+				"b": 2,
+			},
+			key:        "a",
+			defaultVal: 1,
+			expected: map[string]int{
+				"a": 1,
+				"b": 2,
+			},
+		},
+		{
+			name: "NonEmptyMap_KeyPresent",
+			inputMap: map[string]int{
+				"a": 99,
+			},
+			key:        "a",
+			defaultVal: 1,
+			expected: map[string]int{
+				"a": 99,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mapx.SetIfAbsent(tt.inputMap, tt.key, tt.defaultVal)
+			if !reflect.DeepEqual(tt.inputMap, tt.expected) {
+				t.Errorf("SetIfAbsent() got %v, want %v", tt.inputMap, tt.expected)
+			}
+		})
+	}
+}
+
 func TestSortByKey_EmptyMap(t *testing.T) {
 	m := map[int]string{}
 	result := mapx.SortByKey(m, func(a, b int) bool { return a < b })
