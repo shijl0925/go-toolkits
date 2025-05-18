@@ -25,7 +25,7 @@ type Number interface {
 func Sum[T RealNumber](s []T) T {
 	var result T
 	for _, v := range s {
-		// lint:ignore U1000 type check
+		//nolint:typecheck
 		result += v
 	}
 	return result
