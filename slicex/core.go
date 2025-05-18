@@ -2,7 +2,7 @@ package slicex
 
 import (
 	"fmt"
-	"github.com/shijl0925/go-toolkits"
+	toolkits "github.com/shijl0925/go-toolkits"
 	"golang.org/x/exp/constraints"
 	"reflect"
 	"strings"
@@ -40,6 +40,7 @@ func Sum[T RealNumber](s []T) T {
 func Max[T constraints.Ordered](s []T) T {
 	result := s[0]
 	for i := 1; i < len(s); i++ {
+		//nolint:typecheck
 		if s[i] > result {
 			result = s[i]
 		}
@@ -56,6 +57,7 @@ func Max[T constraints.Ordered](s []T) T {
 func Min[T constraints.Ordered](s []T) T {
 	result := s[0]
 	for i := 1; i < len(s); i++ {
+		//nolint:typecheck
 		if s[i] < result {
 			result = s[i]
 		}
@@ -795,6 +797,7 @@ func Replace[T comparable](s []T, old, new T, n int) []T {
 // 判断一个 slice 是否是升序排列的。
 func IsAscending[T constraints.Ordered](s []T) bool {
 	for i := 1; i < len(s); i++ {
+		//nolint:typecheck
 		if s[i] < s[i-1] {
 			return false
 		}
@@ -806,6 +809,7 @@ func IsAscending[T constraints.Ordered](s []T) bool {
 // 判断一个 slice 是否是降序排列的。
 func IsDescending[T constraints.Ordered](s []T) bool {
 	for i := 1; i < len(s); i++ {
+		//nolint:typecheck
 		if s[i] > s[i-1] {
 			return false
 		}

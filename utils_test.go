@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"github.com/shijl0925/go-toolkits"
+	toolkits "github.com/shijl0925/go-toolkits"
 	"math"
 	"reflect"
 	"strconv"
