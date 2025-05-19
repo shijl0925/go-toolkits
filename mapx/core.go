@@ -2,6 +2,7 @@ package mapx
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 )
 
@@ -29,6 +30,20 @@ func Values[K comparable, V any](m map[K]V) []V {
 func HasKey[K comparable, V any](m map[K]V, key K) bool {
 	_, ok := m[key]
 	return ok
+}
+
+// Intersect returns the intersection between two maps.
+// 返回两个 map 的交集。
+func Intersect[K comparable, V any](src, dst map[K]V) map[K]V {
+	result := make(map[K]V)
+
+	for key, value1 := range src {
+		if value2, ok := dst[key]; ok && reflect.DeepEqual(value1, value2) {
+			result[key] = value1
+		}
+	}
+
+	return result
 }
 
 // Merge maps, when the key is same, next value will overwrite previous value.

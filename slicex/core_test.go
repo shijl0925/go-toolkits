@@ -25,6 +25,75 @@ func Test_SumSlice(t *testing.T) {
 	}
 }
 
+// TestAvg_Int 测试 int 类型的平均值计算
+func TestAvg_Int(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []int
+		expected float64
+	}{
+		{"empty slice", []int{}, 0},
+		{"single element", []int{100}, 100},
+		{"positive numbers", []int{1, 2, 3}, 2.0},
+		{"negative and zero", []int{-1, 0, 1}, 0.0},
+		{"all zeros", []int{0, 0, 0}, 0.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slicex.Avg(tt.input)
+			if got != tt.expected {
+				t.Errorf("Avg(%v) = %v; want %v", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+// TestAvg_Float64 测试 float64 类型的平均值计算
+func TestAvg_Float64(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []float64
+		expected float64
+	}{
+		{"empty slice", []float64{}, 0},
+		{"single element", []float64{2.5}, 2.5},
+		{"multiple values", []float64{2.5, 3.5}, 3.0},
+		{"negative and positive", []float64{-1.5, 1.5, 1.5}, 0.5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slicex.Avg(tt.input)
+			if got != tt.expected {
+				t.Errorf("Avg(%v) = %v; want %v", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+// TestAvg_Uint 测试 uint 类型的平均值计算
+func TestAvg_Uint(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []uint
+		expected float64
+	}{
+		{"empty slice", []uint{}, 0},
+		{"single element", []uint{10}, 10},
+		{"multiple elements", []uint{1, 2, 3}, 2.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slicex.Avg(tt.input)
+			if got != tt.expected {
+				t.Errorf("Avg(%v) = %v; want %v", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
 func Test_MaxSlice(t *testing.T) {
 	var tests = []struct {
 		name     string

@@ -139,6 +139,129 @@ func Test_HasKey_NilMap(t *testing.T) {
 	}
 }
 
+// TestIntersect_EmptyMaps tests when both maps are empty.
+func TestIntersect_EmptyMaps(t *testing.T) {
+	src := map[int]string{}
+	dst := map[int]string{}
+	expected := map[int]string{}
+
+	result := mapx.Intersect(src, dst)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Intersect(empty maps) = %v, want %v", result, expected)
+	}
+}
+
+// TestIntersect_IdenticalMaps tests when both maps are identical.
+func TestIntersect_IdenticalMaps(t *testing.T) {
+	src := map[string]int{"a": 1, "b": 2}
+	dst := map[string]int{"a": 1, "b": 2}
+	expected := map[string]int{"a": 1, "b": 2}
+
+	result := mapx.Intersect(src, dst)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Intersect(identical maps) = %v, want %v", result, expected)
+	}
+}
+
+// TestIntersect_PartialOverlap tests when only some keys match with same values.
+func TestIntersect_PartialOverlap(t *testing.T) {
+	src := map[string]int{"a": 1, "b": 2, "c": 3}
+	dst := map[string]int{"a": 1, "b": 99, "d": 4}
+	expected := map[string]int{"a": 1}
+
+	result := mapx.Intersect(src, dst)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Intersect(partial overlap) = %v, want %v", result, expected)
+	}
+}
+
+// TestIntersect_KeyExistsButDifferentValue tests when key exists but values differ.
+func TestIntersect_KeyExistsButDifferentValue(t *testing.T) {
+	src := map[int][]int{1: {1, 2}, 2: {3}}
+	dst := map[int][]int{1: {1, 2}, 2: {4}}
+	expected := map[int][]int{1: {1, 2}}
+
+	result := mapx.Intersect(src, dst)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Intersect(key exists but different value) = %v, want %v", result, expected)
+	}
+}
+
+// TestIntersect_SrcEmpty tests when source is empty.
+func TestIntersect_SrcEmpty(t *testing.T) {
+	src := map[int]int{}
+	dst := map[int]int{1: 2}
+	expected := map[int]int{}
+
+	result := mapx.Intersect(src, dst)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Intersect(src empty) = %v, want %v", result, expected)
+	}
+}
+
+// TestIntersect_DstEmpty tests when destination is empty.
+func TestIntersect_DstEmpty(t *testing.T) {
+	src := map[int]int{1: 2}
+	dst := map[int]int{}
+	expected := map[int]int{}
+
+	result := mapx.Intersect(src, dst)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Intersect(dst empty) = %v, want %v", result, expected)
+	}
+}
+
+// TestIntersect_StructValues tests with struct values.
+func TestIntersect_StructValues(t *testing.T) {
+	type User struct {
+		Name string
+		Age  int
+	}
+
+	src := map[int]User{
+		1: {"Alice", 30},
+		2: {"Bob", 25},
+	}
+	dst := map[int]User{
+		1: {"Alice", 30},
+		2: {"Bob", 26},
+	}
+	expected := map[int]User{
+		1: {"Alice", 30},
+	}
+
+	result := mapx.Intersect(src, dst)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Intersect(struct values) = %v, want %v", result, expected)
+	}
+}
+
+// TestIntersect_PointerValues tests with pointer values pointing to same data.
+func TestIntersect_PointerValues_Same(t *testing.T) {
+	a := 42
+	src := map[string]*int{"x": &a}
+	dst := map[string]*int{"x": &a}
+	expected := map[string]*int{"x": &a}
+
+	result := mapx.Intersect(src, dst)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Intersect(pointer values) = %v, want %v", result, expected)
+	}
+}
+
+// TestIntersect_PointerValues_Different tests with pointer values pointing to different data.
+func TestIntersect_PointerValues_Different(t *testing.T) {
+	a, b := 42, 43
+	src := map[string]*int{"x": &a}
+	dst := map[string]*int{"x": &b}
+	expected := map[string]*int{} // Not equal because pointers point to different addresses
+
+	result := mapx.Intersect(src, dst)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Intersect(pointer values) = %v, want %v", result, expected)
+	}
+}
+
 func TestMerge(t *testing.T) {
 	tests := []struct {
 		name     string

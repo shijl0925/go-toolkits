@@ -346,3 +346,67 @@ func Test_GroupBy(t *testing.T) {
 		})
 	}
 }
+
+func Test_Range_Int(t *testing.T) {
+	testCases := []struct {
+		start, end, step int
+		expected         []int
+	}{
+		{1, 5, 1, []int{1, 2, 3, 4}},
+		{5, 1, -1, []int{5, 4, 3, 2}},
+		{1, 5, 0, []int{}},
+		{5, 1, 1, []int{}},
+		{1, 5, -1, []int{}},
+		{2, 2, 1, []int{}},
+		{0, 10, 2, []int{0, 2, 4, 6, 8}},
+		{-5, 5, 2, []int{-5, -3, -1, 1, 3}},
+		{5, -5, -2, []int{5, 3, 1, -1, -3}},
+	}
+
+	for _, tc := range testCases {
+		t.Run("", func(t *testing.T) {
+			result := itertools.Range(tc.start, tc.end, tc.step)
+			if !reflect.DeepEqual(result, tc.expected) {
+				t.Errorf("Range(%d, %d, %d) = %v, want %v", tc.start, tc.end, tc.step, result, tc.expected)
+			}
+		})
+	}
+}
+
+// 定义辅助函数用于比较浮点数切片是否近似相等
+func approxEqualFloat64(a, b []float64, epsilon float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		diff := a[i] - b[i]
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff > epsilon {
+			return false
+		}
+	}
+	return true
+}
+
+func Test_Range_Float(t *testing.T) {
+	testCases := []struct {
+		start, end, step float64
+		expected         []float64
+	}{
+		{1.0, 5.0, 1.0, []float64{1.0, 2.0, 3.0, 4.0}},
+		{5.0, 1.0, -1.0, []float64{5.0, 4.0, 3.0, 2.0}},
+		{10.0, 0.0, -2.5, []float64{10.0, 7.5, 5.0, 2.5}},
+		{0.0, 1.0, 0.2, []float64{0.0, 0.2, 0.4, 0.6, 0.8}},
+	}
+
+	for _, tc := range testCases {
+		t.Run("", func(t *testing.T) {
+			result := itertools.Range(tc.start, tc.end, tc.step)
+			if !approxEqualFloat64(result, tc.expected, 1e-9) {
+				t.Errorf("Range(%v, %v, %v) = %v; want %v", tc.start, tc.end, tc.step, result, tc.expected)
+			}
+		})
+	}
+}

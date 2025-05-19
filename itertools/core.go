@@ -1,5 +1,7 @@
 package itertools
 
+import "golang.org/x/exp/constraints"
+
 // Map applies a function to each element in a slice and returns a new slice with the results.
 func Map[T any, U any](s []T, fn func(T) U) []U {
 	result := make([]U, len(s))
@@ -106,5 +108,30 @@ func GroupBy[T any, U comparable](slice []T, fn func(T) U) map[U][]T {
 		}
 		result[key] = append(result[key], v)
 	}
+	return result
+}
+
+func Range[T constraints.Integer | constraints.Float](start, end, step T) []T {
+	var result []T
+
+	if step == 0 {
+		return []T{}
+	}
+
+	// 判断是否递增序列
+	ascending := step > 0
+
+	// 判断是否满足生成条件
+	if ascending && start >= end {
+		return []T{}
+	}
+	if !ascending && start <= end {
+		return []T{}
+	}
+
+	for i := start; (ascending && i < end) || (!ascending && i > end); i += step {
+		result = append(result, i)
+	}
+
 	return result
 }

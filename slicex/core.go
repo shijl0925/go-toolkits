@@ -31,6 +31,18 @@ func Sum[T RealNumber](s []T) T {
 	return result
 }
 
+func Avg[T RealNumber](s []T) float64 {
+	var zero float64
+	if len(s) == 0 {
+		return zero
+	}
+	var sum float64
+	for _, v := range s {
+		sum += float64(v)
+	}
+	return sum / float64(len(s))
+}
+
 // Max returns the maximum value in the slice.
 //
 // Example:
