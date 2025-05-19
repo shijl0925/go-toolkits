@@ -111,6 +111,7 @@ func GroupBy[T any, U comparable](slice []T, fn func(T) U) map[U][]T {
 	return result
 }
 
+//nolint:typecheck
 func Range[T constraints.Integer | constraints.Float](start, end, step T) []T {
 	var result []T
 

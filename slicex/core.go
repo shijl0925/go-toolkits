@@ -38,6 +38,7 @@ func Avg[T RealNumber](s []T) float64 {
 	}
 	var sum float64
 	for _, v := range s {
+		//nolint:typecheck
 		sum += float64(v)
 	}
 	return sum / float64(len(s))
