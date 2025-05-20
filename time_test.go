@@ -1,7 +1,7 @@
 package toolkits_test
 
 import (
-	"github.com/shijl0925/go-toolkits"
+	toolkits "github.com/shijl0925/go-toolkits"
 	"testing"
 	"time"
 )
