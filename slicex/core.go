@@ -899,3 +899,23 @@ func FlattenDeep(slice any) any {
 
 	return result.Interface()
 }
+
+// Combine combines two slices into a map.
+// 将两个切片组合成一个 map。
+//
+// Example:
+//
+//	keys := []string{"a", "b", "c"}
+//	values := []int{1, 2, 3}
+//	r := Combine(keys, values) // r == map[string]int{"a": 1, "b": 2, "c": 3}
+func Combine[K comparable, V any](keys []K, values []V) map[K]V {
+	if len(keys) != len(values) {
+		return make(map[K]V)
+	}
+
+	result := make(map[K]V, len(keys))
+	for i, key := range keys {
+		result[key] = values[i]
+	}
+	return result
+}
