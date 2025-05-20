@@ -2005,3 +2005,74 @@ func TestIsDescending(t *testing.T) {
 		})
 	}
 }
+
+// TestCombine 是 Combine 函数的单元测试
+func TestCombine(t *testing.T) {
+	tests := []struct {
+		name   string
+		keys   []string
+		values []int
+		want   map[string]int
+	}{
+		{
+			name:   "正常情况",
+			keys:   []string{"a", "b"},
+			values: []int{1, 2},
+			want:   map[string]int{"a": 1, "b": 2},
+		},
+		{
+			name:   "空切片",
+			keys:   []string{},
+			values: []int{},
+			want:   map[string]int{},
+		},
+		{
+			name:   "长度不一致",
+			keys:   []string{"x"},
+			values: []int{},
+			want:   map[string]int{},
+		},
+		{
+			name:   "nil 切片",
+			keys:   nil,
+			values: nil,
+			want:   map[string]int{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slicex.Combine(tt.keys, tt.values)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Combine() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestCombine_GenericTypes 测试不同泛型类型的组合
+func TestCombine_GenericTypes(t *testing.T) {
+	// K=int, V=string
+	{
+		keys := []int{1, 2}
+		values := []string{"one", "two"}
+		want := map[int]string{1: "one", 2: "two"}
+
+		got := slicex.Combine(keys, values)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Combine(int, string) = %v, want %v", got, want)
+		}
+	}
+
+	// K=string, V=bool
+	{
+		keys := []string{"k1", "k2"}
+		values := []bool{true, false}
+		want := map[string]bool{"k1": true, "k2": false}
+
+		got := slicex.Combine(keys, values)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Combine(string, bool) = %v, want %v", got, want)
+		}
+	}
+}
