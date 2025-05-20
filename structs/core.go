@@ -14,13 +14,13 @@ func StructToMap(s any) map[string]any {
 	t := val.Type()
 
 	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
+		fieldType := t.Field(i)
 		value := val.Field(i).Interface()
-		name := field.Name
+		fieldName := fieldType.Name
 
-		tagName, tagOpts := parseTag(field.Tag.Get("json"))
+		tagName, tagOpts := parseTag(fieldType.Tag.Get("json"))
 		if tagName != "" {
-			name = tagName
+			fieldName = tagName
 		}
 
 		v := reflect.ValueOf(value)
@@ -32,7 +32,7 @@ func StructToMap(s any) map[string]any {
 		} else if v.Kind() == reflect.Struct {
 			if tagOpts.Has("flatten") {
 				// 判断变量是否为匿名结构体
-				if field.Anonymous {
+				if fieldType.Anonymous {
 					for k, v := range StructToMap(value) {
 						result[k] = v
 					}
@@ -51,7 +51,7 @@ func StructToMap(s any) map[string]any {
 			}
 		}
 
-		result[name] = value
+		result[fieldName] = value
 	}
 
 	return result
