@@ -1,6 +1,7 @@
 package itertools_test
 
 import (
+	toolkits "github.com/shijl0925/go-toolkits"
 	"github.com/shijl0925/go-toolkits/itertools"
 	"reflect"
 	"testing"
@@ -373,23 +374,6 @@ func Test_Range_Int(t *testing.T) {
 	}
 }
 
-// 定义辅助函数用于比较浮点数切片是否近似相等
-func approxEqualFloat64(a, b []float64, epsilon float64) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		diff := a[i] - b[i]
-		if diff < 0 {
-			diff = -diff
-		}
-		if diff > epsilon {
-			return false
-		}
-	}
-	return true
-}
-
 func Test_Range_Float(t *testing.T) {
 	testCases := []struct {
 		start, end, step float64
@@ -404,8 +388,10 @@ func Test_Range_Float(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run("", func(t *testing.T) {
 			result := itertools.Range(tc.start, tc.end, tc.step)
-			if !approxEqualFloat64(result, tc.expected, 1e-9) {
-				t.Errorf("Range(%v, %v, %v) = %v; want %v", tc.start, tc.end, tc.step, result, tc.expected)
+			for i := range result {
+				if !toolkits.EqualFloat64(result[i], tc.expected[i], 9) {
+					t.Errorf("Range(%v, %v, %v) = %v; want %v", tc.start, tc.end, tc.step, result, tc.expected)
+				}
 			}
 		})
 	}
