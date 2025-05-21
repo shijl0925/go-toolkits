@@ -5,6 +5,7 @@ import (
 	toolkits "github.com/shijl0925/go-toolkits"
 	"golang.org/x/exp/constraints"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -918,4 +919,15 @@ func Combine[K comparable, V any](keys []K, values []V) map[K]V {
 		result[key] = values[i]
 	}
 	return result
+}
+
+// SortSlice 对任意类型的切片进行排序，使用提供的 less 函数定义排序规则。
+// 注意：此函数不会分配新内存，而是原地修改原切片。
+func SortSlice[T any](s []T, less func(a, b T) bool) {
+	if len(s) == 0 || less == nil {
+		return
+	}
+	sort.Slice(s, func(i, j int) bool {
+		return less(s[i], s[j])
+	})
 }
