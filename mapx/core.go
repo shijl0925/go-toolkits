@@ -64,6 +64,67 @@ func Merge[K comparable, V any](maps ...map[K]V) map[K]V {
 	return result
 }
 
+// Chain maps, when the key is same, next value will be ignored.
+// It's like a merge, but when the key is same, next value will be ignored.
+func Chain[K comparable, V any](maps ...map[K]V) map[K]V {
+	size := 0
+	for _, m := range maps {
+		size += len(m)
+	}
+
+	result := make(map[K]V, size)
+
+	for _, m := range maps {
+		if m == nil {
+			continue
+		}
+
+		for k, v := range m {
+			if _, ok := result[k]; !ok {
+				result[k] = v
+			}
+		}
+	}
+
+	return result
+}
+
+// FilterByKey filters a map by key.
+// It returns a new map with only the key-value pairs where the key passes the given function.
+func FilterByKey[K comparable, V any](m map[K]V, fn func(K) bool) map[K]V {
+	result := make(map[K]V, len(m))
+	for key, value := range m {
+		if fn(key) {
+			result[key] = value
+		}
+	}
+	return result
+}
+
+// FilterByValue filters a map by value.
+// It returns a new map with only the key-value pairs where the value passes the given function.
+func FilterByValue[K comparable, V any](m map[K]V, fn func(V) bool) map[K]V {
+	result := make(map[K]V, len(m))
+	for key, value := range m {
+		if fn(value) {
+			result[key] = value
+		}
+	}
+	return result
+}
+
+// Filter filters a map by key and value
+// It return a new map contains all key and value pairs pass the predicate function.
+func Filter[K comparable, V any](m map[K]V, fn func(key K, value V) bool) map[K]V {
+	result := make(map[K]V, len(m))
+	for k, v := range m {
+		if fn(k, v) {
+			result[k] = v
+		}
+	}
+	return result
+}
+
 // GetOrDefault returns the value of the given key or a default value if the key is not present.
 func GetOrDefault[K comparable, V any](m map[K]V, key K, defaultValue V) V {
 	if value, ok := m[key]; ok {
