@@ -56,6 +56,10 @@ func Merge[K comparable, V any](maps ...map[K]V) map[K]V {
 	result := make(map[K]V, size)
 
 	for _, m := range maps {
+		if m == nil {
+			continue
+		}
+
 		for k, v := range m {
 			result[k] = v
 		}
