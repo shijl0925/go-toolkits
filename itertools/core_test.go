@@ -346,6 +346,92 @@ func Test_GroupBy(t *testing.T) {
 			}
 		})
 	}
+
+t.Run("test2", func(t *testing.T) {
+		type Location struct {
+			address string
+			date    string
+		}
+		slice := []Location{
+			{
+				address: "5412 N CLARK",
+				date:    "07/01/2012",
+			},
+			{
+				address: "5148 N CLARK",
+				date:    "07/04/2012",
+			},
+			{
+				address: "5800 E 58TH",
+				date:    "07/02/2012",
+			},
+			{
+				address: "2122 N CLARK",
+				date:    "07/03/2012",
+			},
+			{
+				address: "5645 N RAVENSWOOD",
+				date:    "07/02/2012",
+			},
+			{
+				address: "1060 W ADDISON",
+				date:    "07/02/2012",
+			},
+			{
+				address: "4801 N BROADWAY",
+				date:    "07/01/2012",
+			},
+			{
+				address: "1039 W GRANVILLE",
+				date:    "07/04/2012",
+			},
+		}
+		wanted := map[string][]Location{
+			"07/01/2012": []Location{
+				{
+					address: "5412 N CLARK",
+					date:    "07/01/2012",
+				},
+				{
+					address: "4801 N BROADWAY",
+					date:    "07/01/2012",
+				},
+			},
+			"07/02/2012": []Location{
+				{
+					address: "5800 E 58TH",
+					date:    "07/02/2012",
+				},
+				{
+					address: "5645 N RAVENSWOOD",
+					date:    "07/02/2012",
+				},
+				{
+					address: "1060 W ADDISON",
+					date:    "07/02/2012",
+				},
+			},
+			"07/03/2012": []Location{
+				{
+					address: "2122 N CLARK",
+					date:    "07/03/2012",
+				},
+			},
+			"07/04/2012": []Location{
+				{
+					address: "5148 N CLARK",
+					date:    "07/04/2012",
+				},
+				{
+					address: "1039 W GRANVILLE",
+					date:    "07/04/2012",
+				},
+			},
+		}
+		if got := itertools.GroupBy(slice, func(x Location) string { return x.date }); !reflect.DeepEqual(got, wanted) {
+			t.Errorf("GroupBy() expected %v, got %v", wanted, got)
+		}
+	})
 }
 
 func Test_Range_Int(t *testing.T) {
