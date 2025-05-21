@@ -57,6 +57,41 @@ func FormatTimeToStr(t time.Time, format ...string) string {
 //	return time.Unix(timestamp, 0).Local()
 //}
 
+// SetTimeZoneV1 设置时区, timeZone 为时区名称: "Asia/Shanghai"
+func SetTimeZoneV1(t time.Time, timeZone string) (time.Time, error) {
+	if t.IsZero() {
+		return time.Time{}, ErrTimeIsZero
+	}
+
+	if timeZone == "" {
+		return time.Time{}, fmt.Errorf("time zone name cannot be empty")
+	}
+
+	local, err := time.LoadLocation(timeZone)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid time zone: %s, %s", timeZone, err)
+	}
+
+	return t.In(local), nil
+}
+
+// SetTimeZoneV2 设置时区, hour 为时区偏移量(-12 - 14), name 为时区名称: "UTC", "CST", "EST"
+func SetTimeZoneV2(t time.Time, name string, hour int) (time.Time, error) {
+	if t.IsZero() {
+		return time.Time{}, ErrTimeIsZero
+	}
+
+	// 检查 hour 是否在合理范围内（-12 到 +14 是常见时区偏移范围）
+	if hour < -12 || hour > 14 {
+		return time.Time{}, fmt.Errorf("invalid hour offset: %d, must be between -12 and +14", hour)
+	}
+
+	offset := hour * 3600
+	local := time.FixedZone(name, offset)
+
+	return t.In(local), nil
+}
+
 // AddMinute add or sub minutes to the time.
 func AddMinute(t time.Time, minutes int) (time.Time, error) {
 	if t.IsZero() {

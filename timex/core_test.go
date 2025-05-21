@@ -717,3 +717,135 @@ func TestGetSecondsBetween(t *testing.T) {
 		})
 	}
 }
+
+func TestSetTimeZoneV1(t *testing.T) {
+	// 构造一个非零时间
+	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	testCases := []struct {
+		name         string
+		inputTime    time.Time
+		timeZone     string
+		wantErr      bool
+		expectOutput func(time.Time) bool // 可选：验证输出时间是否符合预期
+	}{
+		{
+			name:      "TC01 - Zero Time",
+			inputTime: time.Time{},
+			timeZone:  "UTC",
+			wantErr:   true,
+		},
+		{
+			name:      "TC02 - Empty Time Zone",
+			inputTime: now,
+			timeZone:  "",
+			wantErr:   true,
+		},
+		{
+			name:      "TC03 - Invalid Time Zone",
+			inputTime: now,
+			timeZone:  "Invalid/UnknownZone",
+			wantErr:   true,
+		},
+		{
+			name:      "TC04 - Valid Time and Zone",
+			inputTime: now,
+			timeZone:  "Asia/Shanghai",
+			wantErr:   false,
+			expectOutput: func(output time.Time) bool {
+				return output.Location().String() == "Asia/Shanghai"
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := timex.SetTimeZoneV1(tc.inputTime, tc.timeZone)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("Expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if tc.expectOutput != nil && !tc.expectOutput(output) {
+					t.Errorf("Expected output time to match expectations, got %v", output)
+				}
+			}
+		})
+	}
+}
+
+func TestSetTimeZoneV2(t *testing.T) {
+	// 正常时间示例
+	baseTime := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		t        time.Time
+		timeZone string
+		hour     int
+		wantErr  bool
+	}{
+		{
+			name:     "TC01_ZeroTime",
+			t:        time.Time{},
+			timeZone: "UTC",
+			hour:     0,
+			wantErr:  true,
+		},
+		{
+			name:     "TC02_HourTooLow",
+			t:        baseTime,
+			timeZone: "UTC",
+			hour:     -13,
+			wantErr:  true,
+		},
+		{
+			name:     "TC03_HourTooHigh",
+			t:        baseTime,
+			timeZone: "UTC",
+			hour:     15,
+			wantErr:  true,
+		},
+		{
+			name:     "TC04_ValidUTCPlus8",
+			t:        baseTime,
+			timeZone: "CST",
+			hour:     8,
+			wantErr:  false,
+		},
+		{
+			name:     "TC05_ValidUTCMinus5",
+			t:        baseTime,
+			timeZone: "EST",
+			hour:     -5,
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := timex.SetTimeZoneV2(tt.t, tt.timeZone, tt.hour)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected an error, but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if res.IsZero() {
+					t.Errorf("Expected a non-zero time, but got zero")
+				}
+
+				if res.Location().String() != tt.timeZone {
+					t.Errorf("Expected time in %s+%d, but got %s", tt.timeZone, tt.hour, res.Location().String())
+				}
+			}
+		})
+	}
+}
