@@ -8,8 +8,11 @@ import (
 
 const defaultTimeFormat = "2006-01-02 15:04:05"
 
-// StringFormatTime converts a string to a time.Time
-func StringFormatTime(s string, format ...string) (time.Time, error) {
+var ErrTimeIsZero = fmt.Errorf("time is zero")
+var OverflowError = fmt.Errorf("duration overflow detected")
+
+// FormatStrToTime converts a string to a time.Time
+func FormatStrToTime(s string, format ...string) (time.Time, error) {
 	if strings.TrimSpace(s) == "" {
 		return time.Time{}, fmt.Errorf("input time string is empty or whitespace")
 	}
@@ -24,8 +27,8 @@ func StringFormatTime(s string, format ...string) (time.Time, error) {
 	return time.Parse(f, s)
 }
 
-// TimeFormatString converts a time.Time to a string
-func TimeFormatString(t time.Time, format ...string) string {
+// FormatTimeToStr converts a time.Time to a string
+func FormatTimeToStr(t time.Time, format ...string) string {
 	var f string
 	if len(format) > 0 {
 		f = strings.TrimSpace(format[0])
@@ -42,4 +45,214 @@ func TimeFormatString(t time.Time, format ...string) string {
 	*/
 
 	return t.Format(f)
+}
+
+//// Timestamp 时间戳
+//func Timestamp(t time.Time) int64 {
+//	return t.Unix()
+//}
+//
+//// LocalTime 本地时间
+//func LocalTime(timestamp int64) time.Time {
+//	return time.Unix(timestamp, 0).Local()
+//}
+
+// AddMinute add or sub minutes to the time.
+func AddMinute(t time.Time, minutes int) (time.Time, error) {
+	if t.IsZero() {
+		return time.Time{}, ErrTimeIsZero
+	}
+
+	// Check for duration overflow
+	duration := time.Duration(minutes) * time.Minute
+	if (minutes > 0 && duration < 0) || (minutes < 0 && duration > 0) {
+		return time.Time{}, OverflowError
+	}
+
+	return t.Add(duration), nil
+}
+
+// AddHour add or sub hours to the time.
+func AddHour(t time.Time, hours int) (time.Time, error) {
+	if t.IsZero() {
+		return time.Time{}, ErrTimeIsZero
+	}
+
+	duration := time.Duration(hours) * time.Hour
+
+	return t.Add(duration), nil
+}
+
+// AddDay add or sub days to the time.
+func AddDay(t time.Time, days int) (time.Time, error) {
+	if t.IsZero() {
+		return time.Time{}, ErrTimeIsZero
+	}
+
+	duration := 24 * time.Hour * time.Duration(days)
+
+	return t.Add(duration), nil
+}
+
+// AddWeek add or sub weeks to the time.
+func AddWeek(t time.Time, weeks int) (time.Time, error) {
+	if t.IsZero() {
+		return time.Time{}, ErrTimeIsZero
+	}
+
+	duration := time.Hour * 24 * 7 * time.Duration(weeks)
+
+	return t.Add(duration), nil
+}
+
+// AddMonth add or sub months to the time.
+func AddMonth(t time.Time, months int) (time.Time, error) {
+	if t.IsZero() {
+		return time.Time{}, ErrTimeIsZero
+	}
+	return t.AddDate(0, months, 0), nil
+}
+
+// AddYear add or sub year to the time.
+func AddYear(t time.Time, years int) (time.Time, error) {
+	if t.IsZero() {
+		return time.Time{}, ErrTimeIsZero
+	}
+	return t.AddDate(years, 0, 0), nil
+}
+
+// GetNowDate return format yyyy-mm-dd of current date.
+func GetNowDate() string {
+	now := time.Now()
+	return now.Format("2006-01-02")
+}
+
+// GetNowTime return format hh-mm-ss of current time.
+func GetNowTime() string {
+	now := time.Now()
+	return now.Format("15:04:05")
+}
+
+// GetNowDateTime return format yyyy-mm-dd hh-mm-ss of current datetime.
+func GetNowDateTime() string {
+	now := time.Now()
+	return now.Format("2006-01-02 15:04:05")
+}
+
+// GetDaysBetween returns the number of days between two times.
+func GetDaysBetween(start, end time.Time) int {
+	// 确保 end 不早于 start，防止负数计算
+	if end.Before(start) {
+		start, end = end, start
+	}
+	return int(end.Sub(start).Hours() / 24)
+}
+
+// GetMonthsBetween returns the number of months between two times.
+func GetMonthsBetween(start, end time.Time) int {
+	// 确保 end 不早于 start，防止负数计算
+	if end.Before(start) {
+		start, end = end, start
+	}
+
+	year1, month1, day1 := start.Date()
+	year2, month2, day2 := end.Date()
+
+	// 计算总月份数
+	months := (year2-year1)*12 + int(month2-month1)
+
+	// 如果结束日的日期小于开始日的日期，则减去一个月，只统计完整的月份差
+	if day2 < day1 {
+		months--
+	}
+
+	return months
+}
+
+// GetYearsBetween returns the number of years between two times.
+func GetYearsBetween(start, end time.Time) int {
+	// 确保 end 不早于 start，防止负数计算
+	if end.Before(start) {
+		start, end = end, start
+	}
+	years := end.Year() - start.Year()
+	if end.Month() < start.Month() || (end.Month() == start.Month() && end.Day() < start.Day()) {
+		years--
+	}
+	return years
+}
+
+// GetHoursBetween returns the number of hours between two times.
+func GetHoursBetween(start, end time.Time) float64 {
+	// 确保 end 不早于 start，防止负数计算
+	if end.Before(start) {
+		start, end = end, start
+	}
+	return end.Sub(start).Hours()
+}
+
+// GetMinutesBetween returns the number of minutes between two times.
+func GetMinutesBetween(start, end time.Time) float64 {
+	// 确保 end 不早于 start，防止负数计算
+	if end.Before(start) {
+		start, end = end, start
+	}
+	return end.Sub(start).Minutes()
+}
+
+// GetSecondsBetween returns the number of seconds
+func GetSecondsBetween(start, end time.Time) float64 {
+	// 确保 end 不早于 start，防止负数计算
+	if end.Before(start) {
+		start, end = end, start
+	}
+	return end.Sub(start).Seconds()
+}
+
+// GetDurationBetween returns the duration between two times, ensuring a non-negative result.
+func GetDurationBetween(start, end time.Time) time.Duration {
+	// 确保 end 不早于 start，防止负数计算
+	if end.Before(start) {
+		start, end = end, start
+	}
+	return end.Sub(start)
+}
+
+func GetDurationPretty(start, end time.Time) (day, hour, minute, second int) {
+	// 确保 end 不早于 start，防止负数计算
+	if end.Before(start) {
+		start, end = end, start
+	}
+
+	// 计算总秒数（整数）
+	seconds := int(end.Sub(start).Seconds())
+
+	// 依次拆分 day, hour, minute, second
+	minute, second = seconds/60, seconds%60
+	hour, minute = minute/60, minute%60
+	day, hour = hour/24, hour%24
+
+	return day, hour, minute, second
+}
+
+// Min returns the earliest time among the given times.
+func Min(t1 time.Time, times ...time.Time) time.Time {
+	minTime := t1
+	for _, t := range times {
+		if t.Before(minTime) {
+			minTime = t
+		}
+	}
+	return minTime
+}
+
+// Max returns the latest time among the given times.
+func Max(t1 time.Time, times ...time.Time) time.Time {
+	maxTime := t1
+	for _, t := range times {
+		if t.After(maxTime) {
+			maxTime = t
+		}
+	}
+	return maxTime
 }
