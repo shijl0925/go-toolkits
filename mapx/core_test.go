@@ -319,6 +319,242 @@ func TestMerge(t *testing.T) {
 	}
 }
 
+// TestChain_MultipleMapsNoOverlap 测试多个 map 合并且无重复 key 的情况
+func TestChain_MultipleMapsNoOverlap(t *testing.T) {
+	m1 := map[string]int{"a": 1}
+	m2 := map[string]int{"b": 2}
+	expected := map[string]int{"a": 1, "b": 2}
+
+	result := mapx.Chain(m1, m2)
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+// TestChain_WithDuplicateKeys 测试多个 map 包含重复 key，确保只保留第一个出现的值
+func TestChain_WithDuplicateKeys(t *testing.T) {
+	m1 := map[int]string{1: "one"}
+	m2 := map[int]string{1: "uno", 2: "two"}
+	expected := map[int]string{1: "one", 2: "two"}
+
+	result := mapx.Chain(m1, m2)
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+// TestChain_WithNilMaps 测试包含 nil map 的情况，应跳过 nil map
+func TestChain_WithNilMaps(t *testing.T) {
+	var m1 map[string]bool = nil
+	m2 := map[string]bool{"enabled": true}
+	expected := map[string]bool{"enabled": true}
+
+	result := mapx.Chain(m1, m2)
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+// TestChain_EmptyInput 测试无输入的情况，应返回空 map
+func TestChain_EmptyInput(t *testing.T) {
+	expected := map[int]string{}
+	result := mapx.Chain[int, string]()
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+// TestChain_SingleMap 测试单个 map 输入，应返回其副本
+func TestChain_SingleMap(t *testing.T) {
+	m := map[float64]int{3.14: 1, 2.71: 2}
+	expected := map[float64]int{3.14: 1, 2.71: 2}
+
+	result := mapx.Chain(m)
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestFilterByKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[int]string
+		filterFn func(int) bool
+		expected map[int]string
+	}{
+		{
+			name:     "EmptyMap",
+			input:    map[int]string{},
+			filterFn: func(k int) bool { return true },
+			expected: map[int]string{},
+		},
+		{
+			name:     "SomeKeysMatch",
+			input:    map[int]string{1: "a", 2: "b"},
+			filterFn: func(k int) bool { return k > 1 },
+			expected: map[int]string{2: "b"},
+		},
+		{
+			name:     "EvenKeysOnly",
+			input:    map[int]string{1: "a", 2: "b", 3: "c"},
+			filterFn: func(k int) bool { return k%2 == 0 },
+			expected: map[int]string{2: "b"},
+		},
+		{
+			name:     "AllKeysMatch",
+			input:    map[int]string{1: "a", 2: "b"},
+			filterFn: func(k int) bool { return k != 0 },
+			expected: map[int]string{1: "a", 2: "b"},
+		},
+		{
+			name:     "NoKeysMatch",
+			input:    map[int]string{1: "a", 2: "b"},
+			filterFn: func(k int) bool { return k == 0 },
+			expected: map[int]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapx.FilterByKey(tt.input, tt.filterFn)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("FilterByKey() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+// 可选：测试非 int 类型的 key，例如 string
+func TestFilterByKey_GenericKeyType(t *testing.T) {
+	input := map[string]int{"a": 1, "bb": 2, "c": 3}
+	fn := func(k string) bool {
+		return len(k) == 1
+	}
+	expected := map[string]int{"a": 1, "c": 3}
+
+	got := mapx.FilterByKey(input, fn)
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("FilterByKey() with string keys = %v, want %v", got, expected)
+	}
+}
+
+// TestFilterByValue 是 FilterByValue 的单元测试
+func TestFilterByValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		inputMap map[any]any
+		filterFn func(any) bool
+		expected map[any]any
+	}{
+		{
+			name:     "Empty Map",
+			inputMap: map[any]any{},
+			filterFn: func(v any) bool { return true },
+			expected: map[any]any{},
+		},
+		{
+			name:     "Nil Map",
+			inputMap: nil,
+			filterFn: func(v any) bool { return true },
+			expected: map[any]any{},
+		},
+		{
+			name:     "All Elements Match",
+			inputMap: map[any]any{1: "apple", 2: "banana"},
+			filterFn: func(v any) bool { return true },
+			expected: map[any]any{1: "apple", 2: "banana"},
+		},
+		{
+			name:     "No Elements Match",
+			inputMap: map[any]any{1: "apple", 2: "banana"},
+			filterFn: func(v any) bool { return false },
+			expected: map[any]any{},
+		},
+		{
+			name:     "Some Elements Match - String Value",
+			inputMap: map[any]any{1: "apple", 2: "banana", 3: "cherry"},
+			filterFn: func(v any) bool { return v.(string) == "banana" },
+			expected: map[any]any{2: "banana"},
+		},
+		{
+			name:     "Some Elements Match - Int Value",
+			inputMap: map[any]any{"a": 10, "b": 20, "c": 30},
+			filterFn: func(v any) bool { return v.(int) > 15 },
+			expected: map[any]any{"b": 20, "c": 30},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapx.FilterByValue(tt.inputMap, tt.filterFn)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("FilterByValue() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+// 测试用例
+func TestFilter(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[int]string
+		filterFn func(int, string) bool
+		expected map[int]string
+	}{
+		{
+			name:     "NilMap_ReturnsEmpty",
+			input:    nil,
+			filterFn: func(k int, v string) bool { return true },
+			expected: map[int]string{},
+		},
+		{
+			name:     "EmptyMap_ReturnsEmpty",
+			input:    map[int]string{},
+			filterFn: func(k int, v string) bool { return true },
+			expected: map[int]string{},
+		},
+		{
+			name:     "AllElementsMatch_ReturnsSame",
+			input:    map[int]string{1: "a", 2: "b"},
+			filterFn: func(k int, v string) bool { return true },
+			expected: map[int]string{1: "a", 2: "b"},
+		},
+		{
+			name:     "NoElementsMatch_ReturnsEmpty",
+			input:    map[int]string{1: "a", 2: "b"},
+			filterFn: func(k int, v string) bool { return false },
+			expected: map[int]string{},
+		},
+		{
+			name:     "FilterByKeyEven",
+			input:    map[int]string{1: "a", 2: "b", 3: "c", 4: "dd", 5: "e"},
+			filterFn: func(k int, v string) bool { return k%2 == 0 && len(v) == 1 },
+			expected: map[int]string{2: "b"},
+		},
+		{
+			name:     "FilterByValueLengthGreaterThanOne",
+			input:    map[int]string{1: "a", 2: "ab", 3: "abc"},
+			filterFn: func(_ int, v string) bool { return len(v) > 1 },
+			expected: map[int]string{2: "ab", 3: "abc"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapx.Filter(tt.input, tt.filterFn)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("Filter() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
 // TestGetOrDefault tests the GetOrDefault function with various scenarios.
 func TestGetOrDefault(t *testing.T) {
 	tests := []struct {
