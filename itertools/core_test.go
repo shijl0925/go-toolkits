@@ -347,7 +347,7 @@ func Test_GroupBy(t *testing.T) {
 		})
 	}
 
-t.Run("test2", func(t *testing.T) {
+	t.Run("test2", func(t *testing.T) {
 		type Location struct {
 			address string
 			date    string
