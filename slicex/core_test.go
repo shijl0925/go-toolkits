@@ -2076,3 +2076,86 @@ func TestCombine_GenericTypes(t *testing.T) {
 		}
 	}
 }
+
+// TestSortSlice_EmptySlice tests when the input slice is empty.
+func TestSortSlice_EmptySlice(t *testing.T) {
+	var s []int
+	slicex.SortSlice(s, func(a, b int) bool { return a < b })
+	if len(s) != 0 {
+		t.Errorf("Expected empty slice, got length %d", len(s))
+	}
+}
+
+// TestSortSlice_NilLessFunc tests when the 'less' function is nil.
+func TestSortSlice_NilLessFunc(t *testing.T) {
+	s := []int{3, 1, 2}
+	slicex.SortSlice(s, nil)
+	if !reflect.DeepEqual(s, []int{3, 1, 2}) {
+		t.Errorf("Expected no change due to nil less func, got %v", s)
+	}
+}
+
+// TestSortSlice_IntAscending tests sorting an int slice in ascending order.
+func TestSortSlice_IntAscending(t *testing.T) {
+	s := []int{3, 1, 2}
+	expected := []int{1, 2, 3}
+	slicex.SortSlice(s, func(a, b int) bool { return a < b })
+	if !reflect.DeepEqual(s, expected) {
+		t.Errorf("Expected %v, got %v", expected, s)
+	}
+}
+
+// TestSortSlice_StringDescending tests sorting a string slice in descending order.
+func TestSortSlice_StringDescending(t *testing.T) {
+	s := []string{"apple", "banana", "cherry"}
+	expected := []string{"cherry", "banana", "apple"}
+	slicex.SortSlice(s, func(a, b string) bool { return a > b })
+	if !reflect.DeepEqual(s, expected) {
+		t.Errorf("Expected %v, got %v", expected, s)
+	}
+}
+
+type Employee struct {
+	FirstName string
+	LastName  string
+	Age       int
+}
+
+func TestSortSlice_StructField(t *testing.T) {
+	input := []Employee{
+		{"Bob", "Smith", 25},
+		{"John", "Doe", 30},
+		{"Jane", "Doe", 28},
+	}
+	expected := []Employee{
+		{"Bob", "Smith", 25},
+		{"Jane", "Doe", 28},
+		{"John", "Doe", 30},
+	}
+
+	slicex.SortSlice(input, func(a, b Employee) bool {
+		return a.Age < b.Age
+	})
+	if !reflect.DeepEqual(input, expected) {
+		t.Errorf("SortSlice() expected %v, got %v", expected, input)
+	}
+}
+
+func TestSortSlice_MapField(t *testing.T) {
+	input := []map[string]interface{}{
+		{"first_name": "Bob", "last_name": "Smith", "age": 25},
+		{"first_name": "John", "last_name": "Doe", "age": 30},
+		{"first_name": "Jane", "last_name": "Doe", "age": 28},
+	}
+	expected := []map[string]interface{}{
+		{"first_name": "Bob", "last_name": "Smith", "age": 25},
+		{"first_name": "Jane", "last_name": "Doe", "age": 28},
+		{"first_name": "John", "last_name": "Doe", "age": 30},
+	}
+	slicex.SortSlice(input, func(a, b map[string]interface{}) bool {
+		return a["age"].(int) < b["age"].(int)
+	})
+	if !reflect.DeepEqual(input, expected) {
+		t.Errorf("Expected %v, got %v", expected, input)
+	}
+}
