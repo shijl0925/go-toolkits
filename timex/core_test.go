@@ -1,8 +1,7 @@
-package toolkits_test
+package timex_test
 
 import (
-	"fmt"
-	toolkits "github.com/shijl0925/go-toolkits"
+	"github.com/shijl0925/go-toolkits/timex"
 	"testing"
 	"time"
 )
@@ -67,7 +66,7 @@ func Test_StringFormatTime(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := toolkits.FormatStrToTime(tt.input, tt.format...)
+			got, err := timex.FormatStrToTime(tt.input, tt.format...)
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("StringFormatTime() error = %v, wantErr %v", err, tt.wantErr)
@@ -129,7 +128,7 @@ func Test_TimeFormatString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := toolkits.FormatTimeToStr(tt.input, tt.format...)
+			got := timex.FormatTimeToStr(tt.input, tt.format...)
 			if got != tt.expected {
 				t.Errorf("got %q, want %q", got, tt.expected)
 			}
@@ -180,7 +179,7 @@ func TestGetDurationBetween(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := toolkits.GetDurationBetween(tc.start, tc.end)
+			result := timex.GetDurationBetween(tc.start, tc.end)
 			if result != tc.expected {
 				t.Errorf("Expected %v, but got %v", tc.expected, result)
 			}
@@ -252,7 +251,7 @@ func TestGetDurationPretty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, h, m, s := toolkits.GetDurationPretty(tt.start, tt.end)
+			d, h, m, s := timex.GetDurationPretty(tt.start, tt.end)
 			if d != tt.expected[0] || h != tt.expected[1] || m != tt.expected[2] || s != tt.expected[3] {
 				t.Errorf("expected (%d, %d, %d, %d), got (%d, %d, %d, %d)",
 					tt.expected[0], tt.expected[1], tt.expected[2], tt.expected[3],
@@ -311,7 +310,7 @@ func TestAddMinute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTime, err := toolkits.AddMinute(tt.inputTime, tt.minutes)
+			gotTime, err := timex.AddMinute(tt.inputTime, tt.minutes)
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got nil")
@@ -363,8 +362,8 @@ func TestAddHour(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTime, err := toolkits.AddHour(tt.inputTime, tt.hours)
-			fmt.Printf("gotTime: %v, err: %v", gotTime, err)
+			gotTime, err := timex.AddHour(tt.inputTime, tt.hours)
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got nil")
@@ -428,7 +427,7 @@ func TestGetDaysBetween(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := toolkits.GetDaysBetween(tt.start, tt.end)
+			result := timex.GetDaysBetween(tt.start, tt.end)
 			if result != tt.expected {
 				t.Errorf("Expected %d days, got %d", tt.expected, result)
 			}
@@ -507,7 +506,7 @@ func TestGetMonthsBetween(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := toolkits.GetMonthsBetween(tt.start, tt.end)
+			result := timex.GetMonthsBetween(tt.start, tt.end)
 			if result != tt.expected {
 				t.Errorf("Expected %d, but got %d", tt.expected, result)
 			}
@@ -574,7 +573,7 @@ func TestGetYearsBetween(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := toolkits.GetYearsBetween(tt.start, tt.end)
+			got := timex.GetYearsBetween(tt.start, tt.end)
 			if got != tt.expect {
 				t.Errorf("GetYearsBetween() = %v, want %v", got, tt.expect)
 			}
@@ -625,7 +624,7 @@ func TestGetHoursBetween(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := toolkits.GetHoursBetween(tt.start, tt.end)
+			result := timex.GetHoursBetween(tt.start, tt.end)
 			if result != tt.expected {
 				t.Errorf("Expected %f, got %f", tt.expected, result)
 			}
@@ -668,7 +667,7 @@ func TestGetMinutesBetween(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := toolkits.GetMinutesBetween(tt.start, tt.end)
+			result := timex.GetMinutesBetween(tt.start, tt.end)
 			if result != tt.expected {
 				t.Errorf("Expected %f, but got %f", tt.expected, result)
 			}
@@ -711,7 +710,7 @@ func TestGetSecondsBetween(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := toolkits.GetSecondsBetween(tt.start, tt.end)
+			result := timex.GetSecondsBetween(tt.start, tt.end)
 			if result != tt.expected {
 				t.Errorf("GetSecondsBetween() = %v; want %v", result, tt.expected)
 			}
