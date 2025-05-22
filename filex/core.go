@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -20,6 +21,66 @@ func IsExist(path string) bool {
 		return false
 	}
 	return false
+}
+
+func IsSameStat(path1, path2 string) bool {
+	if path1 == "" || path2 == "" {
+		return false
+	}
+
+	info1, err := os.Stat(path1)
+	if err != nil {
+		log.Printf("os.Stat(%s) failed: %v", path1, err)
+		return false
+	}
+
+	info2, err := os.Stat(path2)
+	if err != nil {
+		log.Printf("os.Stat(%s) failed: %v", path2, err)
+		return false
+	}
+
+	return os.SameFile(info1, info2)
+}
+
+// GetAbsPath returns the absolute path of the given path.
+// If the path is relative, it will be resolved relative to the current working directory.
+func GetAbsPath(path string) (string, error) {
+	if path == "" {
+		return "", fmt.Errorf("path is empty")
+	}
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("filepath.Abs(%s) failed: %v", path, err)
+	}
+	return absPath, nil
+}
+
+// GetBaseName returns the last element of the path, with leading directories removed.
+// It ensures that even paths ending with a separator are handled correctly.
+func GetBaseName(path string) string {
+	return filepath.Base(filepath.Clean(path))
+}
+
+// GetDirName 返回给定路径的目录部分，清理路径后提取其父目录。
+// 注意：若路径为空或无法提取目录，则返回 "." 或对应平台的等价路径。
+func GetDirName(path string) string {
+	return filepath.Dir(filepath.Clean(path))
+}
+
+// GetExtension returns the file extension of the given path.
+// If the path has no extension or is empty, it returns an empty string.
+func GetExtension(path string) string {
+	return filepath.Ext(path)
+}
+
+// SplitText returns the file name(without the extension) and extension of the given path.
+// 分割路径为文件名（不含扩展）和扩展名
+func SplitText(path string) (string, string) {
+	ext := filepath.Ext(path)
+	fileName := path[:len(path)-len(ext)]
+	return fileName, ext
 }
 
 // CreateFile create a file in path.
