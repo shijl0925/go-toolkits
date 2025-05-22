@@ -106,6 +106,64 @@ func Test_FilterSlice(t *testing.T) {
 	}
 }
 
+// TestDropWhile tests the DropWhile function with various test cases.
+func TestDropWhile(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		input     []int
+		predicate func(int) bool
+		expected  []int
+	}{
+		{
+			name:      "EmptySlice",
+			input:     []int{},
+			predicate: func(x int) bool { return true },
+			expected:  []int{},
+		},
+		{
+			name:      "AllElementsMatch",
+			input:     []int{1, 2, 3, 4},
+			predicate: func(x int) bool { return x < 5 },
+			expected:  []int{},
+		},
+		{
+			name:      "SomeElementsMatch",
+			input:     []int{1, 2, 3, 4, 5, 6},
+			predicate: func(x int) bool { return x <= 3 },
+			expected:  []int{4, 5, 6},
+		},
+		{
+			name:      "NoElementsMatch",
+			input:     []int{4, 5, 6},
+			predicate: func(x int) bool { return x < 4 },
+			expected:  []int{4, 5, 6},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := itertools.DropWhile(tt.input, tt.predicate)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestDropWhile_GenericString tests DropWhile with a string slice to verify generic behavior.
+func TestDropWhile_GenericString(t *testing.T) {
+	input := []string{"a", "aa", "aaa", "b"}
+	predicate := func(s string) bool { return len(s) < 3 }
+	expected := []string{"aaa", "b"}
+
+	result := itertools.DropWhile(input, predicate)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
 func Test_AllSlice(t *testing.T) {
 	var tests = []struct {
 		name     string
