@@ -1,9 +1,11 @@
 package mapx
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 )
 
 // Keys 返回 map 里面的所有的 key。
@@ -208,4 +210,13 @@ func InvertWithErr[K, V comparable](m map[K]V) (map[V]K, error) {
 		result[value] = key
 	}
 	return result, nil
+}
+
+// ToJson covert map to a json string
+func ToJson(m map[string]any) (string, error) {
+	data, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
