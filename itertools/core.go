@@ -33,6 +33,22 @@ func Filter[T any](s []T, fn func(T) bool) []T {
 	return result
 }
 
+// DropWhile remove elements from the left while the predicate is true.
+// 丢弃原有切片中直到函数返回false之前的所有元素，然后返回后面所有元素。
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r := DropWhile(s, func(i int) bool { return > 3 }) // r == []int{4, 5}
+func DropWhile[T any](s []T, fn func(T) bool) []T {
+	i := 0
+	for ; i < len(s); i++ {
+		if !fn(s[i]) {
+			break
+		}
+	}
+	return s[i:]
+}
+
 func Reduce[T any, U any](s []T, fn func(U, T) U, initial U) U {
 	acc := initial
 	for _, v := range s {
