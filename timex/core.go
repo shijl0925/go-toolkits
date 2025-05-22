@@ -156,6 +156,16 @@ func AddYear(t time.Time, years int) (time.Time, error) {
 	return t.AddDate(years, 0, 0), nil
 }
 
+func AddTimeDelta(t time.Time, delta *TimeDelta) (time.Time, error) {
+	if t.IsZero() {
+		return time.Time{}, ErrTimeIsZero
+	}
+	if delta == nil {
+		return time.Time{}, fmt.Errorf("delta is nil")
+	}
+	return t.Add(delta.Duration()), nil
+}
+
 // GetNowDate return format yyyy-mm-dd of current date.
 func GetNowDate() string {
 	now := time.Now()
