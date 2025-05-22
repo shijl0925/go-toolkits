@@ -380,6 +380,64 @@ func TestAddHour(t *testing.T) {
 	}
 }
 
+func TestAddTimeDelta(t *testing.T) {
+	baseTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name        string
+		inputTime   time.Time
+		delta       *timex.TimeDelta
+		wantTime    time.Time
+		expectedErr bool
+	}{
+		{
+			name:        "ZeroTimeInput",
+			inputTime:   time.Time{},
+			delta:       &timex.TimeDelta{Days: 1},
+			expectedErr: true,
+		},
+		{
+			name:        "NilDelta",
+			inputTime:   baseTime,
+			delta:       nil,
+			expectedErr: true,
+		},
+		{
+			name:        "TS001 ValidTimeAndDelta",
+			inputTime:   baseTime,
+			delta:       &timex.TimeDelta{Days: 1, Hours: 2},
+			expectedErr: false,
+			wantTime:    baseTime.Add(time.Hour*24 + time.Hour*2),
+		},
+		{
+			name:        "TS002 ValidTimeAndDelta",
+			inputTime:   baseTime,
+			delta:       &timex.TimeDelta{Weeks: 1, Days: 2, Hours: 3, Minutes: 4, Seconds: 5, Milliseconds: 6, Microseconds: 7},
+			expectedErr: false,
+			wantTime:    baseTime.Add(time.Hour*24*7 + time.Hour*24*2 + time.Hour*3 + time.Minute*4 + time.Second*5 + time.Millisecond*6 + time.Microsecond*7),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := timex.AddTimeDelta(tt.inputTime, tt.delta)
+			if tt.expectedErr {
+				if err == nil {
+					t.Errorf("Expected error, but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if !result.Equal(tt.wantTime) {
+					t.Errorf("Expected %v, got %v", tt.wantTime, result)
+				}
+			}
+		})
+	}
+}
+
 func TestGetDaysBetween(t *testing.T) {
 	tests := []struct {
 		name     string
