@@ -687,7 +687,7 @@ func Chunk[T any](s []T, size int) [][]T {
 	result := [][]T{}
 
 	if len(s) == 0 || size <= 0 {
-		return result
+		return [][]T{}
 	}
 
 	for i := 0; i < len(s); i += size {
