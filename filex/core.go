@@ -86,6 +86,9 @@ func SplitText(path string) (string, string) {
 
 // CreateFile create a file in path.
 func CreateFile(path string) error {
+	if path == "" {
+		return fmt.Errorf("path is empty")
+	}
 	f, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0600)
 	if err != nil {
 		return err
@@ -114,6 +117,9 @@ func CreateDir(absPath string) error {
 }
 
 func CopyDir(srcPath string, dstPath string) error {
+	if srcPath == "" || dstPath == "" {
+		return fmt.Errorf("srcPath or dstPath is empty")
+	}
 	srcInfo, err := os.Lstat(srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to get source directory info: %w", err)
@@ -172,6 +178,9 @@ func CopyDir(srcPath string, dstPath string) error {
 
 // CopyFile copy src file to dist file.
 func CopyFile(srcPath string, dstPath string) error {
+	if srcPath == "" || dstPath == "" {
+		return fmt.Errorf("srcPath or dstPath is empty")
+	}
 	srcFile, err := os.Open(filepath.Clean(srcPath))
 	if err != nil {
 		return err
@@ -227,6 +236,10 @@ func IsFile(path string) (bool, error) {
 // It will return an error if the path is not a directory.
 // return all files and dirs
 func ListDir(path string) ([]string, error) {
+	path = filepath.Clean(path)
+	if path == "" {
+		return nil, fmt.Errorf("path is empty")
+	}
 	if !IsExist(path) {
 		return nil, fmt.Errorf("path %s not exist", path)
 	}
@@ -250,6 +263,9 @@ func ListDir(path string) ([]string, error) {
 }
 
 func RemoveFile(path string) error {
+	if path == "" {
+		return fmt.Errorf("path is empty")
+	}
 	// 清理路径，防止路径穿越攻击
 	cleanedPath := filepath.Clean(path)
 
@@ -265,6 +281,9 @@ func RemoveFile(path string) error {
 }
 
 func RemoveDir(path string) error {
+	if path == "" {
+		return fmt.Errorf("path is empty")
+	}
 	// 清理路径，防止路径穿越攻击
 	cleanedPath := filepath.Clean(path)
 
@@ -285,6 +304,9 @@ func RemoveDir(path string) error {
 }
 
 func ReadLines(path string) ([]string, error) {
+	if path == "" {
+		return nil, fmt.Errorf("path is empty")
+	}
 	file, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, err
@@ -335,6 +357,9 @@ func ReadLines(path string) ([]string, error) {
 
 // ReadFileToString return string of file content.
 func ReadFileToString(path string) (string, error) {
+	if path == "" {
+		return "", fmt.Errorf("path is empty")
+	}
 	bytes, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return "", fmt.Errorf("reading file %s: %w", path, err)
@@ -344,21 +369,30 @@ func ReadFileToString(path string) (string, error) {
 
 // WriteStringToFile write string to target file.
 func WriteStringToFile(filepath string, content string) error {
+	if filepath == "" {
+		return fmt.Errorf("filepath is empty")
+	}
 	err := os.WriteFile(filepath, []byte(content), 0600)
 	return err
 }
 
 // IsLink checks if a file is symbol link or not.
-func IsLink(path string) bool {
+func IsLink(path string) (bool, error) {
+	if path == "" {
+		return false, fmt.Errorf("path is empty")
+	}
 	fi, err := os.Lstat(path)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return fi.Mode()&os.ModeSymlink != 0
+	return fi.Mode()&os.ModeSymlink != 0, nil
 }
 
 // FileMode return file's mode and permission.
 func FileMode(path string) (fs.FileMode, error) {
+	if path == "" {
+		return 0, fmt.Errorf("path is empty")
+	}
 	fi, err := os.Lstat(path)
 	if err != nil {
 		return 0, err
@@ -368,6 +402,9 @@ func FileMode(path string) (fs.FileMode, error) {
 
 // FileSize returns file size in bytes.
 func FileSize(path string) (int64, error) {
+	if path == "" {
+		return 0, fmt.Errorf("path is empty")
+	}
 	f, err := os.Stat(path)
 	if err != nil {
 		// 可选：对特定错误进行封装或记录日志
