@@ -1,10 +1,11 @@
 package setx_test
 
 import (
-	"github.com/shijl0925/go-toolkits/setx"
-	"github.com/shijl0925/go-toolkits/slicex"
 	"reflect"
 	"testing"
+
+	"github.com/shijl0925/go-toolkits/setx"
+	"github.com/shijl0925/go-toolkits/slicex"
 )
 
 // TestNewSet tests the New function.
@@ -182,7 +183,7 @@ func TestIterate(t *testing.T) {
 	t.Run("TC01 - Empty Set", func(t *testing.T) {
 		set := setx.New([]int{}...)
 		called := false
-		set.Iterate(func(item int) {
+		set.Iterate(func(_ int) {
 			called = true
 		})
 		if called {
@@ -218,7 +219,7 @@ func TestIterate(t *testing.T) {
 	t.Run("TC03 - Nil Set", func(t *testing.T) {
 		set := setx.New([]float64{}...) // nil map
 		called := false
-		set.Iterate(func(item float64) {
+		set.Iterate(func(_ float64) {
 			called = true
 		})
 		if called {

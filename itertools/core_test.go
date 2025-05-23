@@ -1,10 +1,11 @@
 package itertools_test
 
 import (
-	toolkits "github.com/shijl0925/go-toolkits"
-	"github.com/shijl0925/go-toolkits/itertools"
 	"reflect"
 	"testing"
+
+	toolkits "github.com/shijl0925/go-toolkits"
+	"github.com/shijl0925/go-toolkits/itertools"
 )
 
 func Test_MapSliceArray(t *testing.T) {
@@ -119,7 +120,7 @@ func TestDropWhile(t *testing.T) {
 		{
 			name:      "EmptySlice",
 			input:     []int{},
-			predicate: func(x int) bool { return true },
+			predicate: func(_ int) bool { return true },
 			expected:  []int{},
 		},
 		{
@@ -392,7 +393,7 @@ func Test_GroupBy(t *testing.T) {
 		{
 			name:    "empty slice",
 			slice:   []int{},
-			keyFunc: func(x int) int { return 1 },
+			keyFunc: func(_ int) int { return 1 },
 			want:    map[int][]int{},
 		},
 	}
