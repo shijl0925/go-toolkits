@@ -1,10 +1,11 @@
 package mapx_test
 
 import (
-	"github.com/shijl0925/go-toolkits/mapx"
-	"github.com/shijl0925/go-toolkits/setx"
 	"reflect"
 	"testing"
+
+	"github.com/shijl0925/go-toolkits/mapx"
+	"github.com/shijl0925/go-toolkits/setx"
 )
 
 func TestKeys(t *testing.T) {
@@ -390,7 +391,7 @@ func TestFilterByKey(t *testing.T) {
 		{
 			name:     "EmptyMap",
 			input:    map[int]string{},
-			filterFn: func(k int) bool { return true },
+			filterFn: func(_ int) bool { return true },
 			expected: map[int]string{},
 		},
 		{
@@ -454,25 +455,25 @@ func TestFilterByValue(t *testing.T) {
 		{
 			name:     "Empty Map",
 			inputMap: map[any]any{},
-			filterFn: func(v any) bool { return true },
+			filterFn: func(_ any) bool { return true },
 			expected: map[any]any{},
 		},
 		{
 			name:     "Nil Map",
 			inputMap: nil,
-			filterFn: func(v any) bool { return true },
+			filterFn: func(_ any) bool { return true },
 			expected: map[any]any{},
 		},
 		{
 			name:     "All Elements Match",
 			inputMap: map[any]any{1: "apple", 2: "banana"},
-			filterFn: func(v any) bool { return true },
+			filterFn: func(_ any) bool { return true },
 			expected: map[any]any{1: "apple", 2: "banana"},
 		},
 		{
 			name:     "No Elements Match",
 			inputMap: map[any]any{1: "apple", 2: "banana"},
-			filterFn: func(v any) bool { return false },
+			filterFn: func(_ any) bool { return false },
 			expected: map[any]any{},
 		},
 		{
@@ -510,25 +511,25 @@ func TestFilter(t *testing.T) {
 		{
 			name:     "NilMap_ReturnsEmpty",
 			input:    nil,
-			filterFn: func(k int, v string) bool { return true },
+			filterFn: func(_ int, _ string) bool { return true },
 			expected: map[int]string{},
 		},
 		{
 			name:     "EmptyMap_ReturnsEmpty",
 			input:    map[int]string{},
-			filterFn: func(k int, v string) bool { return true },
+			filterFn: func(_ int, _ string) bool { return true },
 			expected: map[int]string{},
 		},
 		{
 			name:     "AllElementsMatch_ReturnsSame",
 			input:    map[int]string{1: "a", 2: "b"},
-			filterFn: func(k int, v string) bool { return true },
+			filterFn: func(_ int, _ string) bool { return true },
 			expected: map[int]string{1: "a", 2: "b"},
 		},
 		{
 			name:     "NoElementsMatch_ReturnsEmpty",
 			input:    map[int]string{1: "a", 2: "b"},
-			filterFn: func(k int, v string) bool { return false },
+			filterFn: func(_ int, _ string) bool { return false },
 			expected: map[int]string{},
 		},
 		{
