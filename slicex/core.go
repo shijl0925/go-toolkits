@@ -2,11 +2,12 @@ package slicex
 
 import (
 	"fmt"
-	toolkits "github.com/shijl0925/go-toolkits"
-	"golang.org/x/exp/constraints"
 	"reflect"
 	"sort"
 	"strings"
+
+	toolkits "github.com/shijl0925/go-toolkits"
+	"golang.org/x/exp/constraints"
 )
 
 type RealNumber interface {
@@ -684,7 +685,7 @@ func JoinSlice[T any](sep string, s []T) string {
 // Chunk creates a slice of elements split into groups the length of size.
 // 将切片按照给定的大小进行分组，并返回一个二维切片。
 func Chunk[T any](s []T, size int) [][]T {
-	result := [][]T{}
+	var result [][]T
 
 	if len(s) == 0 || size <= 0 {
 		return [][]T{}

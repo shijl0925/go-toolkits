@@ -39,7 +39,8 @@ func TestFind(t *testing.T) {
 	})
 
 	t.Run("Empty slice returns false", func(t *testing.T) {
-		s := []int{}
+		var s []int
+
 		result := itertools.Find(s, func(x int) bool { return x > 0 })
 		if result {
 			t.Errorf("Expected false, got true")
