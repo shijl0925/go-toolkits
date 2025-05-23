@@ -1,11 +1,12 @@
 package filex_test
 
 import (
-	"github.com/shijl0925/go-toolkits/filex"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/shijl0925/go-toolkits/filex"
 )
 
 func TestIsExist(t *testing.T) {
@@ -185,7 +186,7 @@ func TestReadFileToString(t *testing.T) {
 				t.Errorf("ReadFileToString() error = %v", err)
 			}
 
-			if len(result) == 0 {
+			if result == "" {
 				t.Errorf("ReadFileToString() expected %v, got %v", tt.expected, result)
 			}
 		})
