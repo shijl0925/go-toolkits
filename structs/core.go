@@ -37,9 +37,8 @@ func StructToMap(s any) map[string]any {
 						result[k] = v
 					}
 					continue
-				} else {
-					value = StructToMap(value)
 				}
+				value = StructToMap(value)
 
 			}
 		}
