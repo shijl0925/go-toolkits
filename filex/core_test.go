@@ -477,3 +477,143 @@ func Test_RemoveFile(t *testing.T) {
 		}
 	})
 }
+
+// TestWalk_NormalDirectoryStructure tests the Walk function with a normal directory structure
+func TestWalk_NormalDirectoryStructure(t *testing.T) {
+	// 创建临时测试目录结构
+	testDir := t.TempDir()
+
+	// 创建子目录和文件
+	os.MkdirAll(filepath.Join(testDir, "dir1", "subdir1"), 0755)
+	os.MkdirAll(filepath.Join(testDir, "dir2"), 0755)
+	os.WriteFile(filepath.Join(testDir, "file1.txt"), []byte("content"), 0644)
+	os.WriteFile(filepath.Join(testDir, "file2.txt"), []byte("content"), 0644)
+	os.WriteFile(filepath.Join(testDir, "dir1", "subdir1", "subfile.txt"), []byte("content"), 0644)
+	os.WriteFile(filepath.Join(testDir, "dir1", "file3.txt"), []byte("content"), 0644)
+
+	// 执行Walk函数
+	results, err := filex.WalkV2(testDir)
+	if err != nil {
+		t.Errorf("WalkV2() error = %v", err)
+	}
+
+	// 验证结果数量
+	expectedCount := 4 // 根目录 + dir1 + subdir1 + dir2
+	if len(results) != expectedCount {
+		t.Errorf("Expected %d results, got %d", expectedCount, len(results))
+	}
+
+	// 验证根目录结果
+	for _, result := range results {
+		if result.Err != nil {
+			t.Errorf("Unexpected error in directory %s: %v", result.Root, result.Err)
+		}
+
+		switch {
+		case result.Root == testDir:
+			expectedDirs := []string{"dir1", "dir2"}
+			expectedFiles := []string{"file1.txt", "file2.txt"}
+			if !slicex.EqualUnordered(result.Dirs, expectedDirs) || !slicex.EqualUnordered(result.Files, expectedFiles) {
+				t.Errorf("Root directory mismatch: Dirs=%v, Files=%v", result.Dirs, result.Files)
+			}
+		case filepath.Base(result.Root) == "dir1":
+			expectedDirs := []string{"subdir1"}
+			expectedFiles := []string{"file3.txt"}
+			if !slicex.EqualUnordered(result.Dirs, expectedDirs) || !slicex.EqualUnordered(result.Files, expectedFiles) {
+				t.Errorf("Dir1 directory mismatch: Dirs=%v, Files=%v", result.Dirs, result.Files)
+			}
+		case filepath.Base(result.Root) == "subdir1":
+			expectedDirs := []string{}
+			expectedFiles := []string{"subfile.txt"}
+			if !slicex.EqualUnordered(result.Dirs, expectedDirs) || !slicex.EqualUnordered(result.Files, expectedFiles) {
+				t.Errorf("Subdir1 directory mismatch: Dirs=%v, Files=%v", result.Dirs, result.Files)
+			}
+		case filepath.Base(result.Root) == "dir2":
+			expectedDirs := []string{}
+			expectedFiles := []string{}
+			if !slicex.EqualUnordered(result.Dirs, expectedDirs) || !slicex.EqualUnordered(result.Files, expectedFiles) {
+				t.Errorf("Dir2 directory mismatch: Dirs=%v, Files=%v", result.Dirs, result.Files)
+			}
+		}
+	}
+}
+
+// TestWalk_NonExistentDirectory tests Walk function with a non-existent directory
+func TestWalk_NonExistentDirectory(t *testing.T) {
+	nonExistentDir := filepath.Join("non", "existent", "dir")
+	_, err := filex.WalkV2(nonExistentDir)
+	if err == nil {
+		t.Errorf("Walk error: %v", err)
+	}
+}
+
+// TestWalk_EmptyDirectory tests Walk function with an empty directory
+func TestWalk_EmptyDirectory(t *testing.T) {
+	emptyDir := t.TempDir()
+	results, err := filex.WalkV2(emptyDir)
+	if err != nil {
+		t.Errorf("Walk error: %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("Expected 0 result, got %d", len(results))
+	}
+}
+
+// TestWalk_DirectoryOnlyWithSubdirectories tests Walk function with directories only
+func TestWalk_DirectoryOnlyWithSubdirectories(t *testing.T) {
+	testDir := t.TempDir()
+	os.MkdirAll(filepath.Join(testDir, "dir1"), 0755)
+	os.MkdirAll(filepath.Join(testDir, "dir2"), 0755)
+
+	results, err := filex.WalkV2(testDir)
+	if err != nil {
+		t.Errorf("WalkV2() error = %v", err)
+	}
+
+	if len(results) != 3 { // 根目录 + dir1 + dir2
+		t.Errorf("Expected 3 results, got %d", len(results))
+	}
+
+	for _, result := range results {
+		if result.Err != nil {
+			t.Errorf("Unexpected error in directory %s: %v", result.Root, result.Err)
+		}
+
+		if len(result.Files) != 0 {
+			t.Errorf("Expected no files in directory %s, got %v", result.Root, result.Files)
+		}
+	}
+
+	// 验证根目录的子目录
+	if !slicex.EqualUnordered(results[0].Dirs, []string{"dir1", "dir2"}) {
+		t.Errorf("Expected Dirs=[dir1, dir2], got %v", results[0].Dirs)
+	}
+}
+
+// TestWalk_DirectoryOnlyWithFiles tests Walk function with files only
+func TestWalk_DirectoryOnlyWithFiles(t *testing.T) {
+	testDir := t.TempDir()
+	os.WriteFile(filepath.Join(testDir, "file1.txt"), []byte("content"), 0644)
+	os.WriteFile(filepath.Join(testDir, "file2.txt"), []byte("content"), 0644)
+
+	results, err := filex.WalkV2(testDir)
+	if err != nil {
+		t.Errorf("WalkV2() error = %v", err)
+	}
+
+	if len(results) != 1 {
+		t.Errorf("Expected 1 result, got %d", len(results))
+	}
+
+	if results[0].Err != nil {
+		t.Errorf("Unexpected error: %v", results[0].Err)
+	}
+
+	if len(results[0].Dirs) != 0 {
+		t.Errorf("Expected no subdirectories, got %v", results[0].Dirs)
+	}
+
+	if !slicex.EqualUnordered(results[0].Files, []string{"file1.txt", "file2.txt"}) {
+		t.Errorf("Expected Files=[file1.txt, file2.txt], got %v", results[0].Files)
+	}
+}
