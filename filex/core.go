@@ -378,3 +378,114 @@ func FileSize(path string) (int64, error) {
 	}
 	return f.Size(), nil
 }
+
+// WalkResult 包含目录遍历结果
+type WalkResult struct {
+	Root  string   // 当前目录路径
+	Dirs  []string // 子目录名列表（相对路径）
+	Files []string // 文件名列表
+	Err   error    // 遍历错误
+}
+
+func WalkV1(root string) []WalkResult {
+	var results []WalkResult
+	stack := []string{root} // 使用栈实现深度优先遍历
+
+	for len(stack) > 0 {
+		currentDir := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		// 读取目录内容
+		entries, err := os.ReadDir(currentDir)
+		if err != nil {
+			results = append(results, WalkResult{
+				Root: currentDir,
+				Err:  err,
+			})
+			continue
+		}
+
+		// 分离子目录和文件
+		var dirs, files []string
+		for _, entry := range entries {
+			name := entry.Name()
+			if entry.IsDir() {
+				dirs = append(dirs, name)
+			} else {
+				files = append(files, name)
+			}
+		}
+
+		// 按名称排序（与 Python 行为一致）
+		sort.Strings(dirs)
+		sort.Strings(files)
+
+		// 记录结果
+		results = append(results, WalkResult{
+			Root:  currentDir,
+			Dirs:  dirs,
+			Files: files,
+		})
+
+		// 逆序压栈（保证顺序处理）
+		for i := len(dirs) - 1; i >= 0; i-- {
+			fullPath := filepath.Join(currentDir, dirs[i])
+			stack = append(stack, fullPath)
+		}
+	}
+
+	return results
+}
+
+func WalkV2(root string) ([]*WalkResult, error) {
+	var results []*WalkResult
+	resultMap := make(map[string]*WalkResult)
+
+	err := filepath.Walk(root, func(filePath string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+
+		if filePath == root {
+			return nil
+		}
+
+		dirName := filepath.Dir(filePath)
+		dirWr, ok := resultMap[dirName]
+
+		if !ok {
+			dirWr = &WalkResult{
+				Root:  dirName,
+				Dirs:  []string{},
+				Files: []string{},
+			}
+			results = append(results, dirWr)
+			resultMap[dirName] = dirWr
+		}
+
+		if info.IsDir() {
+			dirWr.Dirs = append(dirWr.Dirs, info.Name())
+
+			currentWr, ok := resultMap[filePath]
+			if !ok {
+				currentWr = &WalkResult{
+					Root:  filePath,
+					Dirs:  []string{},
+					Files: []string{},
+				}
+				results = append(results, currentWr)
+				resultMap[filePath] = currentWr
+			}
+		} else {
+			dirWr.Files = append(dirWr.Files, info.Name())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
