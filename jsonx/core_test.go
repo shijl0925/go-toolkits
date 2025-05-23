@@ -154,6 +154,9 @@ func Test_EncodeToWriter(t *testing.T) {
 		}
 
 		buf, err := ioutil.ReadFile(tmpfile.Name())
+		if err != nil {
+			t.Errorf("ReadFile() error: %v", err)
+		}
 		if string(buf) != want {
 			t.Errorf("EncodeToWriter() expected %v, got %v", want, string(buf))
 		}
