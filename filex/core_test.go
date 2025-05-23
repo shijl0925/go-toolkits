@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/shijl0925/go-toolkits/filex"
+	"github.com/shijl0925/go-toolkits/slicex"
 )
 
 func TestIsExist(t *testing.T) {
