@@ -110,8 +110,6 @@ func Test_FilterSlice(t *testing.T) {
 
 // TestDropWhile tests the DropWhile function with various test cases.
 func TestDropWhile(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name      string
 		input     []int
