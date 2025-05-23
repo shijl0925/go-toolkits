@@ -524,14 +524,17 @@ func TestWalk_NormalDirectoryStructure(t *testing.T) {
 				t.Errorf("Dir1 directory mismatch: Dirs=%v, Files=%v", result.Dirs, result.Files)
 			}
 		case filepath.Base(result.Root) == "subdir1":
-			expectedDirs := []string{}
+			var expectedDirs []string
+
 			expectedFiles := []string{"subfile.txt"}
 			if !slicex.EqualUnordered(result.Dirs, expectedDirs) || !slicex.EqualUnordered(result.Files, expectedFiles) {
 				t.Errorf("Subdir1 directory mismatch: Dirs=%v, Files=%v", result.Dirs, result.Files)
 			}
 		case filepath.Base(result.Root) == "dir2":
-			expectedDirs := []string{}
-			expectedFiles := []string{}
+			var expectedDirs []string
+
+			var expectedFiles []string
+
 			if !slicex.EqualUnordered(result.Dirs, expectedDirs) || !slicex.EqualUnordered(result.Files, expectedFiles) {
 				t.Errorf("Dir2 directory mismatch: Dirs=%v, Files=%v", result.Dirs, result.Files)
 			}
