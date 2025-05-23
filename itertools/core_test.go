@@ -1,10 +1,11 @@
 package itertools_test
 
 import (
-	toolkits "github.com/shijl0925/go-toolkits"
-	"github.com/shijl0925/go-toolkits/itertools"
 	"reflect"
 	"testing"
+
+	toolkits "github.com/shijl0925/go-toolkits"
+	"github.com/shijl0925/go-toolkits/itertools"
 )
 
 func Test_MapSliceArray(t *testing.T) {
@@ -38,7 +39,8 @@ func TestFind(t *testing.T) {
 	})
 
 	t.Run("Empty slice returns false", func(t *testing.T) {
-		s := []int{}
+		var s []int
+
 		result := itertools.Find(s, func(x int) bool { return x > 0 })
 		if result {
 			t.Errorf("Expected false, got true")
