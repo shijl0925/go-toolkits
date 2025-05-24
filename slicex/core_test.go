@@ -2,7 +2,6 @@ package slicex_test
 
 import (
 	"fmt"
-	"github.com/shijl0925/go-toolkits"
 	"github.com/shijl0925/go-toolkits/slicex"
 	"reflect"
 	"testing"
@@ -373,14 +372,22 @@ func Test_Pop(t *testing.T) {
 		}
 	})
 
-	t.Run("generic type float64", func(t *testing.T) {
-		s := &[]float64{3.14, 2.71, 1.61}
+	t.Run("generic type struct", func(t *testing.T) {
+		type User struct {
+			Name string
+			Age  int
+		}
+		s := &[]User{
+			{Name: "Alice", Age: 25},
+			{Name: "Bob", Age: 30},
+			{Name: "Charlie", Age: 35},
+		}
 		val, ok := slicex.Pop(s)
-		if !toolkits.EqualFloat64(val, 1.61, 6) || !ok {
+		if !reflect.DeepEqual(val, User{Name: "Charlie", Age: 35}) || !ok {
 			t.Errorf("Pop() expected %v(%v), got %v(%v)", val, true, val, ok)
 		}
-		if !reflect.DeepEqual(*s, []float64{3.14, 2.71}) {
-			t.Errorf("Pop() expected %v, got %v", []float64{3.14, 2.71}, *s)
+		if !reflect.DeepEqual(*s, []User{{Name: "Alice", Age: 25}, {Name: "Bob", Age: 30}}) {
+			t.Errorf("Pop() expected %v, got %v", []User{{Name: "Alice", Age: 25}, {Name: "Bob", Age: 30}}, *s)
 		}
 	})
 }

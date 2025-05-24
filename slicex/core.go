@@ -811,13 +811,13 @@ func Counter[T comparable](s []T) map[T]int {
 
 // Replace returns a new slice with all occurrences of old replaced by new.
 // 返回一个新的 slice，其中包含原始 slice 中所有 old 值被 new 替换后的元素。n 表示替换的次数，-1 表示替换所有。
-func Replace[T comparable](s []T, old, new T, n int) []T {
+func Replace[T comparable](s []T, oldElement, newElement T, n int) []T {
 	result := make([]T, len(s))
 	copy(result, s)
 
 	for i := range result {
-		if result[i] == old && n != 0 {
-			result[i] = new
+		if result[i] == oldElement && n != 0 {
+			result[i] = newElement
 			n--
 		}
 	}

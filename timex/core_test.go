@@ -188,8 +188,8 @@ func TestGetDurationBetween(t *testing.T) {
 }
 
 // 定义辅助函数用于创建固定时间点
-func newTime(year int, month time.Month, day, hour, min, sec int) time.Time {
-	return time.Date(year, month, day, hour, min, sec, 0, time.UTC)
+func newTime(year int, month time.Month, day, hour, minute, sec int) time.Time {
+	return time.Date(year, month, day, hour, minute, sec, 0, time.UTC)
 }
 
 func TestGetDurationPretty(t *testing.T) {
