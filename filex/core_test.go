@@ -38,6 +38,269 @@ func TestIsExist(t *testing.T) {
 	}
 }
 
+// Test_IsSameStat_EmptyPath 测试空路径输入
+func Test_IsSameStat_EmptyPath(t *testing.T) {
+	_, err := filex.IsSameStat("", "any")
+	if err == nil {
+		t.Errorf("IsSameStat() expected error, got nil")
+	}
+
+	_, err = filex.IsSameStat("any", "")
+	if err == nil {
+		t.Errorf("IsSameStat() expected error, got nil")
+	}
+}
+
+// Test_IsSameStat_StatFailFirst 测试第一个路径 Stat 失败
+func Test_IsSameStat_StatFailFirst(t *testing.T) {
+	_, err := filex.IsSameStat("nonexistent_file1", "nonexistent_file2")
+	if err == nil {
+		t.Errorf("IsSameStat() expected error, got nil")
+	}
+}
+
+// Test_IsSameStat_StatFailSecond 测试第二个路径 Stat 失败
+func Test_IsSameStat_StatFailSecond(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "testfile")
+	if err != nil {
+		t.Errorf("os.CreateTemp() failed: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	_, err = filex.IsSameStat(tmpFile.Name(), "nonexistent_file2")
+	if err == nil {
+		t.Errorf("IsSameStat() expected error, got nil")
+	}
+}
+
+// Test_IsSameStat_SameFile 测试两个路径指向同一文件
+func Test_IsSameStat_SameFile(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "testfile")
+	if err != nil {
+		t.Errorf("os.CreateTemp() failed: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	isSame, err := filex.IsSameStat(tmpFile.Name(), tmpFile.Name())
+	if err != nil || !isSame {
+		t.Errorf("IsSameStat() expect %v, get %v", true, isSame)
+	}
+}
+
+// Test_IsSameStat_DifferentFiles 测试两个路径指向不同文件
+func Test_IsSameStat_DifferentFiles(t *testing.T) {
+	tmpFile1, err := os.CreateTemp("", "testfile1")
+	if err != nil {
+		t.Errorf("os.CreateTemp() failed: %v", err)
+	}
+	defer os.Remove(tmpFile1.Name())
+	defer tmpFile1.Close()
+
+	tmpFile2, err := os.CreateTemp("", "testfile2")
+	if err != nil {
+		t.Errorf("os.CreateTemp() failed: %v", err)
+	}
+	defer os.Remove(tmpFile2.Name())
+	defer tmpFile2.Close()
+
+	isSame, err := filex.IsSameStat(tmpFile1.Name(), tmpFile2.Name())
+	if err != nil || isSame {
+		t.Errorf("IsSameStat() expect %v, get %v", false, isSame)
+	}
+}
+
+// TestGetAbsPath_EmptyPath 检查当输入为空字符串时是否返回正确错误
+func TestGetAbsPath_EmptyPath(t *testing.T) {
+	_, err := filex.GetAbsPath("")
+	if err == nil {
+		t.Errorf("GetAbsPath() expected error, got nil")
+	}
+}
+
+// TestGetAbsPath_ValidRelativePath 检查相对路径是否能正确转换为绝对路径
+func TestGetAbsPath_ValidRelativePath(t *testing.T) {
+	cwd, _ := os.Getwd()
+	expectedPath := filepath.Join(cwd, "test")
+
+	absPath, err := filex.GetAbsPath("test")
+	if err != nil {
+		t.Errorf("GetAbsPath() failed: %v", err)
+	}
+	if absPath != expectedPath {
+		t.Errorf("GetAbsPath() expected %s, got %s", expectedPath, absPath)
+	}
+}
+
+//// TestGetAbsPath_InvalidPath 模拟非法路径导致 filepath.Abs 失败的情况
+//func TestGetAbsPath_InvalidPath(t *testing.T) {
+//	// 使用一个不可能存在的路径来触发错误（例如 Windows 不允许的路径）
+//	invalidPath := `<invalid>:path?*"|`
+//	_, err := filex.GetAbsPath(invalidPath)
+//
+//	if err == nil {
+//		t.Errorf("GetAbsPath() expected error, got nil")
+//	}
+//}
+
+// TestGetBaseName tests various cases for GetBaseName function.
+func TestGetBaseName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Normal file path",
+			input:    "/home/user/file.txt",
+			expected: "file.txt",
+		},
+		{
+			name:     "Directory path with trailing slash",
+			input:    "/home/user/",
+			expected: "user",
+		},
+		{
+			name:     "Current directory",
+			input:    ".",
+			expected: ".",
+		},
+		{
+			name:     "Parent directory",
+			input:    "..",
+			expected: "..",
+		},
+		{
+			name:     "Relative file path",
+			input:    "file.txt",
+			expected: "file.txt",
+		},
+		//{
+		//	name:     "Windows-style path on Unix",
+		//	input:    `C:\Users\file.txt`,
+		//	expected: "file.txt",
+		//},
+		{
+			name:     "Multi-level path",
+			input:    "a/b/c",
+			expected: "c",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := filex.GetBaseName(tt.input)
+			if result != tt.expected {
+				t.Errorf("GetBaseName(%q) = %q; want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetDirName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Normal file path",
+			input:    "/home/user/file.txt",
+			expected: "/home/user",
+		},
+		{
+			name:     "Directory path with trailing slash",
+			input:    "/home/user/",
+			expected: "/home",
+		},
+		{
+			name:     "Current directory",
+			input:    ".",
+			expected: ".",
+		},
+		{
+			name:     "Relative file path",
+			input:    "file.txt",
+			expected: ".",
+		},
+		//{
+		//	name:     "Windows-style path on Unix",
+		//	input:    `C:\Users\file.txt`,
+		//	expected: "C:\Users",
+		//},
+		{
+			name:     "Multi-level path",
+			input:    "a/b/c",
+			expected: "a/b",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := filex.GetDirName(tt.input)
+			if result != tt.expected {
+				t.Errorf("GetDirName(%q) = %q; want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestGetExtension tests various cases for the GetExtension function.
+func TestGetExtension(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"Normal file with extension", "file.txt", ".txt"},
+		{"File without extension", "file", ""},
+		{"Multiple dots in filename", "image.version.jpg", ".jpg"},
+		{"Filename ends with a dot", "file.", "."},
+		{"Path with directories and multiple extensions", "dir/file.tar.gz", ".gz"},
+		{"Empty string input", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := filex.GetExtension(tt.input)
+			if result != tt.expected {
+				t.Errorf("Expected %q but got %q for input %q", tt.expected, result, tt.input)
+			}
+		})
+	}
+}
+
+func TestSplitText(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected [2]string
+	}{
+		{"TC01 - 常规带扩展名", "/home/user/file.txt", [2]string{"/home/user/file", ".txt"}},
+		{"TC02 - 多点扩展名", "file.tar.gz", [2]string{"file.tar", ".gz"}},
+		{"TC03 - 简单扩展名", "image.png", [2]string{"image", ".png"}},
+		{"TC04 - 无扩展名", "/tmp/no_extension", [2]string{"/tmp/no_extension", ""}},
+		{"TC05 - 只有文件名", "README", [2]string{"README", ""}},
+		//{"TC06 - 当前目录", ".", [2]string{"", "."}},
+		//{"TC07 - 上级目录", "..", [2]string{".", "."}},
+		{"TC08 - 结尾带斜杠", "/a/b/c/d/", [2]string{"/a/b/c/d", ""}},
+		{"TC09 - 路径含扩展名但结尾是斜杠", "/a/b/c.txt/", [2]string{"/a/b/c", ".txt"}},
+		{"TC10 - Windows路径", "C:\\Windows\\test.txt", [2]string{"C:\\Windows\\test", ".txt"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotFileName, gotExt := filex.SplitText(tt.input)
+			if tt.expected != [2]string{gotFileName, gotExt} {
+				t.Errorf("SplitText(%q) = %q, %q; want %q, %q", tt.input, gotFileName, gotExt, tt.expected[0], tt.expected[1])
+			}
+			//assert.Equal(t, tt.expected[0], gotFileName)
+			//assert.Equal(t, tt.expected[1], gotExt)
+		})
+	}
+}
+
 func TestCreateFile(t *testing.T) {
 	tempDir := t.TempDir()
 
@@ -65,6 +328,11 @@ func TestCreateFile(t *testing.T) {
 			name:    "空路径",
 			path:    "",
 			wantErr: true,
+		},
+		{
+			name:    "父文件夹不存在的情况",
+			path:    filepath.Join(tempDir, "existing", "newfile.txt"),
+			wantErr: false,
 		},
 	}
 

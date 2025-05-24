@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -24,24 +23,22 @@ func IsExist(path string) bool {
 	return false
 }
 
-func IsSameStat(path1, path2 string) bool {
+func IsSameStat(path1, path2 string) (bool, error) {
 	if path1 == "" || path2 == "" {
-		return false
+		return false, fmt.Errorf("path is empty")
 	}
 
 	info1, err := os.Stat(path1)
 	if err != nil {
-		log.Printf("os.Stat(%s) failed: %v", path1, err)
-		return false
+		return false, fmt.Errorf("os.Stat(%s) failed: %v", path1, err)
 	}
 
 	info2, err := os.Stat(path2)
 	if err != nil {
-		log.Printf("os.Stat(%s) failed: %v", path2, err)
-		return false
+		return false, fmt.Errorf("os.Stat(%s) failed: %v", path2, err)
 	}
 
-	return os.SameFile(info1, info2)
+	return os.SameFile(info1, info2), nil
 }
 
 // GetAbsPath returns the absolute path of the given path.
@@ -79,8 +76,12 @@ func GetExtension(path string) string {
 // SplitText returns the file name(without the extension) and extension of the given path.
 // 分割路径为文件名（不含扩展）和扩展名
 func SplitText(path string) (string, string) {
-	ext := filepath.Ext(path)
-	fileName := path[:len(path)-len(ext)]
+	cleanedPath := filepath.Clean(path)
+	ext := filepath.Ext(cleanedPath)
+	if ext == "" {
+		return cleanedPath, ""
+	}
+	fileName := cleanedPath[:len(cleanedPath)-len(ext)]
 	return fileName, ext
 }
 
@@ -89,7 +90,16 @@ func CreateFile(path string) error {
 	if path == "" {
 		return fmt.Errorf("path is empty")
 	}
-	f, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0600)
+
+	cleanedPath := filepath.Clean(path)
+
+	dirName := filepath.Dir(cleanedPath)
+	err := CreateDir(dirName)
+	if err != nil {
+		return fmt.Errorf("failed to create parent directories: %w", err)
+	}
+
+	f, err := os.OpenFile(cleanedPath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0600)
 	if err != nil {
 		return err
 	}
@@ -102,16 +112,21 @@ func CreateDir(absPath string) error {
 	if absPath == "" {
 		return fmt.Errorf("absPath is empty")
 	}
-	if IsExist(absPath) {
+
+	// 规范化路径
+	cleanedPath := filepath.Clean(absPath)
+
+	if IsExist(cleanedPath) {
 		return nil
 	}
-	err := os.MkdirAll(absPath, 0750)
+
+	err := os.MkdirAll(cleanedPath, 0750)
 	if err != nil {
 		// 忽略已存在
 		if os.IsExist(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("failed to create directory %q: %w", cleanedPath, err)
 	}
 	return nil
 }
@@ -181,6 +196,12 @@ func CopyFile(srcPath string, dstPath string) error {
 	if srcPath == "" || dstPath == "" {
 		return fmt.Errorf("srcPath or dstPath is empty")
 	}
+
+	srcInfo, err := os.Lstat(srcPath)
+	if err != nil {
+		return fmt.Errorf("failed to get source directory info: %w", err)
+	}
+
 	srcFile, err := os.Open(filepath.Clean(srcPath))
 	if err != nil {
 		return err
@@ -188,16 +209,22 @@ func CopyFile(srcPath string, dstPath string) error {
 	defer srcFile.Close()
 
 	// 确保目标目录存在
-	//dstDir := filepath.Dir(dstPath)
-	//if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
-	//	return fmt.Errorf("failed to create destination directory: %w", err)
-	//}
+	dstDir := filepath.Dir(dstPath)
+	err = CreateDir(dstDir)
+	if err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
 
 	distFile, err := os.OpenFile(filepath.Clean(dstPath), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
 	defer distFile.Close()
+
+	// 设置目标目录权限与源目录一致
+	if err := os.Chmod(dstPath, srcInfo.Mode()); err != nil {
+		return fmt.Errorf("failed to set destination directory permissions: %w", err)
+	}
 
 	// 使用缓冲拷贝
 	buf := make([]byte, 64*1024) // 64KB buffer
