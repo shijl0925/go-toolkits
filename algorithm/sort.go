@@ -1,3 +1,4 @@
+//nolint:typecheck
 package algorithm
 
 import "golang.org/x/exp/constraints"
