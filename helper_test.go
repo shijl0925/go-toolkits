@@ -110,7 +110,7 @@ func TestEqualFloat64(t *testing.T) {
 		{
 			name:     "zero comparison",
 			a:        0.0,
-			b:        -0.0,
+			b:        math.Copysign(0, -1),
 			decimal:  10,
 			expected: true,
 		},

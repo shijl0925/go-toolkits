@@ -119,7 +119,7 @@ func TestCreateDir(t *testing.T) {
 
 	// 创建一个已存在的文件用于测试
 	existFilePath := filepath.Join("tmp", "existing")
-	err := os.MkdirAll(existFilePath, 0755)
+	err := os.MkdirAll(existFilePath, 0750)
 	if err != nil {
 		t.Fatalf("准备测试文件夹失败: %v", err)
 	}
@@ -270,7 +270,7 @@ func Test_IsDir(t *testing.T) {
 	t.Run("test01", func(t *testing.T) {
 		// 创建一个已存在的文件用于测试
 		existFilePath01 := filepath.Join("tmp", "existing")
-		err := os.MkdirAll(existFilePath01, 0755)
+		err := os.MkdirAll(existFilePath01, 0750)
 		if err != nil {
 			t.Fatalf("准备测试文件夹失败: %v", err)
 		}
@@ -304,7 +304,7 @@ func Test_IsFile(t *testing.T) {
 	t.Run("test01", func(t *testing.T) {
 		// 创建一个已存在的文件用于测试
 		existFilePath01 := filepath.Join("tmp", "existing")
-		err := os.MkdirAll(existFilePath01, 0755)
+		err := os.MkdirAll(existFilePath01, 0750)
 		if err != nil {
 			t.Fatalf("准备测试文件夹失败: %v", err)
 		}
@@ -348,7 +348,7 @@ func Test_CopyFile(t *testing.T) {
 		},
 	}
 
-	err := os.MkdirAll("tmp", 0755)
+	err := os.MkdirAll("tmp", 0750)
 	if err != nil {
 		t.Fatalf("准备测试文件夹失败: %v", err)
 	}
@@ -378,7 +378,7 @@ func Test_CopyDir(t *testing.T) {
 		},
 	}
 
-	err := os.MkdirAll("tmp", 0755)
+	err := os.MkdirAll("tmp", 0750)
 	if err != nil {
 		t.Fatalf("准备测试文件夹失败: %v", err)
 	}
@@ -398,7 +398,7 @@ func Test_ListDir(t *testing.T) {
 	t.Run("test01", func(t *testing.T) {
 		// 创建一个已存在的文件用于测试
 		existFilePath01 := filepath.Join("tmp", "existing")
-		err := os.MkdirAll(existFilePath01, 0755)
+		err := os.MkdirAll(existFilePath01, 0750)
 		if err != nil {
 			t.Fatalf("准备测试文件夹失败: %v", err)
 		}
@@ -425,7 +425,7 @@ func Test_RemoveDir(t *testing.T) {
 	t.Run("test01", func(t *testing.T) {
 		// 创建一个已存在的文件用于测试
 		existFilePath01 := filepath.Join("tmp", "existing")
-		err := os.MkdirAll(existFilePath01, 0755)
+		err := os.MkdirAll(existFilePath01, 0750)
 		if err != nil {
 			t.Fatalf("准备测试文件夹失败: %v", err)
 		}
@@ -454,7 +454,7 @@ func Test_RemoveFile(t *testing.T) {
 	t.Run("test01", func(t *testing.T) {
 		// 创建一个已存在的文件用于测试
 		existFilePath01 := filepath.Join("tmp", "existing")
-		err := os.MkdirAll(existFilePath01, 0755)
+		err := os.MkdirAll(existFilePath01, 0750)
 		if err != nil {
 			t.Fatalf("准备测试文件夹失败: %v", err)
 		}
@@ -485,8 +485,8 @@ func TestWalk_NormalDirectoryStructure(t *testing.T) {
 	testDir := t.TempDir()
 
 	// 创建子目录和文件
-	os.MkdirAll(filepath.Join(testDir, "dir1", "subdir1"), 0755)
-	os.MkdirAll(filepath.Join(testDir, "dir2"), 0755)
+	os.MkdirAll(filepath.Join(testDir, "dir1", "subdir1"), 0750)
+	os.MkdirAll(filepath.Join(testDir, "dir2"), 0750)
 	os.WriteFile(filepath.Join(testDir, "file1.txt"), []byte("content"), 0644)
 	os.WriteFile(filepath.Join(testDir, "file2.txt"), []byte("content"), 0644)
 	os.WriteFile(filepath.Join(testDir, "dir1", "subdir1", "subfile.txt"), []byte("content"), 0644)
@@ -566,8 +566,8 @@ func TestWalk_EmptyDirectory(t *testing.T) {
 // TestWalk_DirectoryOnlyWithSubdirectories tests Walk function with directories only
 func TestWalk_DirectoryOnlyWithSubdirectories(t *testing.T) {
 	testDir := t.TempDir()
-	os.MkdirAll(filepath.Join(testDir, "dir1"), 0755)
-	os.MkdirAll(filepath.Join(testDir, "dir2"), 0755)
+	os.MkdirAll(filepath.Join(testDir, "dir1"), 0750)
+	os.MkdirAll(filepath.Join(testDir, "dir2"), 0750)
 
 	results, err := filex.WalkV2(testDir)
 	if err != nil {

@@ -119,13 +119,13 @@ func RemoveTail[T any](s []T) []T {
 //
 //	s := []int{1, 2, 3, 4, 5}
 //	r, ok := Pop(s) //  r == 5, ok ==true, s == []int{1, 2, 3, 4}
-func Pop[T any](s []T) (T, bool) {
-	if len(s) == 0 {
+func Pop[T any](s *[]T) (T, bool) {
+	if s == nil || len(*s) == 0 {
 		var zero T
 		return zero, false
 	}
-	v := s[len(s)-1]
-	s = RemoveTail(s)
+	v := (*s)[len(*s)-1]
+	*s = (*s)[:len(*s)-1]
 	return v, true
 }
 
@@ -600,8 +600,24 @@ func Intersect[T comparable](src, dst []T) []T {
 //	dst := []int{4, 5, 6, 7, 8}
 //	r := Union(src, dst)  // r == []int{1, 2, 3, 4, 5, 6, 7, 8}
 func Union[T comparable](src, dst []T) []T {
-	result := append(src, dst...)
-	return Unique(result)
+	length := len(src) + len(dst)
+	seen := make(map[T]struct{}, length)
+	result := make([]T, 0, length)
+
+	for _, v := range src {
+		if _, ok := seen[v]; !ok {
+			result = append(result, v)
+			seen[v] = struct{}{}
+		}
+	}
+
+	for _, v := range dst {
+		if _, ok := seen[v]; !ok {
+			result = append(result, v)
+			seen[v] = struct{}{}
+		}
+	}
+	return result
 }
 
 // Index 返回和 dst 相等的第一个元素下标

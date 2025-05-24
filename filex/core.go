@@ -504,9 +504,8 @@ func WalkV2(root string) ([]*WalkResult, error) {
 		if info.IsDir() {
 			dirWr.Dirs = append(dirWr.Dirs, info.Name())
 
-			currentWr, ok := resultMap[filePath]
-			if !ok {
-				currentWr = &WalkResult{
+			if _, ok := resultMap[filePath]; !ok {
+				currentWr := &WalkResult{
 					Root:  filePath,
 					Dirs:  []string{},
 					Files: []string{},

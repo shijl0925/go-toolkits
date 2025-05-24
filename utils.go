@@ -166,12 +166,10 @@ func SafeToUint64(v any) (uint64, error) {
 		}
 		return v, nil
 	case reflect.Bool:
-		{
-			if rv.Bool() {
-				return 1, nil
-			} else {
-				return 0, nil
-			}
+		if rv.Bool() {
+			return 1, nil
+		} else {
+			return 0, nil
 		}
 	default:
 		return 0, ErrType
