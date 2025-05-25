@@ -1,7 +1,16 @@
 package stringx
 
 import (
+	"regexp"
 	"strings"
+	"unicode"
+)
+
+var (
+	// bearer:disable go_lang_permissive_regex_validation
+	splitWordReg = regexp.MustCompile(`([a-z])([A-Z0-9])|([a-zA-Z])([0-9])|([0-9])([a-zA-Z])|([A-Z])([A-Z])([a-z])`)
+	// bearer:disable go_lang_permissive_regex_validation
+	splitNumberLetterReg = regexp.MustCompile(`([0-9])([a-zA-Z])`)
 )
 
 // Capitalize converts the first character of a string to upper case and the remaining to lower case.
@@ -157,4 +166,67 @@ func FormatMap(format string, m map[string]any) string {
 	}
 
 	return format
+}
+
+// SplitString splits string into an array of its words.
+func SplitString(str string) []string {
+	// Step 1: 处理驼峰命名和其他混合大小写/数字结构
+	str = splitWordReg.ReplaceAllString(str, `$1$3$5$7 $2$4$6$8$9`)
+
+	// Step 2: 分离数字和字母组合
+	// example: Int8Value => Int 8Value => Int 8 Value
+	str = splitNumberLetterReg.ReplaceAllString(str, "$1 $2")
+
+	var result strings.Builder
+	for _, r := range str {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			result.WriteRune(r)
+		} else {
+			result.WriteRune(' ')
+		}
+	}
+
+	return strings.Fields(result.String())
+}
+
+func ToPascal(s string) string {
+	words := SplitString(s)
+	for i, item := range words {
+		item = Capitalize(item)
+		words[i] = item
+	}
+	return strings.Join(words, "")
+}
+
+// ToCamel converts a string to CamelCase
+func ToCamel(s string) string {
+	words := SplitString(s)
+	for i, item := range words {
+		if i == 0 {
+			item = strings.ToLower(item)
+		} else {
+			item = Capitalize(item)
+		}
+
+		words[i] = item
+	}
+	return strings.Join(words, "")
+}
+
+// ToKebab converts string to kebab-case.
+func ToKebab(str string) string {
+	items := SplitString(str)
+	for i := range items {
+		items[i] = strings.ToLower(items[i])
+	}
+	return strings.Join(items, "-")
+}
+
+// ToSnake converts a string to snake_case
+func ToSnake(s string) string {
+	words := SplitString(s)
+	for i, item := range words {
+		words[i] = strings.ToLower(item)
+	}
+	return strings.Join(words, "_")
 }

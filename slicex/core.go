@@ -2,6 +2,7 @@ package slicex
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
 	"sort"
 	"strings"
