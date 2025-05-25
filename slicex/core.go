@@ -17,7 +17,7 @@ import (
 //
 //	s := []int{1, 2, 3, 4, 5}
 //	r := Sum(s) //  r == 15
-func Sum[T constraints.RealNumber](s []T) T {
+func Sum[T constraints.Number](s []T) T {
 	var result T
 	for _, v := range s {
 		//nolint:typecheck

@@ -9,18 +9,44 @@ import (
 )
 
 func Test_SumSlice(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name     string
-		slice    []float64
-		expected float64
+		slice    any
+		expected any
 	}{
-		{"test1", []float64{1, 2, 3, 4, 5}, 15},
-		{"test2", []float64{1.1, 2.0, 3.5}, 6.6},
+		{"TC01: Positive integers", []int{1, 2, 3, 4, 5}, 15},
+		{"TC03: Float numbers", []float64{1.1, 2.0, 3.5}, 6.6},
+		{"TC03: Negative and zero", []int{1, 0, -1}, 0},
+		{"TC04: Empty slice", []int{}, 0},
+		{"TC05: Unsigned integers", []uint{1, 2, 3, 4, 5}, uint(15)},
+		{"TC06: Complex numbers", []complex128{1 + 2i, 3 + 4i}, complex(4, 6)},
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := slicex.Sum(tc.slice); got != tc.expected {
-				t.Errorf("Sum() expected %v, got %v", tc.expected, got)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			switch input := tt.slice.(type) {
+			case []int:
+				got := slicex.Sum(input)
+				if got != tt.expected {
+					t.Errorf("Sum() expected %v, got %v", tt.expected, got)
+				}
+			case []float64:
+				got := slicex.Sum(input)
+				if got != tt.expected {
+					t.Errorf("Sum() expected %v, got %v", tt.expected, got)
+				}
+			case []uint:
+				got := slicex.Sum(input)
+				if got != tt.expected {
+					t.Errorf("Sum() expected %v, got %v", tt.expected, got)
+				}
+			case []complex128:
+				got := slicex.Sum(input)
+				if got != tt.expected {
+					t.Errorf("Sum() expected %v, got %v", tt.expected, got)
+				}
+			default:
+				t.Fatalf("Unsupported input type: %T", input)
 			}
 		})
 	}
