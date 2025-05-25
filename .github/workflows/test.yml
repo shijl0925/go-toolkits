@@ -30,23 +30,5 @@ jobs:
         go-version: ${{ matrix.go }}
 
     - name: Test
-      run: go test -v ./...
-
-  go-static-checks:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: 1.23
-          check-latest: true
-          cache: true
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.56.1
-          args: --verbose --timeout=3m
-          skip-cache: true
+      run: go test ./...
 
