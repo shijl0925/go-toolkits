@@ -754,6 +754,98 @@ func Test_ReverseSlice(t *testing.T) {
 	})
 }
 
+// TestShuffle_EmptySlice tests that shuffling an empty slice does not cause errors and remains unchanged
+func TestShuffle_EmptySlice(t *testing.T) {
+	input := []int{}
+	expected := []int{}
+	slicex.Shuffle(input)
+	if !reflect.DeepEqual(input, expected) {
+		t.Errorf("Shuffle() on empty slice = %v, want %v", input, expected)
+	}
+}
+
+// TestShuffle_SingleElementSlice tests that shuffling a single-element slice leaves it unchanged
+func TestShuffle_SingleElementSlice(t *testing.T) {
+	input := []string{"a"}
+	expected := []string{"a"}
+	slicex.Shuffle(input)
+	if !reflect.DeepEqual(input, expected) {
+		t.Errorf("Shuffle() on single-element slice = %v, want %v", input, expected)
+	}
+}
+
+// TestShuffle_MultipleElements tests that shuffling a multi-element slice changes the order
+// but keeps all elements present
+func TestShuffle_MultipleElements(t *testing.T) {
+	input := []int{1, 2, 3, 4, 5}
+	originalCopy := make([]int, len(input))
+	copy(originalCopy, input)
+
+	slicex.Shuffle(input)
+
+	// Check if the order is different (not guaranteed in every run, so we only check once)
+	if reflect.DeepEqual(input, originalCopy) {
+		t.Errorf("Shuffle() did not change the order, got %v", input)
+	}
+}
+
+// TestShuffle_DuplicateElements tests that shuffling works correctly with duplicate elements
+func TestShuffle_DuplicateElements(t *testing.T) {
+	input := []string{"a", "b", "a", "c", "b"}
+	originalCopy := make([]string, len(input))
+	copy(originalCopy, input)
+
+	slicex.Shuffle(input)
+
+	if reflect.DeepEqual(input, originalCopy) {
+		t.Errorf("Shuffle() changed the elements, got %v want %v", input, originalCopy)
+	}
+}
+
+// TestShuffle_DifferentDataTypes tests that shuffling works for various data types
+func TestShuffle_DifferentDataTypes(t *testing.T) {
+	// Test with integers
+	intInput := []int{1, 2, 3, 4, 5}
+	originalIntCopy := make([]int, len(intInput))
+	copy(originalIntCopy, intInput)
+
+	slicex.Shuffle(intInput)
+
+	if reflect.DeepEqual(intInput, originalIntCopy) {
+		t.Errorf("Shuffle() failed for integer type, got %v want %v", intInput, originalIntCopy)
+	}
+
+	// Test with strings
+	stringInput := []string{"apple", "banana", "cherry", "date"}
+	originalStringCopy := make([]string, len(stringInput))
+	copy(originalStringCopy, stringInput)
+
+	slicex.Shuffle(stringInput)
+
+	if reflect.DeepEqual(stringInput, originalStringCopy) {
+		t.Errorf("Shuffle() failed for string type, got %v want %v", stringInput, originalStringCopy)
+	}
+
+	// Test with custom structs
+	type testStruct struct {
+		ID   int
+		Name string
+	}
+	structInput := []testStruct{
+		{ID: 1, Name: "One"},
+		{ID: 2, Name: "Two"},
+		{ID: 3, Name: "Three"},
+	}
+	originalStructCopy := make([]testStruct, len(structInput))
+	copy(originalStructCopy, structInput)
+
+	slicex.Shuffle(structInput)
+
+	if reflect.DeepEqual(structInput, originalStructCopy) {
+		t.Errorf("Shuffle() failed for struct type, got %v want %v", structInput, originalStructCopy)
+	}
+}
+
 func Test_RepeatSlice(t *testing.T) {
 	t.Run("test1", func(t *testing.T) {
 		if got := slicex.Repeat(1, 5); !reflect.DeepEqual(got, []int{1, 1, 1, 1, 1}) {

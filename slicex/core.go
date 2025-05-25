@@ -390,6 +390,13 @@ func ReverseSelf[T any](s []T) {
 	}
 }
 
+// Shuffle returns an array of shuffled values. Uses the Fisher-Yates shuffle algorithm.
+func Shuffle[T any](s []T) {
+	rand.Shuffle(len(s), func(i, j int) {
+		s[i], s[j] = s[j], s[i]
+	})
+}
+
 // Repeat returns a new slice with n copies of the given element.
 // 返回一个新 slice，其中包含 n 个给定元素的副本, 原始 slice 不会被改变。
 // 注意: 返回的切片仍与原切片共享底层数组。
@@ -693,11 +700,16 @@ func JoinSlice[T any](sep string, s []T) string {
 // Chunk creates a slice of elements split into groups the length of size.
 // 将切片按照给定的大小进行分组，并返回一个二维切片。
 func Chunk[T any](s []T, size int) [][]T {
-	var result [][]T
-
 	if len(s) == 0 || size <= 0 {
 		return [][]T{}
 	}
+
+	chunksNum := len(s) / size
+	if len(s)%size != 0 {
+		chunksNum++
+	}
+
+	result := make([][]T, 0, chunksNum)
 
 	for i := 0; i < len(s); i += size {
 		end := i + size
