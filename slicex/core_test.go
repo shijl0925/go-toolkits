@@ -784,7 +784,7 @@ func TestShuffle_MultipleElements(t *testing.T) {
 	slicex.Shuffle(input)
 
 	// Check if the order is different (not guaranteed in every run, so we only check once)
-	if slicex.EqualUnordered(input, originalCopy) {
+	if !slicex.EqualUnordered(input, originalCopy) {
 		t.Errorf("Shuffle() did not change the order, got %v", input)
 	}
 }
@@ -797,7 +797,7 @@ func TestShuffle_DuplicateElements(t *testing.T) {
 
 	slicex.Shuffle(input)
 
-	if slicex.EqualUnordered(input, originalCopy) {
+	if !slicex.EqualUnordered(input, originalCopy) {
 		t.Errorf("Shuffle() changed the elements, got %v want %v", input, originalCopy)
 	}
 }
@@ -811,7 +811,7 @@ func TestShuffle_DifferentDataTypes(t *testing.T) {
 
 	slicex.Shuffle(intInput)
 
-	if slicex.EqualUnordered(intInput, originalIntCopy) {
+	if !slicex.EqualUnordered(intInput, originalIntCopy) {
 		t.Errorf("Shuffle() failed for integer type, got %v want %v", intInput, originalIntCopy)
 	}
 
@@ -822,7 +822,7 @@ func TestShuffle_DifferentDataTypes(t *testing.T) {
 
 	slicex.Shuffle(stringInput)
 
-	if slicex.EqualUnordered(stringInput, originalStringCopy) {
+	if !slicex.EqualUnordered(stringInput, originalStringCopy) {
 		t.Errorf("Shuffle() failed for string type, got %v want %v", stringInput, originalStringCopy)
 	}
 
@@ -841,7 +841,7 @@ func TestShuffle_DifferentDataTypes(t *testing.T) {
 
 	slicex.Shuffle(structInput)
 
-	if slicex.EqualUnordered(structInput, originalStructCopy) {
+	if !slicex.EqualUnordered(structInput, originalStructCopy) {
 		t.Errorf("Shuffle() failed for struct type, got %v want %v", structInput, originalStructCopy)
 	}
 }
