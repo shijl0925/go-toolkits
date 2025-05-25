@@ -1,15 +1,9 @@
 package timex
 
 import (
+	"github.com/shijl0925/go-toolkits/internal"
 	"time"
 )
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
 
 type TimeDelta struct {
 	Weeks        int
@@ -62,13 +56,13 @@ func (td *TimeDelta) Subtract(td2 *TimeDelta) TimeDelta {
 // Abs returns the absolute value of td
 func (td *TimeDelta) Abs() TimeDelta {
 	return TimeDelta{
-		Weeks:        abs(td.Weeks),
-		Days:         abs(td.Days),
-		Hours:        abs(td.Hours),
-		Minutes:      abs(td.Minutes),
-		Seconds:      abs(td.Seconds),
-		Milliseconds: abs(td.Milliseconds),
-		Microseconds: abs(td.Microseconds),
+		Weeks:        internal.Abs(td.Weeks),
+		Days:         internal.Abs(td.Days),
+		Hours:        internal.Abs(td.Hours),
+		Minutes:      internal.Abs(td.Minutes),
+		Seconds:      internal.Abs(td.Seconds),
+		Milliseconds: internal.Abs(td.Milliseconds),
+		Microseconds: internal.Abs(td.Microseconds),
 	}
 }
 
