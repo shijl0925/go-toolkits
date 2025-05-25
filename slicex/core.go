@@ -386,7 +386,7 @@ func Reverse[T any](s []T) []T {
 }
 
 // ReverseSelf reverses the elements in a slice in place.
-// 反转 slice 本身, 原始 slice 不会被改变。
+// 反转 slice 本身
 //
 // Example:
 //
