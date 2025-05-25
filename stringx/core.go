@@ -3,7 +3,7 @@ package stringx
 import (
 	"regexp"
 	"strings"
-	"unicode"
+	"unicode" //nolint:typecheck
 )
 
 var (

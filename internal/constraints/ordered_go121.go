@@ -3,7 +3,7 @@
 package constraints
 
 import (
-	"cmp"
+	"cmp" //nolint:typecheck
 )
 
 type Ordered = cmp.Ordered

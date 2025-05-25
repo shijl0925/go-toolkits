@@ -45,7 +45,7 @@ jobs:
 
       - name: Verify go.mod is tidy
         run: |
-          go mod tidy -go=1.20.0
+          go mod tidy -go=1.23.0
           git diff --exit-code
 
       - name: golangci-lint
