@@ -1,6 +1,6 @@
 package itertools
 
-import "golang.org/x/exp/constraints"
+import "github.com/shijl0925/go-toolkits/internal/constraints"
 
 // Map applies a function to each element in a slice and returns a new slice with the results.
 func Map[T any, U any](s []T, fn func(T) U) []U {

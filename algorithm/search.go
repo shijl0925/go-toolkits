@@ -1,7 +1,7 @@
 //nolint:typecheck
 package algorithm
 
-import "golang.org/x/exp/constraints"
+import "github.com/shijl0925/go-toolkits/internal/constraints"
 
 // BinarySearch return the index of target within a sorted slice, use binary search (recursive call itself).
 // If not found return -1.

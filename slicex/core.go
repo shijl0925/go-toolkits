@@ -7,16 +7,8 @@ import (
 	"strings"
 
 	toolkits "github.com/shijl0925/go-toolkits"
-	"golang.org/x/exp/constraints"
+	"github.com/shijl0925/go-toolkits/internal/constraints"
 )
-
-type RealNumber interface {
-	constraints.Integer | constraints.Float
-}
-
-type Number interface {
-	RealNumber | ~complex64 | ~complex128
-}
 
 // Sum returns the sum of all elements in the slice.
 //
@@ -24,7 +16,7 @@ type Number interface {
 //
 //	s := []int{1, 2, 3, 4, 5}
 //	r := Sum(s) //  r == 15
-func Sum[T RealNumber](s []T) T {
+func Sum[T constraints.RealNumber](s []T) T {
 	var result T
 	for _, v := range s {
 		//nolint:typecheck
@@ -33,7 +25,7 @@ func Sum[T RealNumber](s []T) T {
 	return result
 }
 
-func Avg[T RealNumber](s []T) float64 {
+func Avg[T constraints.RealNumber](s []T) float64 {
 	var zero float64
 	if len(s) == 0 {
 		return zero

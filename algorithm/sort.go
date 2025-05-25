@@ -1,7 +1,7 @@
 //nolint:typecheck
 package algorithm
 
-import "golang.org/x/exp/constraints"
+import "github.com/shijl0925/go-toolkits/internal/constraints"
 
 // BubbleSortV1 冒泡排序V1
 func BubbleSortV1[T constraints.Ordered](s []T) {
