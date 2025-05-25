@@ -2,9 +2,10 @@ package slicex_test
 
 import (
 	"fmt"
-	"github.com/shijl0925/go-toolkits/slicex"
 	"reflect"
 	"testing"
+
+	"github.com/shijl0925/go-toolkits/slicex"
 )
 
 func Test_SumSlice(t *testing.T) {
@@ -756,8 +757,10 @@ func Test_ReverseSlice(t *testing.T) {
 
 // TestShuffle_EmptySlice tests that shuffling an empty slice does not cause errors and remains unchanged
 func TestShuffle_EmptySlice(t *testing.T) {
-	input := []int{}
-	expected := []int{}
+	var input []int
+
+	var expected []int
+
 	slicex.Shuffle(input)
 	if !slicex.EqualUnordered(input, expected) {
 		t.Errorf("Shuffle() on empty slice = %v, want %v", input, expected)
