@@ -11,17 +11,6 @@ func Map[T any, U any](s []T, fn func(T) U) []U {
 	return result
 }
 
-// Find returns the first element in a slice that satisfies the predicate, or an indication that no such element exists.
-func Find[T any](s []T, fn func(T) bool) bool {
-	for _, v := range s {
-		if fn(v) {
-			return true
-		}
-	}
-
-	return false
-}
-
 // Filter applies a function to each element in a slice and returns a new slice with the elements that satisfy the predicate.
 func Filter[T any](s []T, fn func(T) bool) []T {
 	result := make([]T, 0, len(s))
