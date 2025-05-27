@@ -2340,3 +2340,128 @@ func TestSortSlice_MapField(t *testing.T) {
 		t.Errorf("Expected %v, got %v", expected, input)
 	}
 }
+
+// TestFindUniques_Int_NoDuplicates tests a slice with no duplicates.
+func TestFindUniques_Int_NoDuplicates(t *testing.T) {
+	input := []int{1, 2, 3}
+	expected := []int{1, 2, 3}
+
+	if got := slicex.FindUniques(input); !reflect.DeepEqual(expected, got) {
+		t.Errorf("Expected %v, got %v", expected, got)
+	}
+}
+
+// TestFindUniques_Int_WithDuplicates tests a slice with duplicates.
+func TestFindUniques_Int_WithDuplicates(t *testing.T) {
+	input := []int{1, 2, 1, 3}
+	expected := []int{2, 3}
+
+	if got := slicex.FindUniques(input); !reflect.DeepEqual(expected, got) {
+		t.Errorf("Expected %v, got %v", expected, got)
+	}
+}
+
+// TestFindUniques_String_WithDuplicates tests string slice with duplicates.
+func TestFindUniques_String_WithDuplicates(t *testing.T) {
+	input := []string{"a", "b", "a", "c"}
+	expected := []string{"b", "c"}
+
+	if got := slicex.FindUniques(input); !reflect.DeepEqual(expected, got) {
+		t.Errorf("Expected %v, got %v", expected, got)
+	}
+}
+
+// TestFindUniques_EmptySlice tests empty input.
+func TestFindUniques_EmptySlice(t *testing.T) {
+	if got := slicex.FindUniques([]int{}); !reflect.DeepEqual([]int{}, got) {
+		t.Errorf("Expected %v, got %v", []int{}, got)
+	}
+}
+
+// TestFindUniques_AllSameElements tests all elements are same.
+func TestFindUniques_AllSameElements(t *testing.T) {
+	input := []int{1, 1, 1, 1}
+
+	if got := slicex.FindUniques(input); !reflect.DeepEqual([]int{}, got) {
+		t.Errorf("Expected %v, got %v", []int{}, got)
+	}
+}
+
+// TestFindUniques_InterfaceMixedType tests mixed type in interface slice.
+func TestFindUniques_InterfaceMixedType(t *testing.T) {
+	input := []interface{}{1, "a", 1, "a"}
+
+	if got := slicex.FindUniques(input); !reflect.DeepEqual([]interface{}{}, got) {
+		t.Errorf("Expected %v, got %v", []interface{}{}, got)
+	}
+}
+
+// TestFindUniques_Int_Interleaved tests interleaved duplicates.
+func TestFindUniques_Int_Interleaved(t *testing.T) {
+	input := []int{2, 3, 2, 3, 4}
+	expected := []int{4}
+
+	if got := slicex.FindUniques(input); !reflect.DeepEqual(expected, got) {
+		t.Errorf("Expected %v, got %v", expected, got)
+	}
+}
+
+func TestWithout(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []int
+		excludes []int
+		expected []int
+	}{
+		{
+			name:     "Normal case",
+			input:    []int{1, 2, 3, 4},
+			excludes: []int{2, 4},
+			expected: []int{1, 3},
+		},
+		{
+			name:     "Empty input slice",
+			input:    []int{},
+			excludes: []int{1, 2},
+			expected: []int{},
+		},
+		{
+			name:     "No elements to exclude",
+			input:    []int{1, 2, 3},
+			excludes: []int{},
+			expected: []int{1, 2, 3},
+		},
+		{
+			name:     "All elements excluded",
+			input:    []int{1, 2, 3},
+			excludes: []int{1, 2, 3},
+			expected: []int{},
+		},
+		{
+			name:     "Duplicate elements",
+			input:    []int{1, 2, 2, 3},
+			excludes: []int{2},
+			expected: []int{1, 3},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := slicex.Without(tt.input, tt.excludes...)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("Expected %v, got %v", tt.expected, got)
+			}
+		})
+	}
+}
+
+func TestWithout_GenericString(t *testing.T) {
+	input := []string{"a", "b", "c"}
+	excludes := []string{"b"}
+	expected := []string{"a", "c"}
+
+	got := slicex.Without(input, excludes...)
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("Expected %v, got %v", expected, got)
+	}
+}
