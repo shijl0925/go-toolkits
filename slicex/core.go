@@ -599,24 +599,25 @@ func Intersect[T comparable](src, dst []T) []T {
 //	src := []int{1, 2, 3, 4, 5}
 //	dst := []int{4, 5, 6, 7, 8}
 //	r := Union(src, dst)  // r == []int{1, 2, 3, 4, 5, 6, 7, 8}
-func Union[T comparable](src, dst []T) []T {
-	length := len(src) + len(dst)
-	seen := make(map[T]struct{}, length)
-	result := make([]T, 0, length)
+func Union[T comparable](lists ...[]T) []T {
+	var capLen int
 
-	for _, v := range src {
-		if _, ok := seen[v]; !ok {
-			result = append(result, v)
-			seen[v] = struct{}{}
+	for _, list := range lists {
+		capLen += len(list)
+	}
+
+	seen := make(map[T]struct{}, capLen)
+	result := make([]T, 0, capLen)
+
+	for _, list := range lists {
+		for _, item := range list {
+			if _, ok := seen[item]; !ok {
+				seen[item] = struct{}{}
+				result = append(result, item)
+			}
 		}
 	}
 
-	for _, v := range dst {
-		if _, ok := seen[v]; !ok {
-			result = append(result, v)
-			seen[v] = struct{}{}
-		}
-	}
 	return result
 }
 
