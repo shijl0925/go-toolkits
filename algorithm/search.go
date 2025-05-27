@@ -23,8 +23,8 @@ func BinarySearch[T constraints.Ordered](sortedSlice []T, target T, lowIndex, hi
 // If not found return -1.
 // 二分查找
 func BinaryIterativeSearch[T constraints.Ordered](sortedSlice []T, target T) int {
-	i, j := 0, len(sortedSlice)
-	for i < j {
+	i, j := 0, len(sortedSlice)-1
+	for i <= j {
 		m := i + (j-i)/2
 		if sortedSlice[m] < target {
 			i = m + 1
