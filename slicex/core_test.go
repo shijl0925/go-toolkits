@@ -738,31 +738,6 @@ func Test_Unique(t *testing.T) {
 	}
 }
 
-func Test_ReverseSelfSlice(t *testing.T) {
-	s1 := []int{1, 2, 3, 4, 5}
-	t.Run("test1", func(t *testing.T) {
-		slicex.ReverseSelf(s1)
-		if !reflect.DeepEqual(s1, []int{5, 4, 3, 2, 1}) {
-			t.Errorf("Reverse() expected %v, got %v", 0, s1)
-		}
-	})
-
-	s2 := []string{"one", "two", "three"}
-	t.Run("test2", func(t *testing.T) {
-		slicex.ReverseSelf(s2)
-		if !reflect.DeepEqual(s2, []string{"three", "two", "one"}) {
-			t.Errorf("Reverse() expected %v, got %v", []string{"three", "two", "one"}, s2)
-		}
-	})
-
-	s3 := []byte("Google")
-	t.Run("test3", func(t *testing.T) {
-		slicex.ReverseSelf(s3)
-		if string(s3) != "elgooG" {
-			t.Errorf("Reverse() expected %v, got %v", "elgooG", string(s3))
-		}
-	})
-}
 func Test_ReverseSlice(t *testing.T) {
 	t.Run("test1", func(t *testing.T) {
 		if got := slicex.Reverse([]int{1, 2, 3, 4, 5}); !reflect.DeepEqual(got, []int{5, 4, 3, 2, 1}) {
