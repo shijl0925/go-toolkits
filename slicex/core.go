@@ -954,3 +954,58 @@ func SortSlice[T any](s []T, less func(a, b T) bool) {
 		return less(s[i], s[j])
 	})
 }
+
+// FindUniques returns a slice with all the unique elements of the collection.
+// The order of result values is determined by the order they occur in the collection.
+// 函数返回一个新切片，该切片包含原始切片中唯一不重复的元素。
+//
+// Example:
+//
+// s := []int{1, 2, 3, 1, 2, 4}
+// r := FindUniques(s) // r == []int{3, 4}
+func FindUniques[T comparable](s []T) []T {
+	seen := make(map[T]bool, len(s))
+
+	for i := range s {
+		duplicated, ok := seen[s[i]]
+		if !ok {
+			seen[s[i]] = false
+		} else if !duplicated {
+			seen[s[i]] = true
+		}
+	}
+	result := make([]T, 0, len(s))
+
+	for _, v := range s {
+		if duplicated := seen[v]; !duplicated {
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
+
+// Without returns slice excluding all given values.
+// 从切片 s 中移除所有在 excludes 参数中指定的元素，并返回一个新的切片。
+//
+// Example:
+//
+// s := []int{1, 2, 3, 4, 5}
+// r := Without(s, 1, 2) // r == []int{3, 4, 5}
+func Without[T comparable](s []T, excludes ...T) []T {
+	seen := make(map[T]struct{}, len(excludes))
+
+	for _, v := range excludes {
+		seen[v] = struct{}{}
+	}
+
+	result := make([]T, 0, len(s))
+
+	for _, v := range s {
+		if _, ok := seen[v]; !ok {
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
