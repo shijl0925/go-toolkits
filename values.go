@@ -125,3 +125,13 @@ func AnyToBytes(v any) ([]byte, error) {
 	}
 	return []byte(s), nil
 }
+
+// Cast Converts any(interface{}) type to a given type. If conversion fails, it returns the zero value
+// of the given type. This is a type-safe version of type assertion.
+func Cast[T any](value any) (T, bool) {
+	if v, ok := value.(T); ok {
+		return v, true
+	}
+	var zero T
+	return zero, false
+}
