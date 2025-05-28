@@ -122,6 +122,25 @@ func Pop[T any](s *[]T) (T, bool) {
 	return v, true
 }
 
+// Shift removes the slice's first element and returns the removed element.
+// 从切片 s 中弹出第一个元素，并返回该元素和弹出状态。
+// 如果 slice 为空，则返回一个零值和false。
+// 注意：原始 slice 会被改变。
+//
+// Example:
+//
+//	s := []int{1, 2, 3, 4, 5}
+//	r, ok := Shift(s) //  r == 1, ok ==true, s == []int{2, 3, 4, 5}
+func Shift[T any](s *[]T) (T, bool) {
+	if s == nil || len(*s) == 0 {
+		var zero T
+		return zero, false
+	}
+	v := (*s)[0]
+	*s = (*s)[1:]
+	return v, true
+}
+
 // Drop removes the n elements from the slice and returns the remaining elements.
 // 删除并返回切片的前 n 个元素和剩余元素组成的切片, 原始 slice 不会被改变。
 // 注意: 返回的切片仍与原切片共享底层数组。
