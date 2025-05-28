@@ -8,6 +8,28 @@ func Map[T any](s []T, fn func(T) T) {
 	}
 }
 
+func Filter[T any](s []T, fn func(T) bool) []T {
+	i := 0
+	for _, v := range s {
+		if fn(v) {
+			s[i] = v
+			i++
+		}
+	}
+	return s[:i]
+}
+
+func Remove[T comparable](s []T, element T) []T {
+	i := 0
+	for _, v := range s {
+		if v != element {
+			s[i] = v
+			i++
+		}
+	}
+	return s[:i]
+}
+
 // Reverse reverses the elements in a slice in place.
 // 反转 slice 本身
 //
