@@ -1257,7 +1257,7 @@ func TestChunk(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := slicex.Chunk(tt.input, tt.size)
 			if !reflect.DeepEqual(got, tt.expect) {
-				t.Errorf("ChunkV2(%v, %d) = %v; want %v", tt.input, tt.size, got, tt.expect)
+				t.Errorf("Chunk(%v, %d) = %v; want %v", tt.input, tt.size, got, tt.expect)
 			}
 		})
 	}
