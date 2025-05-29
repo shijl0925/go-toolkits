@@ -8,26 +8,37 @@ func Map[T any](s []T, fn func(T) T) {
 	}
 }
 
-func Filter[T any](s []T, fn func(T) bool) []T {
+func Filter[T any](s *[]T, fn func(T) bool) []T {
+	// 输入切片为 nil, 会 panic, 所以需要返回 nil
+	if s == nil {
+		return nil
+	}
+
 	i := 0
-	for _, v := range s {
+	for _, v := range *s {
 		if fn(v) {
-			s[i] = v
+			(*s)[i] = v
 			i++
 		}
 	}
-	return s[:i]
+	*s = (*s)[:i]
+	return *s
 }
 
-func Remove[T comparable](s []T, element T) []T {
+func Remove[T comparable](s *[]T, element T) []T {
+	if s == nil {
+		return nil
+	}
+
 	i := 0
-	for _, v := range s {
+	for _, v := range *s {
 		if v != element {
-			s[i] = v
+			(*s)[i] = v
 			i++
 		}
 	}
-	return s[:i]
+	*s = (*s)[:i]
+	return *s
 }
 
 // Reverse reverses the elements in a slice in place.
