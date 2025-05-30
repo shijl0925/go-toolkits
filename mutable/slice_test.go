@@ -121,7 +121,7 @@ func Test_MutableFilter(t *testing.T) {
 
 	t.Run("TC04: All elements match", func(t *testing.T) {
 		s := []int{1, 2, 3}
-		fn := func(i int) bool { return true }
+		fn := func(_ int) bool { return true }
 
 		result := mutable.Filter(&s, fn)
 		expected := []int{1, 2, 3}
