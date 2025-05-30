@@ -6,7 +6,11 @@ import (
 
 // StructToMap convert structs to map[string]any by reflect.
 func StructToMap(s any) map[string]any {
-	s = structVal(s)
+	var ok bool
+	s, ok = structVal(s)
+	if !ok {
+		return map[string]any{}
+	}
 
 	result := make(map[string]any)
 
@@ -55,17 +59,20 @@ func StructToMap(s any) map[string]any {
 	return result
 }
 
-func structVal(s any) any {
+func structVal(s any) (any, bool) {
 	v := reflect.ValueOf(s)
 
 	// if pointer get the underlying element≤
 	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil, false
+		}
 		v = v.Elem()
 	}
 
 	if v.Kind() != reflect.Struct {
-		panic("not struct")
+		return nil, false
 	}
 
-	return v.Interface()
+	return v.Interface(), true
 }
