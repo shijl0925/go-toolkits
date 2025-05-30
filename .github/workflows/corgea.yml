@@ -6,8 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Run Corgea Blast
-        uses: @corgea/actions/blast@v1
+        uses: corgea/actions/blast@v1
         with:
           token: ${{ secrets.CORGEA_TOKEN }}
           fail: false
