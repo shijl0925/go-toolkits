@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/shijl0925/go-toolkits/jsonx"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -151,7 +150,7 @@ func Test_EncodeToWriter(t *testing.T) {
 	})
 
 	t.Run("TC02 - Valid JSON file", func(t *testing.T) {
-		tmpfile, _ := ioutil.TempFile("", "example.json")
+		tmpfile, _ := os.CreateTemp("", "example.json")
 		err := jsonx.EncodeToWriter(testUser, tmpfile)
 		want := `{"first_name":"Alice","last_name":"Smith","age":18}
 `
@@ -160,7 +159,7 @@ func Test_EncodeToWriter(t *testing.T) {
 			t.Errorf("EncodeToWriter() error: %v", err)
 		}
 
-		buf, err := ioutil.ReadFile(tmpfile.Name())
+		buf, err := os.ReadFile(tmpfile.Name())
 		if err != nil {
 			t.Errorf("ReadFile() error: %v", err)
 		}
@@ -334,7 +333,7 @@ func Test_WriteFile(t *testing.T) {
 			t.Errorf("WriteFile() error: %v", err)
 		}
 
-		data, _ := ioutil.ReadFile(filePath)
+		data, _ := os.ReadFile(filePath)
 		if string(data) != want {
 			t.Errorf("WriteFile() expected %v, got %v", want, string(data))
 		}
