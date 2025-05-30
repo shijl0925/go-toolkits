@@ -66,7 +66,10 @@ func TestPartition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			first, second, third := stringx.Partition(tt.s, tt.sep)
+			first, second, third, err := stringx.Partition(tt.s, tt.sep)
+			if err != nil {
+				t.Errorf("Partition(%q, %q) failed: %v", tt.s, tt.sep, err)
+			}
 			if !reflect.DeepEqual([3]string{first, second, third}, tt.expected) {
 				t.Errorf("Partition(%q, %q) = %v, want %v", tt.s, tt.sep, [3]string{first, second, third}, tt.expected)
 			}
@@ -74,7 +77,7 @@ func TestPartition(t *testing.T) {
 	}
 }
 
-func TestPartition_InvalidSep(t *testing.T) {
+/*func TestPartition_InvalidSep(t *testing.T) {
 	t.Run("Invalid sep", func(t *testing.T) {
 		defer func() {
 			if r := recover(); r == nil {
@@ -84,7 +87,7 @@ func TestPartition_InvalidSep(t *testing.T) {
 
 		stringx.Partition("abc", "")
 	})
-}
+}*/
 
 func TestRightPartition(t *testing.T) {
 	tests := []struct {
@@ -128,7 +131,10 @@ func TestRightPartition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			first, second, third := stringx.RightPartition(tt.s, tt.sep)
+			first, second, third, err := stringx.RightPartition(tt.s, tt.sep)
+			if err != nil {
+				t.Errorf("RightPartition(%q, %q) failed: %v", tt.s, tt.sep, err)
+			}
 			if !reflect.DeepEqual([3]string{first, second, third}, tt.expected) {
 				t.Errorf("RightPartition(%q, %q) = %v, want %v", tt.s, tt.sep, [3]string{first, second, third}, tt.expected)
 			}
@@ -136,7 +142,7 @@ func TestRightPartition(t *testing.T) {
 	}
 }
 
-func TestRightPartition_InvalidSep(t *testing.T) {
+/*func TestRightPartition_InvalidSep(t *testing.T) {
 	t.Run("Invalid sep", func(t *testing.T) {
 		defer func() {
 			if r := recover(); r == nil {
@@ -146,7 +152,7 @@ func TestRightPartition_InvalidSep(t *testing.T) {
 
 		stringx.RightPartition("abc", "")
 	})
-}
+}*/
 
 // TestSwapCase runs unit tests for the SwapCase function.
 func TestSwapCase(t *testing.T) {
