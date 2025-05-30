@@ -344,6 +344,21 @@ func RemoveDir(path string) error {
 		return fmt.Errorf("path %s is a symlink; removing it is not allowed", cleanedPath)
 	}
 
+	// Walk the directory and refuse to remove if symlink is found inside
+	err = filepath.WalkDir(cleanedPath, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.Type()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing to remove %s: contains symlink at %s", cleanedPath, p)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
 	if !info.IsDir() {
 		return fmt.Errorf("%s is not a directory", cleanedPath)
 	}
