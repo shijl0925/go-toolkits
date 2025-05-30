@@ -2,6 +2,7 @@ package timex_test
 
 import (
 	"github.com/shijl0925/go-toolkits/timex"
+	"math"
 	"testing"
 	"time"
 )
