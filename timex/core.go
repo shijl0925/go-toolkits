@@ -2,6 +2,7 @@ package timex
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
