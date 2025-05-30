@@ -3,6 +3,7 @@ package toolkits
 import (
 	"fmt"
 	"math"
+	"reflect"
 )
 
 func AnyToInt(v any) (int, error) {
@@ -124,6 +125,10 @@ func AnyToBytes(v any) ([]byte, error) {
 		return nil, err
 	}
 	return []byte(s), nil
+}
+
+func AnyToInterface(value any) (interface{}, bool) {
+	return SafeToInterface(reflect.ValueOf(value))
 }
 
 // Cast Converts any(interface{}) type to a given type. If conversion fails, it returns the zero value
