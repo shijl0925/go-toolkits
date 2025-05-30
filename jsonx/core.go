@@ -20,12 +20,12 @@ func Encode(v any) ([]byte, error) {
 //
 // testUser = Person{"Alice", "Smith", 18}
 // res, _ := jsonx.Dumps(testUser) // res == `{"first_name":"Alice","last_name":"Smith","age":18}`
-func Dumps(v any) string {
+func Dumps(v any) (string, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(b)
+	return string(b), nil
 }
 
 // DumpsPretty encode data to json string with pretty format
@@ -41,16 +41,16 @@ func Dumps(v any) string {
 //		   "last_name": "Smith",
 //		   "age": 18
 //		}`
-func DumpsPretty(v any, indent int) string {
+func DumpsPretty(v any, indent int) (string, error) {
 	if indent <= 0 {
 		return Dumps(v)
 	}
 	indentStr := strings.Repeat(" ", indent)
 	b, err := json.MarshalIndent(v, "", indentStr)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(b)
+	return string(b), nil
 }
 
 // EncodeToWriter encode data to json and write to writer.
