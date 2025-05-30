@@ -2,6 +2,7 @@ package toolkits_test
 
 import (
 	toolkits "github.com/shijl0925/go-toolkits"
+	"reflect"
 	"testing"
 )
 
@@ -75,4 +76,69 @@ func TestCast(t *testing.T) {
 			t.Errorf("got %v (%T), expected %v (%T)", got, got, 0, 0)
 		}
 	})
+}
+
+func TestAnyToInterface(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected any
+		success  bool
+	}{
+		{
+			name:     "TC01 - Integer",
+			input:    42,
+			expected: 42,
+			success:  true,
+		},
+		{
+			name:     "TC02 - String",
+			input:    "hello",
+			expected: "hello",
+			success:  true,
+		},
+		{
+			name:     "TC03 - Struct",
+			input:    struct{}{},
+			expected: struct{}{},
+			success:  true,
+		},
+		{
+			name:     "TC04 - Nil",
+			input:    nil,
+			expected: nil,
+			success:  false,
+		},
+		//{
+		//	name:     "TC05 - Nil Pointer",
+		//	input:    (*int)(nil),
+		//	expected: nil,
+		//	success:  true,
+		//},
+		{
+			name:     "TC06 - Map",
+			input:    map[int]string{1: "a"},
+			expected: map[int]string{1: "a"},
+			success:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, ok := toolkits.AnyToInterface(tt.input)
+
+			if tt.success {
+				if !ok {
+					t.Errorf("expected success, got failure")
+				}
+				if !reflect.DeepEqual(tt.expected, result) {
+					t.Errorf("expected %v, got %v", tt.expected, result)
+				}
+			} else {
+				if ok {
+					t.Errorf("expected failure, got success")
+				}
+			}
+		})
+	}
 }
