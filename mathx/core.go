@@ -20,12 +20,8 @@ func FloatToPercent[T float64 | float32](f T, n uint) string {
 
 // PercentToFloat returns the float64 of the percent string
 func PercentToFloat(s string) (float64, error) {
-	if len(s) < 1 {
-		return 0, fmt.Errorf("invalid percent string: %s", s)
-	}
-
-	if s[len(s)-1] != '%' {
-		return 0, fmt.Errorf("invalid percent string: missing '%%' suffix in '%s'", s)
+	if len(s) < 2 || s[len(s)-1] != '%' {
+		return 0, fmt.Errorf("invalid percent string: must be in form '<number>%%', got: %s", s)
 	}
 
 	s = s[:len(s)-1]
