@@ -358,6 +358,24 @@ func TestAddHour(t *testing.T) {
 			wantTime:  baseTime.Add(-24 * time.Hour),
 			wantErr:   false,
 		},
+		{
+			name:      "Overflow Hours",
+			inputTime: baseTime,
+			hours:     int(math.MaxInt64/time.Hour) + 1,
+			wantErr:   true,
+		},
+		{
+			name:      "Underflow Hours",
+			inputTime: baseTime,
+			hours:     int(math.MinInt64/time.Hour) - 1,
+			wantErr:   true,
+		},
+		{
+			name:      "Add Zero Hours",
+			inputTime: baseTime,
+			hours:     0,
+			wantTime:  baseTime,
+		},
 	}
 
 	for _, tt := range tests {
