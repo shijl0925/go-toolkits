@@ -75,34 +75,34 @@ func IsTitle(s string) bool {
 
 // Partition splits a string into three parts using a separator.
 // 分割字符串为三个部分，使用分隔符。
-func Partition(s, sep string) (string, string, string) {
+func Partition(s, sep string) (string, string, string, error) {
 	if sep == "" {
-		panic("Partition: sep cannot be empty string")
+		return "", "", s, fmt.Errorf("partition: sep cannot be empty string")
 	}
 
 	parts := strings.SplitN(s, sep, 2)
 	if len(parts) == 1 {
-		return parts[0], "", ""
+		return parts[0], "", "", nil
 	}
-	return parts[0], sep, parts[1]
+	return parts[0], sep, parts[1], nil
 }
 
 // RightPartition mimics Python's str.rpartition() behavior.
 // It splits the string s into the part before the last occurrence of sep,
 // the sep itself, and the part after.
 // If sep is not found, it returns ("", "", s).
-func RightPartition(s, sep string) (string, string, string) {
+func RightPartition(s, sep string) (string, string, string, error) {
 	if sep == "" {
-		panic("Partition: sep cannot be empty string")
+		return "", "", s, fmt.Errorf("RightPartition: sep cannot be empty string")
 	}
 
 	idx := strings.LastIndex(s, sep)
 	if idx == -1 {
-		return "", "", s
+		return "", "", s, nil
 	}
 	first := s[:idx]
 	second := s[idx+len(sep):]
-	return first, sep, second
+	return first, sep, second, nil
 }
 
 // SwapCase 将输入字符串中的 ASCII 英文字母大小写互换。
