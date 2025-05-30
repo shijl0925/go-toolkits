@@ -1,6 +1,7 @@
 package stringx
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"unicode" //nolint:typecheck
