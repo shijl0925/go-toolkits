@@ -113,6 +113,12 @@ func AddHour(t time.Time, hours int) (time.Time, error) {
 		return time.Time{}, ErrTimeIsZero
 	}
 
+	const maxHours = int64(math.MaxInt64 / int64(time.Hour))
+	const minHours = int64(math.MinInt64 / int64(time.Hour))
+	if int64(hours) > maxHours || int64(hours) < minHours {
+		return time.Time{}, fmt.Errorf("duration overflow in AddHour")
+	}
+
 	duration := time.Duration(hours) * time.Hour
 
 	return t.Add(duration), nil
