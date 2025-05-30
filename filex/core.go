@@ -93,8 +93,19 @@ func CreateFile(path string) error {
 
 	cleanedPath := filepath.Clean(path)
 
+	info, err := os.Lstat(cleanedPath)
+	if err == nil {
+		// File exists; allow only if not a symlink
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing to create file because path is a symlink")
+		}
+		return fmt.Errorf("file already exists")
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
 	dirName := filepath.Dir(cleanedPath)
-	err := CreateDir(dirName)
+	err = CreateDir(dirName)
 	if err != nil {
 		return fmt.Errorf("failed to create parent directories: %w", err)
 	}
