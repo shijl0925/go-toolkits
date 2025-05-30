@@ -202,6 +202,11 @@ func CopyFile(srcPath string, dstPath string) error {
 		return fmt.Errorf("failed to get source directory info: %w", err)
 	}
 
+	// Prevent copying symlinks: check if srcPath is a symbolic link
+	if srcInfo.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("source file %q is a symbolic link and will not be copied", srcPath)
+	}
+
 	srcFile, err := os.Open(filepath.Clean(srcPath))
 	if err != nil {
 		return err
@@ -299,6 +304,11 @@ func RemoveFile(path string) error {
 	info, err := os.Lstat(cleanedPath)
 	if err != nil {
 		return err
+	}
+
+	// Prevent remove symlinks: check if path is a symbolic link
+	if (info.Mode() & os.ModeSymlink) != 0 {
+		return fmt.Errorf("path %s is a symlink; removing it is not allowed", cleanedPath)
 	}
 
 	if info.IsDir() {
