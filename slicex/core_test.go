@@ -485,6 +485,7 @@ func Test_InsertAt(t *testing.T) {
 		expected []int
 		wantErr  bool
 	}{
+		{"test0", nil, 1, 0, []int{1}, false},
 		{"test1", []int{}, 1, 0, []int{1}, false},
 		{"test2", []int{1, 2, 3, 4}, 2, 1, []int{1, 2, 2, 3, 4}, false},
 		{"test3", []int{1, 2, 3, 4, 5, 6}, 7, 6, []int{1, 2, 3, 4, 5, 6, 7}, false},
@@ -850,6 +851,12 @@ func TestRemove(t *testing.T) {
 		expected []int
 	}{
 		{
+			name:     "nil",
+			input:    nil,
+			element:  5,
+			expected: []int{},
+		},
+		{
 			name:     "Empty slice",
 			input:    []int{},
 			element:  5,
@@ -942,8 +949,9 @@ func Test_DeleteAt(t *testing.T) {
 		{"test2", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}, true},
 		{"test4", []int{1, 2, 3, 4, 5, 6}, 2, []int{1, 2, 4, 5, 6}, true},
 		{"test5", []int{}, 0, []int{}, false},
-		{"test6", []int{1, 2, 3, 4}, 4, []int{1, 2, 3, 4}, false},
-		{"test2", []int{1, 2, 3, 4}, 0, []int{2, 3, 4}, true},
+		{"test6", nil, 0, nil, false},
+		{"test7", []int{1, 2, 3, 4}, 4, []int{1, 2, 3, 4}, false},
+		{"test8", []int{1, 2, 3, 4}, 0, []int{2, 3, 4}, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1037,6 +1045,7 @@ func Test_Unique(t *testing.T) {
 		slice    []int
 		expected []int
 	}{
+		{"test0", nil, []int{}},
 		{"test1", []int{}, []int{}},
 		{"test2", []int{1, 2, 3, 4}, []int{1, 2, 3, 4}},
 		{"test3", []int{1, 2, 2, 3, 4, 4, 5}, []int{1, 2, 3, 4, 5}},
@@ -1189,6 +1198,11 @@ func Test_Difference(t *testing.T) {
 		{"test2", []int{1, 3, 4, 2}, []int{}, []int{1, 3, 4, 2}},
 		{"test3", []int{1, 3, 2, 4}, []int{5, 6, 7, 8}, []int{1, 3, 2, 4}},
 		{"test4", []int{}, []int{3, 4, 5, 6, 7}, []int{}},
+		{"test5", []int{}, []int{}, []int{}},
+		{"test6", []int{1, 2, 3, 4}, []int{1, 2, 3, 4}, []int{}},
+		{"test7", nil, []int{3, 4, 5, 6, 7}, []int{}},
+		{"test8", []int{1, 2, 3, 4}, nil, []int{1, 2, 3, 4}},
+		{"test9", nil, nil, []int{}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1210,6 +1224,11 @@ func Test_Intersect(t *testing.T) {
 		{"test2", []int{1, 3, 4, 2}, []int{}, []int{}},
 		{"test3", []int{1, 3, 2, 4}, []int{5, 6, 7, 8}, []int{}},
 		{"test4", []int{}, []int{3, 4, 5, 6, 7}, []int{}},
+		{"test5", []int{}, []int{}, []int{}},
+		{"test6", []int{1, 2, 3, 4}, []int{1, 2, 3, 4}, []int{1, 2, 3, 4}},
+		{"test7", nil, []int{3, 4, 5, 6, 7}, []int{}},
+		{"test8", []int{1, 2, 3, 4}, nil, []int{}},
+		{"test9", nil, nil, []int{}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1232,6 +1251,10 @@ func Test_Union(t *testing.T) {
 		{"test3", []int{1, 3, 2, 2, 4}, []int{5, 6, 7, 8}, []int{1, 3, 2, 4, 5, 6, 7, 8}},
 		{"test4", []int{1, 3, 2, 2, 4}, []int{5, 6, 7, 8, 5, 7}, []int{1, 3, 2, 4, 5, 6, 7, 8}},
 		{"test5", []int{}, []int{3, 4, 5, 6, 7}, []int{3, 4, 5, 6, 7}},
+		{"test6", []int{}, []int{}, []int{}},
+		{"test7", nil, []int{3, 4, 5, 6, 7}, []int{3, 4, 5, 6, 7}},
+		{"test8", []int{1, 2, 3, 4}, nil, []int{1, 2, 3, 4}},
+		{"test9", nil, nil, []int{}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1253,6 +1276,8 @@ func Test_Index(t *testing.T) {
 		{"test2", []int{1, 2, 3, 4}, -3, -1},
 		{"test3", []int{1, 2, 3, 4, 4}, 4, 3},
 		{"test4", []int{1, 2, 3, 4, 5, 4, 6}, 4, 3},
+		{"test5", []int{}, 4, -1},
+		{"test6", nil, 7, -1},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1274,6 +1299,8 @@ func Test_LastIndex(t *testing.T) {
 		{"test2", []int{1, 2, 3, 4}, -3, -1},
 		{"test3", []int{1, 2, 3, 4, 4}, 4, 4},
 		{"test4", []int{1, 2, 3, 4, 5, 4, 6}, 4, 5},
+		{"test5", []int{}, 4, -1},
+		{"test6", nil, 7, -1},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1295,6 +1322,8 @@ func Test_IndexAll(t *testing.T) {
 		{"test2", []int{1, 2, 3, 4}, -3, []int{}},
 		{"test3", []int{1, 2, 3, 4, 4}, 4, []int{3, 4}},
 		{"test4", []int{1, 2, 3, 4, 5, 4, 6}, 4, []int{3, 5}},
+		{"test5", []int{}, 4, []int{}},
+		{"test6", nil, 7, []int{}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1316,6 +1345,14 @@ func (t Person) String() string {
 }
 
 func Test_JoinSlice(t *testing.T) {
+	var s0 []int
+	w0 := ""
+	t.Run("test0", func(t *testing.T) {
+		if got := slicex.JoinSlice(",", s0); !reflect.DeepEqual(got, w0) {
+			t.Errorf("JoinSlice() expected %v, got %v", w0, got)
+		}
+	})
+
 	s1 := []int{1, 2, 3, 4, 5}
 	w1 := "1,2,3,4,5"
 	t.Run("test1", func(t *testing.T) {
@@ -1425,6 +1462,7 @@ func TestCompact(t *testing.T) {
 		{"Mixed with zeros", []int{0, 1, 0, 2, 0}, []int{1, 2}},
 		{"No zeros", []int{1, 2, 3}, []int{1, 2, 3}},
 		{"Empty slice", []int{}, []int{}},
+		{"Nil slice", nil, nil},
 	})
 
 	// string 类型测试
@@ -1479,6 +1517,11 @@ func TestConcat_Int(t *testing.T) {
 			name:     "TC03 - 包含空切片",
 			input:    [][]int{{}, {1}},
 			expected: []int{1},
+		},
+		{
+			name:     "TC04 - 空切片",
+			input:    [][]int{},
+			expected: []int{},
 		},
 	}
 
@@ -1776,6 +1819,12 @@ func Test_Contains(t *testing.T) {
 			dst:      5,
 			expected: false,
 		},
+		{
+			name:     "TC04",
+			src:      nil,
+			dst:      5,
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1817,6 +1866,30 @@ func Test_ContainsAny(t *testing.T) {
 			name:     "TC04",
 			src:      []int{},
 			dst:      []int{1, 2, 3, 4, 5},
+			expected: false,
+		},
+		{
+			name:     "TC05",
+			src:      nil,
+			dst:      []int{2, 6},
+			expected: false,
+		},
+		{
+			name:     "TC06",
+			src:      []int{2, 6},
+			dst:      nil,
+			expected: false,
+		},
+		{
+			name:     "TC07",
+			src:      nil,
+			dst:      nil,
+			expected: false,
+		},
+		{
+			name:     "TC08",
+			src:      []int{},
+			dst:      []int{},
 			expected: false,
 		},
 	}
@@ -1861,6 +1934,30 @@ func Test_ContainsAll(t *testing.T) {
 			src:      []int{},
 			dst:      []int{1, 2, 3, 4, 5},
 			expected: false,
+		},
+		{
+			name:     "TC05",
+			src:      []int{},
+			dst:      []int{},
+			expected: true,
+		},
+		{
+			name:     "TC06",
+			src:      nil,
+			dst:      []int{2, 6},
+			expected: false,
+		},
+		{
+			name:     "TC07",
+			src:      []int{2, 6},
+			dst:      nil,
+			expected: true,
+		},
+		{
+			name:     "TC08",
+			src:      nil,
+			dst:      nil,
+			expected: true,
 		},
 	}
 
