@@ -138,7 +138,7 @@ func Pop[T any](s []T) (T, bool) {
 //	s := []int{1, 2, 3, 4, 5}
 //	r, ok := Shift(s) //  r == 1, ok ==true, s == []int{1, 2, 3, 4, 5}
 func Shift[T any](s []T) (T, bool) {
-	if s == nil || len(s) == 0 {
+	if len(s) == 0 {
 		var zero T
 		return zero, false
 	}
