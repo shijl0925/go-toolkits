@@ -91,3 +91,49 @@ func Shift[T any](s *[]T) (T, bool) {
 	*s = (*s)[1:]
 	return v, true
 }
+
+// Drop removes the n elements from the slice and returns the remaining elements.
+// 删除并返回切片的前 n 个元素和剩余元素组成的切片, 原始 slice 会被改变。
+// Example:
+//
+//	s := &[]int{1, 2, 3, 4, 5}
+//	r, _ := Drop(s, 2) //  r == []int{1, 2, 3}  s ==  []int{1, 2, 3}
+func Drop[T any](s *[]T, n int) ([]T, bool) {
+	if s == nil {
+		return nil, true
+	}
+
+	if n < 0 {
+		return *s, false
+	}
+
+	if n > len(*s) {
+		return []T{}, true
+	}
+
+	*s = (*s)[:len(*s)-n]
+	return *s, true
+}
+
+// DropLeft removes the n elements from the slice and returns the remaining elements.
+// 删除并返回切片的左侧 n 个元素和剩余元素组成的切片, 原始 slice 会被改变。
+// Example:
+//
+//	s := &[]int{1, 2, 3, 4, 5}
+//	r, _ := DropLeft(s, 2) //  r == []int{3, 4, 5}  s ==  []int{3, 4, 5}
+func DropLeft[T any](s *[]T, n int) ([]T, bool) {
+	if s == nil {
+		return nil, true
+	}
+
+	if n < 0 {
+		return *s, false
+	}
+
+	if n > len(*s) {
+		return []T{}, true
+	}
+
+	*s = (*s)[n:]
+	return *s, true
+}

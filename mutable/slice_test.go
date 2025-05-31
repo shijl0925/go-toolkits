@@ -487,3 +487,179 @@ func Test_Shift(t *testing.T) {
 		}
 	})
 }
+
+// Helper function to copy a slice (for testing purposes)
+func copySlice(s *[]int) []int {
+	if s == nil {
+		return nil
+	}
+	copied := make([]int, len(*s))
+	copy(copied, *s)
+	return copied
+}
+
+// TestMutableDrop tests the Drop function with various scenarios.
+func TestMutableDrop(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    *[]int
+		n        int
+		expected []int
+		ok       bool
+	}{
+		{
+			name:     "Normal case",
+			input:    &[]int{1, 2, 3, 4, 5},
+			n:        2,
+			expected: []int{1, 2, 3},
+			ok:       true,
+		},
+		{
+			name:     "Nil pointer",
+			input:    nil,
+			n:        2,
+			expected: nil,
+			ok:       true,
+		},
+		{
+			name:     "Negative n",
+			input:    &[]int{1, 2, 3},
+			n:        -1,
+			expected: []int{1, 2, 3},
+			ok:       false,
+		},
+		{
+			name:     "n greater than length",
+			input:    &[]int{1, 2, 3},
+			n:        5,
+			expected: []int{},
+			ok:       true,
+		},
+		{
+			name:     "Empty slice, n=0",
+			input:    &[]int{},
+			n:        0,
+			expected: []int{},
+			ok:       true,
+		},
+		{
+			name:     "Empty slice, n>0",
+			input:    &[]int{},
+			n:        1,
+			expected: []int{},
+			ok:       true,
+		},
+		{
+			name:     "Remove all elements",
+			input:    &[]int{1, 2, 3},
+			n:        3,
+			expected: []int{},
+			ok:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			original := copySlice(tt.input) // Make a copy to check mutation
+			result, ok := mutable.Drop(tt.input, tt.n)
+
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+			}
+			if ok != tt.ok {
+				t.Errorf("expected ok=%v, got %v", tt.ok, ok)
+			}
+
+			// Check if original slice was modified correctly
+			if tt.input != nil && tt.ok && tt.n >= 0 && tt.n <= len(original) {
+				expectedModified := original[:len(original)-tt.n]
+				if !reflect.DeepEqual(*tt.input, expectedModified) {
+					t.Errorf("expected input slice to be modified to %v, but got %v", expectedModified, *tt.input)
+				}
+			}
+		})
+	}
+}
+
+// TestMutableDropLeft tests the DropLeft function with various scenarios.
+func TestMutableDropLeft(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    *[]int
+		n        int
+		expected []int
+		ok       bool
+	}{
+		{
+			name:     "Normal case",
+			input:    &[]int{1, 2, 3, 4, 5},
+			n:        2,
+			expected: []int{3, 4, 5},
+			ok:       true,
+		},
+		{
+			name:     "Nil pointer",
+			input:    nil,
+			n:        2,
+			expected: nil,
+			ok:       true,
+		},
+		{
+			name:     "Negative n",
+			input:    &[]int{1, 2, 3},
+			n:        -1,
+			expected: []int{1, 2, 3},
+			ok:       false,
+		},
+		{
+			name:     "n greater than length",
+			input:    &[]int{1, 2, 3},
+			n:        5,
+			expected: []int{},
+			ok:       true,
+		},
+		{
+			name:     "Empty slice, n=0",
+			input:    &[]int{},
+			n:        0,
+			expected: []int{},
+			ok:       true,
+		},
+		{
+			name:     "Empty slice, n>0",
+			input:    &[]int{},
+			n:        1,
+			expected: []int{},
+			ok:       true,
+		},
+		{
+			name:     "Remove all elements",
+			input:    &[]int{1, 2, 3},
+			n:        3,
+			expected: []int{},
+			ok:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			original := copySlice(tt.input) // Make a copy to check mutation
+			result, ok := mutable.DropLeft(tt.input, tt.n)
+
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+			}
+			if ok != tt.ok {
+				t.Errorf("expected ok=%v, got %v", tt.ok, ok)
+			}
+
+			// Check if original slice was modified correctly
+			if tt.input != nil && tt.ok && tt.n >= 0 && tt.n <= len(original) {
+				expectedModified := original[tt.n:]
+				if !reflect.DeepEqual(*tt.input, expectedModified) {
+					t.Errorf("expected input slice to be modified to %v, but got %v", expectedModified, *tt.input)
+				}
+			}
+		})
+	}
+}
