@@ -325,3 +325,165 @@ func Test_ReverseSelf_OddLengthSlice(t *testing.T) {
 		t.Errorf("Reverse(%v) = %v; want %v", s, s, expected)
 	}
 }
+
+func Test_Pop(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    *[]int
+		expected int
+		ok       bool
+	}{
+		{"test1", &[]int{1, 2, 3, 4}, 4, true},
+		{"test2", &[]int{1, 2, 3, 4, 5}, 5, true},
+		{"test3", &[]int{1, 2, 3, 4, 5, 6}, 6, true},
+		{"test4", &[]int{}, 0, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			last, ok := mutable.Pop(tc.slice)
+			if last != tc.expected || ok != tc.ok {
+				t.Errorf("Pop() expected %v(%v), got %v(%v)", tc.expected, tc.ok, last, ok)
+			}
+		})
+	}
+
+	t.Run("nil pointer", func(t *testing.T) {
+		var s *[]int
+		val, ok := mutable.Pop(s)
+		var zero int
+		if zero != val || ok {
+			t.Errorf("Pop() expected %v(%v), got %v(%v)", zero, false, val, ok)
+		}
+	})
+
+	t.Run("empty slice", func(t *testing.T) {
+		s := &[]string{}
+		val, ok := mutable.Pop(s)
+		var zero string
+		if zero != val || ok {
+			t.Errorf("Pop() expected %v(%v), got %v(%v)", zero, false, val, ok)
+		}
+	})
+
+	t.Run("single element", func(t *testing.T) {
+		s := &[]int{1}
+		val, ok := mutable.Pop(s)
+		if val != 1 || !ok {
+			t.Errorf("Pop() expected %v(%v), got %v(%v)", val, true, val, ok)
+		}
+		if !reflect.DeepEqual(*s, []int{}) {
+			t.Errorf("Pop() expected %v, got %v", []int{}, *s)
+		}
+	})
+
+	t.Run("multiple elements", func(t *testing.T) {
+		s := &[]string{"a", "b"}
+		val, ok := mutable.Pop(s)
+		if val != "b" || !ok {
+			t.Errorf("Pop() expected %v(%v), got %v(%v)", val, true, val, ok)
+		}
+		if !reflect.DeepEqual(*s, []string{"a"}) {
+			t.Errorf("Pop() expected %v, got %v", []string{"a"}, *s)
+		}
+	})
+
+	t.Run("generic type struct", func(t *testing.T) {
+		type User struct {
+			Name string
+			Age  int
+		}
+		s := &[]User{
+			{Name: "Alice", Age: 25},
+			{Name: "Bob", Age: 30},
+			{Name: "Charlie", Age: 35},
+		}
+		val, ok := mutable.Pop(s)
+		if !reflect.DeepEqual(val, User{Name: "Charlie", Age: 35}) || !ok {
+			t.Errorf("Pop() expected %v(%v), got %v(%v)", val, true, val, ok)
+		}
+		if !reflect.DeepEqual(*s, []User{{Name: "Alice", Age: 25}, {Name: "Bob", Age: 30}}) {
+			t.Errorf("Pop() expected %v, got %v", []User{{Name: "Alice", Age: 25}, {Name: "Bob", Age: 30}}, *s)
+		}
+	})
+}
+
+func Test_Shift(t *testing.T) {
+	var tests = []struct {
+		name     string
+		slice    *[]int
+		expected int
+		ok       bool
+	}{
+		{"test1", &[]int{1, 2, 3, 4}, 1, true},
+		{"test2", &[]int{1, 2, 3, 4, 5}, 1, true},
+		{"test3", &[]int{1, 2, 3, 4, 5, 6}, 1, true},
+		{"test4", &[]int{}, 0, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			val, ok := mutable.Shift(tc.slice)
+			if val != tc.expected || ok != tc.ok {
+				t.Errorf("Shift() expected %v(%v), got %v(%v)", tc.expected, tc.ok, val, ok)
+			}
+		})
+	}
+
+	t.Run("nil pointer", func(t *testing.T) {
+		var s *[]int
+		val, ok := mutable.Shift(s)
+		var zero int
+		if zero != val || ok {
+			t.Errorf("Shift() expected %v(%v), got %v(%v)", zero, false, val, ok)
+		}
+	})
+
+	t.Run("empty slice", func(t *testing.T) {
+		s := &[]string{}
+		val, ok := mutable.Shift(s)
+		var zero string
+		if zero != val || ok {
+			t.Errorf("Shift() expected %v(%v), got %v(%v)", zero, false, val, ok)
+		}
+	})
+
+	t.Run("single element", func(t *testing.T) {
+		s := &[]int{1}
+		val, ok := mutable.Shift(s)
+		if val != 1 || !ok {
+			t.Errorf("Shift() expected %v(%v), got %v(%v)", val, true, val, ok)
+		}
+		if !reflect.DeepEqual(*s, []int{}) {
+			t.Errorf("Shift() expected %v, got %v", []int{}, *s)
+		}
+	})
+
+	t.Run("multiple elements", func(t *testing.T) {
+		s := &[]string{"a", "b"}
+		val, ok := mutable.Shift(s)
+		if val != "a" || !ok {
+			t.Errorf("Shift() expected %v(%v), got %v(%v)", val, true, val, ok)
+		}
+		if !reflect.DeepEqual(*s, []string{"b"}) {
+			t.Errorf("Shift() expected %v, got %v", []string{"b"}, *s)
+		}
+	})
+
+	t.Run("generic type struct", func(t *testing.T) {
+		type User struct {
+			Name string
+			Age  int
+		}
+		s := &[]User{
+			{Name: "Alice", Age: 25},
+			{Name: "Bob", Age: 30},
+			{Name: "Charlie", Age: 35},
+		}
+		val, ok := mutable.Shift(s)
+		if !reflect.DeepEqual(val, User{Name: "Alice", Age: 25}) || !ok {
+			t.Errorf("Shift() expected %v(%v), got %v(%v)", val, true, val, ok)
+		}
+		if !reflect.DeepEqual(*s, []User{{Name: "Bob", Age: 30}, {Name: "Charlie", Age: 35}}) {
+			t.Errorf("Shift() expected %v, got %v", []User{{Name: "Bob", Age: 30}, {Name: "Charlie", Age: 35}}, *s)
+		}
+	})
+}
