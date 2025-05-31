@@ -2,7 +2,6 @@ package slicex
 
 import (
 	"fmt"
-	"math/rand"
 	"reflect"
 	"sort"
 	"strings"
@@ -407,13 +406,6 @@ func Reverse[T any](s []T) []T {
 	}
 
 	return result
-}
-
-// Shuffle returns an array of shuffled values. Uses the Fisher-Yates shuffle algorithm.
-func Shuffle[T any](s []T) {
-	rand.Shuffle(len(s), func(i, j int) {
-		s[i], s[j] = s[j], s[i]
-	})
 }
 
 // Repeat returns a new slice with n copies of the given element.

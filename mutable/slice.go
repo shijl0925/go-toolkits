@@ -1,5 +1,7 @@
 package mutable
 
+import "math/rand"
+
 // Map applies a function to each element of a slice.
 // It modifies the slice in place.
 func Map[T any](s []T, fn func(T) T) {
@@ -136,4 +138,11 @@ func DropLeft[T any](s *[]T, n int) ([]T, bool) {
 
 	*s = (*s)[n:]
 	return *s, true
+}
+
+// Shuffle returns an array of shuffled values. Uses the Fisher-Yates shuffle algorithm.
+func Shuffle[T any](s []T) {
+	rand.Shuffle(len(s), func(i, j int) {
+		s[i], s[j] = s[j], s[i]
+	})
 }
