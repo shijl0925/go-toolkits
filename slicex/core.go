@@ -46,6 +46,10 @@ func Avg[T constraints.RealNumber](s []T) float64 {
 //	s := []int{1, 2, 3, 4, 5}
 //	r := Max(s) //  r == 5
 func Max[T constraints.Ordered](s []T) T {
+	if len(s) == 0 {
+		var zero T
+		return zero
+	}
 	result := s[0]
 	for i := 1; i < len(s); i++ {
 		//nolint:typecheck
@@ -63,6 +67,10 @@ func Max[T constraints.Ordered](s []T) T {
 //	s := []int{1, 2, 3, 4, 5}
 //	r := Min(s) //  r == 1
 func Min[T constraints.Ordered](s []T) T {
+	if len(s) == 0 {
+		var zero T
+		return zero
+	}
 	result := s[0]
 	for i := 1; i < len(s); i++ {
 		//nolint:typecheck

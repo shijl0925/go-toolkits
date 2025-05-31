@@ -62,7 +62,7 @@ func StructToMap(s any) map[string]any {
 func structVal(s any) (any, bool) {
 	v := reflect.ValueOf(s)
 
-	// if pointer get the underlying element≤
+	// if pointer get the underlying element
 	for v.Kind() == reflect.Ptr {
 		if v.IsNil() {
 			return nil, false

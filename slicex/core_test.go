@@ -9,6 +9,12 @@ import (
 )
 
 func Test_SumSlice(t *testing.T) {
+	t.Run("Sum nil", func(t *testing.T) {
+		got := slicex.Sum[int](nil)
+		if got != 0 {
+			t.Errorf("Sum() expected %v, got %v", 0, got)
+		}
+	})
 	tests := []struct {
 		name     string
 		slice    any
@@ -49,6 +55,13 @@ func Test_SumSlice(t *testing.T) {
 				t.Fatalf("Unsupported input type: %T", input)
 			}
 		})
+	}
+}
+
+func TestAvg_Nil(t *testing.T) {
+	got := slicex.Avg[float64](nil)
+	if got != 0 {
+		t.Errorf("Avg() expected %v, got %v", 0, got)
 	}
 }
 
@@ -130,6 +143,8 @@ func Test_MaxSlice(t *testing.T) {
 		{"test1", []float64{-1, -5, -3, -4, -2}, -1},
 		{"test2", []float64{1.1, 3.5, 2.0, 0.1}, 3.5},
 		{"test3", []float64{-1, 5, 3, 4, 2}, 5},
+		{"test4", []float64{}, 0.0},
+		{"test5", nil, 0.0},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -138,6 +153,120 @@ func Test_MaxSlice(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestMax_EmptySlice_ReturnsZeroValue tests the case when input slice is empty.
+func TestMax_EmptySlice_ReturnsZeroValue(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Max([]int{})
+		if got != 0 {
+			t.Errorf("Max() expected %v, got %v", 0, got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Max([]float64{})
+		if got != 0.0 {
+			t.Errorf("Max() expected %v, got %v", 0.0, got)
+		}
+	})
+	t.Run("TC03", func(t *testing.T) {
+		got := slicex.Max([]string{})
+		if got != "" {
+			t.Errorf("Max() expected %v, got %v", "", got)
+		}
+	})
+	t.Run("TC04", func(t *testing.T) {
+		got := slicex.Max[int](nil)
+		if got != 0 {
+			t.Errorf("Max() expected %v, got %v", 0, got)
+		}
+	})
+}
+
+// TestMax_SingleElement_ReturnsThatElement tests when there's only one element.
+func TestMax_SingleElement_ReturnsThatElement(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Max([]int{99})
+		if got != 99 {
+			t.Errorf("Max() expected %v, got %v", 99, got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Max([]string{"z"})
+		if got != "z" {
+			t.Errorf("Max() expected %v, got %v", "z", got)
+		}
+	})
+	t.Run("TC03", func(t *testing.T) {
+		got := slicex.Max([]float64{3.14})
+		if got != 3.14 {
+			t.Errorf("Max() expected %v, got %v", 3.14, got)
+		}
+	})
+}
+
+// TestMax_AllElementsSame_ReturnsSameValue tests when all elements are same.
+func TestMax_AllElementsSame_ReturnsSameValue(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Max([]int{10, 10, 10})
+		if got != 10 {
+			t.Errorf("Max() expected %v, got %v", 10, got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Max([]string{"a", "a", "a"})
+		if got != "a" {
+			t.Errorf("Max() expected %v, got %v", "a", got)
+		}
+	})
+}
+
+// TestMax_MaxAtBeginning_Middle_End tests different positions of max value.
+func TestMax_MaxAtBeginning_Middle_End(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Max([]int{10, 5, 3})
+		if got != 10 {
+			t.Errorf("Max() expected %v, got %v", 10, got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Max([]int{5, 10, 3})
+		if got != 10 {
+			t.Errorf("Max() expected %v, got %v", 10, got)
+		}
+	})
+	t.Run("TC03", func(t *testing.T) {
+		got := slicex.Max([]int{5, 3, 10})
+		if got != 10 {
+			t.Errorf("Max() expected %v, got %v", 10, got)
+		}
+	})
+}
+
+// TestMax_NegativeNumbers tests with negative numbers.
+func TestMax_NegativeNumbers(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Max([]int{-5, -10, -1})
+		if got != -1 {
+			t.Errorf("Max() expected %v, got %v", -1, got)
+		}
+	})
+}
+
+// TestMax_StringLexicographicalOrder tests lexicographical order for strings.
+func TestMax_StringLexicographicalOrder(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Max([]string{"a", "c", "b"})
+		if got != "c" {
+			t.Errorf("Max() expected %v, got %v", "c", got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Max([]string{"apple", "zoo", "banana"})
+		if got != "zoo" {
+			t.Errorf("Max() expected %v, got %v", "zoo", got)
+		}
+	})
 }
 
 func Test_MinSlice(t *testing.T) {
@@ -149,6 +278,8 @@ func Test_MinSlice(t *testing.T) {
 		{"test1", []float64{-1, 5, 3, 4, 2}, -1},
 		{"test2", []float64{1.1, 3.5, 2.0, 0.1}, 0.1},
 		{"test3", []float64{-1, -5, -3, -4, -2}, -5},
+		{"test4", []float64{}, 0.0},
+		{"test5", nil, 0.0},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -157,6 +288,120 @@ func Test_MinSlice(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestMin_EmptySlice_ReturnsZeroValue tests the case when input slice is empty.
+func TestMin_EmptySlice_ReturnsZeroValue(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Min([]int{})
+		if got != 0 {
+			t.Errorf("Min() expected %v, got %v", 0, got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Min([]float64{})
+		if got != 0.0 {
+			t.Errorf("Min() expected %v, got %v", 0.0, got)
+		}
+	})
+	t.Run("TC03", func(t *testing.T) {
+		got := slicex.Min([]string{})
+		if got != "" {
+			t.Errorf("Min() expected %v, got %v", "", got)
+		}
+	})
+	t.Run("TC04", func(t *testing.T) {
+		got := slicex.Min[int](nil)
+		if got != 0 {
+			t.Errorf("Min() expected %v, got %v", 0, got)
+		}
+	})
+}
+
+// TestMin_SingleElement_ReturnsThatElement tests when there's only one element.
+func TestMin_SingleElement_ReturnsThatElement(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Min([]int{99})
+		if got != 99 {
+			t.Errorf("Min() expected %v, got %v", 99, got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Min([]string{"z"})
+		if got != "z" {
+			t.Errorf("Min() expected %v, got %v", "z", got)
+		}
+	})
+	t.Run("TC03", func(t *testing.T) {
+		got := slicex.Min([]float64{3.14})
+		if got != 3.14 {
+			t.Errorf("Min() expected %v, got %v", 3.14, got)
+		}
+	})
+}
+
+// TestMin_AllElementsSame_ReturnsSameValue tests when all elements are same.
+func TestMin_AllElementsSame_ReturnsSameValue(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Min([]int{10, 10, 10})
+		if got != 10 {
+			t.Errorf("Min() expected %v, got %v", 10, got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Min([]string{"a", "a", "a"})
+		if got != "a" {
+			t.Errorf("Min() expected %v, got %v", "a", got)
+		}
+	})
+}
+
+// TestMin_MinAtBeginning_Middle_End tests different positions of min value.
+func TestMin_MinAtBeginning_Middle_End(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Min([]int{10, 5, 3})
+		if got != 3 {
+			t.Errorf("Min() expected %v, got %v", 3, got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Min([]int{5, 10, 3})
+		if got != 3 {
+			t.Errorf("Min() expected %v, got %v", 3, got)
+		}
+	})
+	t.Run("TC03", func(t *testing.T) {
+		got := slicex.Min([]int{5, 3, 10})
+		if got != 3 {
+			t.Errorf("Min() expected %v, got %v", 3, got)
+		}
+	})
+}
+
+// TestMin_NegativeNumbers tests with negative numbers.
+func TestMin_NegativeNumbers(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Min([]int{-5, -10, -1})
+		if got != -10 {
+			t.Errorf("Min() expected %v, got %v", -10, got)
+		}
+	})
+}
+
+// TestMin_StringLexicographicalOrder tests lexicographical order for strings.
+func TestMin_StringLexicographicalOrder(t *testing.T) {
+	t.Run("TC01", func(t *testing.T) {
+		got := slicex.Min([]string{"a", "c", "b"})
+		if got != "a" {
+			t.Errorf("Min() expected %v, got %v", "a", got)
+		}
+	})
+	t.Run("TC02", func(t *testing.T) {
+		got := slicex.Min([]string{"apple", "zoo", "banana"})
+		if got != "apple" {
+			t.Errorf("Min() expected %v, got %v", "apple", got)
+		}
+	})
 }
 
 func Test_Insert(t *testing.T) {
@@ -1808,6 +2053,11 @@ func TestRemoveHead_String(t *testing.T) {
 			input:    nil,
 			expected: nil,
 		},
+		{
+			name:     "Single element",
+			input:    []string{"hello"},
+			expected: []string{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1838,6 +2088,16 @@ func TestRemoveHead_Struct(t *testing.T) {
 		{
 			name:     "Empty slice",
 			input:    []dummy{},
+			expected: []dummy{},
+		},
+		{
+			name:     "Nil slice",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name:     "Single struct",
+			input:    []dummy{{X: 3}},
 			expected: []dummy{},
 		},
 	}
@@ -1874,6 +2134,11 @@ func TestRemoveTail_Int(t *testing.T) {
 			input:    []int{1, 2, 3},
 			expected: []int{1, 2},
 		},
+		{
+			name:     "Nil slice",
+			input:    nil,
+			expected: nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1907,6 +2172,11 @@ func TestRemoveTail_String(t *testing.T) {
 			name:     "Multiple elements",
 			input:    []string{"a", "b", "c"},
 			expected: []string{"a", "b"},
+		},
+		{
+			name:     "Nil slice",
+			input:    nil,
+			expected: nil,
 		},
 	}
 
