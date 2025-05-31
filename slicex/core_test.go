@@ -404,7 +404,7 @@ func TestMin_StringLexicographicalOrder(t *testing.T) {
 	})
 }
 
-func Test_Insert(t *testing.T) {
+func Test_InsertAtV0(t *testing.T) {
 	var tests = []struct {
 		name     string
 		slice    []int
@@ -421,7 +421,7 @@ func Test_Insert(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := slicex.Insert(tc.slice, tc.element, tc.index)
+			got, err := slicex.InsertAtV0(tc.slice, tc.element, tc.index)
 
 			if tc.wantErr {
 				if err == nil {
@@ -476,7 +476,7 @@ func Test_InsertAtV1(t *testing.T) {
 	}
 }
 
-func Test_InsertAtV2(t *testing.T) {
+func Test_InsertAt(t *testing.T) {
 	var tests = []struct {
 		name     string
 		slice    []int
@@ -493,7 +493,7 @@ func Test_InsertAtV2(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := slicex.InsertAtV2(tc.slice, tc.element, tc.index)
+			got, err := slicex.InsertAt(tc.slice, tc.element, tc.index)
 
 			if tc.wantErr {
 				if err == nil {

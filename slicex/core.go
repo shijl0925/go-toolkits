@@ -284,15 +284,15 @@ func Extend[T any](src []T, elements []T) []T {
 	return append(src, elements...)
 }
 
-// Insert inserts an element at a specific index in a slice.
+// InsertAtV0 inserts an element at a specific index in a slice.
 // 在 slice 的指定位置插入一个元素, 原始 slice 不会被改变。
 // 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
 //	s := []int{1, 2, 3}
-//	r, _ := Insert(s, 4, 1) // r == []int{1, 4, 2, 3}
-func Insert[T any](src []T, element T, index int) ([]T, error) {
+//	r, _ := InsertAtV0(s, 4, 1) // r == []int{1, 4, 2, 3}
+func InsertAtV0[T any](src []T, element T, index int) ([]T, error) {
 	if index < 0 || index > len(src) {
 		return src, fmt.Errorf("index out of range: %d", index)
 	}
@@ -307,7 +307,7 @@ func Insert[T any](src []T, element T, index int) ([]T, error) {
 //
 //	s := []int{1, 2, 3}
 //	r, _ := InsertAtV1(s, 4, 1) // r == []int{1, 4, 2, 3}
-func InsertAtV1[T any](src []T, element T, index int) ([]T, error) { // 性能比Insert好
+func InsertAtV1[T any](src []T, element T, index int) ([]T, error) { // 性能比InsertAtV0好
 	if index < 0 || index > len(src) {
 		return src, fmt.Errorf("index out of range: %d", index)
 	}
@@ -324,15 +324,15 @@ func InsertAtV1[T any](src []T, element T, index int) ([]T, error) { // 性能�
 	return src, nil
 }
 
-// InsertAtV2  inserts an element at a specific index in a slice.
+// InsertAt  inserts an element at a specific index in a slice.
 // 在 slice 的指定位置插入一个元素, 原始 slice 不会被改变。
 // 注意: 该函数不会修改原始切片内容，而是返回一个新的切片。
 //
 // Example:
 //
 //	s := []int{1, 2, 3, 4, 5}
-//	r, _ := InsertAtV2(slice, 6, 2)  // r == [1, 2, 6, 3, 4, 5]
-func InsertAtV2[T any](src []T, element T, index int) ([]T, error) { // 性能比InsertAtV1好
+//	r, _ := InsertAt(slice, 6, 2)  // r == [1, 2, 6, 3, 4, 5]
+func InsertAt[T any](src []T, element T, index int) ([]T, error) { // 性能比InsertAtV1好
 	if index < 0 || index > len(src) {
 		return src, fmt.Errorf("index out of range: %d", index)
 	}
