@@ -614,7 +614,8 @@ func Test_Pop(t *testing.T) {
 	})
 
 	t.Run("empty slice", func(t *testing.T) {
-		s := []string{}
+		var s []string
+
 		val, ok := slicex.Pop(s)
 		var zero string
 		if zero != val || ok {
@@ -695,7 +696,8 @@ func Test_Shift(t *testing.T) {
 	})
 
 	t.Run("empty slice", func(t *testing.T) {
-		s := []string{}
+		var s []string
+
 		val, ok := slicex.Shift(s)
 		var zero string
 		if zero != val || ok {
