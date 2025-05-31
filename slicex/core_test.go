@@ -751,28 +751,21 @@ func Test_Drop(t *testing.T) {
 		slice    []int
 		n        int
 		expected []int
-		wantErr  bool
+		ok       bool
 	}{
-		{"test1", []int{1, 2, 3, 4}, 0, []int{1, 2, 3, 4}, false},
-		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{1, 2, 3}, false},
-		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, []int{}, false},
-		{"test4", []int{1, 2, 3, 4}, 5, nil, true},
-		{"test5", []int{1, 2, 3, 4}, -1, nil, true},
+		{"test1", []int{1, 2, 3, 4}, 0, []int{1, 2, 3, 4}, true},
+		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{1, 2, 3}, true},
+		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, []int{}, true},
+		{"test4", []int{1, 2, 3, 4}, 5, []int{}, true},
+		{"test5", []int{1, 2, 3, 4}, -1, []int{1, 2, 3, 4}, false},
+		{"test6", []int{}, 1, []int{}, true},
+		{"test7", []int{}, 0, []int{}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := slicex.Drop(tt.slice, tt.n)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("Expected error but got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if !reflect.DeepEqual(result, tt.expected) {
-					t.Errorf("Drop() expected %v, but got %v", tt.expected, result)
-				}
+			result, ok := slicex.Drop(tt.slice, tt.n)
+			if !reflect.DeepEqual(result, tt.expected) || ok != tt.ok {
+				t.Errorf("Drop() expected %v(%v), but got %v(%v)", tt.expected, tt.ok, result, ok)
 			}
 		})
 	}
@@ -784,73 +777,64 @@ func TestDropLeft(t *testing.T) {
 		s        []int
 		n        int
 		expected []int
-		wantErr  bool
+		ok       bool
 	}{
 		{
 			name:     "Normal case, n=2",
 			s:        []int{1, 2, 3, 4},
 			n:        2,
 			expected: []int{3, 4},
-			wantErr:  false,
+			ok:       true,
 		},
 		{
 			name:     "n=0, no removal",
 			s:        []int{1, 2, 3, 4},
 			n:        0,
 			expected: []int{1, 2, 3, 4},
-			wantErr:  false,
+			ok:       true,
 		},
 		{
 			name:     "n equals length of slice",
 			s:        []int{1, 2, 3, 4},
 			n:        4,
 			expected: []int{},
-			wantErr:  false,
+			ok:       true,
 		},
 		{
 			name:     "n negative",
 			s:        []int{1, 2, 3, 4},
 			n:        -1,
-			expected: nil,
-			wantErr:  true,
+			expected: []int{1, 2, 3, 4},
+			ok:       false,
 		},
 		{
 			name:     "n greater than length",
 			s:        []int{1, 2, 3, 4},
 			n:        5,
-			expected: nil,
-			wantErr:  true,
+			expected: []int{},
+			ok:       true,
 		},
 		{
 			name:     "Empty slice, n=0",
 			s:        []int{},
 			n:        0,
 			expected: []int{},
-			wantErr:  false,
+			ok:       true,
 		},
 		{
 			name:     "Empty slice, n=1",
 			s:        []int{},
 			n:        1,
-			expected: nil,
-			wantErr:  true,
+			expected: []int{},
+			ok:       true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := slicex.DropLeft(tt.s, tt.n)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("Expected error but got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if !reflect.DeepEqual(result, tt.expected) {
-					t.Errorf("DropLeft() expected %v, but got %v", tt.expected, result)
-				}
+			result, ok := slicex.DropLeft(tt.s, tt.n)
+			if !reflect.DeepEqual(result, tt.expected) || ok != tt.ok {
+				t.Errorf("DropLeft() expected %v(%v), but got %v(%v)", tt.expected, tt.ok, result, ok)
 			}
 		})
 	}

@@ -154,11 +154,14 @@ func Shift[T any](s []T) (T, bool) {
 //
 //	s := []int{1, 2, 3, 4, 5}
 //	r, _ := Drop(s, 2) //  r == []int{1, 2, 3}
-func Drop[T any](s []T, n int) ([]T, error) {
-	if n < 0 || n > len(s) {
-		return nil, fmt.Errorf("invalid drop number: %d, length of slice is %d", n, len(s))
+func Drop[T any](s []T, n int) ([]T, bool) {
+	if n < 0 {
+		return s, false
 	}
-	return s[:len(s)-n], nil
+	if n > len(s) {
+		return []T{}, true
+	}
+	return s[:len(s)-n], true
 }
 
 // DropLeft removes the n elements from the slice and returns the remaining elements.
@@ -168,11 +171,14 @@ func Drop[T any](s []T, n int) ([]T, error) {
 //
 //	s := []int{1, 2, 3, 4, 5}
 //	r, _ := DropLeft(s, 2) //  r == []int{3, 4, 5}
-func DropLeft[T any](s []T, n int) ([]T, error) {
-	if n < 0 || n > len(s) {
-		return nil, fmt.Errorf("invalid drop number: %d, length of slice is %d", n, len(s))
+func DropLeft[T any](s []T, n int) ([]T, bool) {
+	if n < 0 {
+		return s, false
 	}
-	return s[n:], nil
+	if n > len(s) {
+		return []T{}, true
+	}
+	return s[n:], true
 }
 
 // Remove returns a slice with the all occurrence of element removed.
