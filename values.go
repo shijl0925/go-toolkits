@@ -28,7 +28,7 @@ func AnyToInt8(v any) (int8, error) {
 		return 0, err
 	}
 	if i < math.MinInt8 || i > math.MaxInt8 {
-		return 0, fmt.Errorf("类型转换失败, 值超出范围:%d", i)
+		return 0, fmt.Errorf("value overflow int8. input: %v", i)
 	}
 	return int8(i), nil
 }
@@ -39,7 +39,7 @@ func AnyToUint8(v any) (uint8, error) {
 		return 0, err
 	}
 	if i > math.MaxUint8 {
-		return 0, fmt.Errorf("类型转换失败, 值超出范围:%d", i)
+		return 0, fmt.Errorf("value overflow uint8. input: %v", i)
 	}
 	return uint8(i), nil
 }
@@ -50,7 +50,7 @@ func AnyToInt16(v any) (int16, error) {
 		return 0, err
 	}
 	if i < math.MinInt16 || i > math.MaxInt16 {
-		return 0, fmt.Errorf("类型转换失败, 值超出范围:%d", i)
+		return 0, fmt.Errorf("value overflow int16. input: %v", i)
 	}
 	return int16(i), nil
 }
@@ -61,7 +61,7 @@ func AnyToUint16(v any) (uint16, error) {
 		return 0, err
 	}
 	if i > math.MaxUint16 {
-		return 0, fmt.Errorf("类型转换失败, 值超出范围:%d", i)
+		return 0, fmt.Errorf("value overflow uint16. input: %v", i)
 	}
 	return uint16(i), nil
 }
@@ -72,7 +72,7 @@ func AnyToInt32(v any) (int32, error) {
 		return 0, err
 	}
 	if i < math.MinInt32 || i > math.MaxInt32 {
-		return 0, fmt.Errorf("类型转换失败, 值超出范围:%d", i)
+		return 0, fmt.Errorf("value overflow int32. input: %v", i)
 	}
 	return int32(i), nil
 }
@@ -83,7 +83,7 @@ func AnyToUint32(v any) (uint32, error) {
 		return 0, err
 	}
 	if i > math.MaxUint32 {
-		return 0, fmt.Errorf("类型转换失败, 值超出范围:%d", i)
+		return 0, fmt.Errorf("value overflow uint32. input: %v", i)
 	}
 	return uint32(i), nil
 }
@@ -102,7 +102,7 @@ func AnyToFloat32(v any) (float32, error) {
 		return 0, err
 	}
 	if f < -math.MaxFloat32 || f > math.MaxFloat32 {
-		return 0, fmt.Errorf("类型转换失败, 值超出范围:%f", f)
+		return 0, fmt.Errorf("value overflow float32. input: %v", f)
 	}
 	return float32(f), nil
 }
