@@ -6,17 +6,17 @@ import "github.com/shijl0925/go-toolkits/internal/constraints"
 // BinarySearch return the index of target within a sorted slice, use binary search (recursive call itself).
 // If not found return -1.
 // 二分查找
-func BinarySearch[T constraints.Ordered](sortedSlice []T, target T, lowIndex, highIndex int) int {
-	if lowIndex > highIndex || len(sortedSlice) == 0 {
+func BinarySearch[T constraints.Ordered](s []T, target T, l, h int) int {
+	if l > h || len(s) == 0 {
 		return -1
 	}
-	midIndex := lowIndex + (highIndex-lowIndex)/2
-	if sortedSlice[midIndex] > target {
-		return BinarySearch(sortedSlice, target, lowIndex, midIndex-1)
-	} else if sortedSlice[midIndex] < target {
-		return BinarySearch(sortedSlice, target, midIndex+1, highIndex)
+	m := l + (h-l)/2
+	if s[m] > target {
+		return BinarySearch(s, target, l, m-1)
+	} else if s[m] < target {
+		return BinarySearch(s, target, m+1, h)
 	}
-	return midIndex
+	return m
 }
 
 // BinaryIterativeSearch return the index of target within a sorted slice, use binary search (no recursive).
