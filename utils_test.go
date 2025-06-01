@@ -478,6 +478,12 @@ func TestSafeToInt64(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "Uint64 overflow",
+			input:    uint64(1 << 63),
+			expected: 0,
+			wantErr:  true,
+		},
+		{
 			name:     "Integer float",
 			input:    3.0,
 			expected: 3,

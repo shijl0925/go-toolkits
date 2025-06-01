@@ -26,6 +26,9 @@ var (
 
 	// ErrUnsignedInt indicates that a negative value is attempted to be converted to an unsigned integer.
 	ErrUnsignedInt = fmt.Errorf("cannot convert negative value to unsigned integer")
+
+	// ErrOverflowUint64 indicates that a value is too large to be converted.
+	ErrOverflowUint64 = fmt.Errorf("overflow uint64")
 )
 
 // SafeToString converts a value to a string.
@@ -98,6 +101,9 @@ func SafeToInt64(v any) (int64, error) {
 		return v, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		v := rv.Uint()
+		if v > math.MaxInt64 {
+			return 0, ErrOverflowUint64
+		}
 		return int64(v), nil
 	case reflect.Float32, reflect.Float64:
 		v := rv.Float()
