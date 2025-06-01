@@ -845,6 +845,12 @@ func TestSafeToUint64(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "string invalid number",
+			input:    "-123",
+			expected: 0,
+			wantErr:  true,
+		},
+		{
 			name:     "string invalid",
 			input:    "abc",
 			expected: 0,
@@ -1004,13 +1010,13 @@ func TestSafeToBool(t *testing.T) {
 			name:     "string empty",
 			input:    "",
 			expected: false,
-			wantErr:  false,
+			wantErr:  true,
 		},
 		{
 			name:     "string non-empty",
 			input:    "hello",
-			expected: true,
-			wantErr:  false,
+			expected: false,
+			wantErr:  true,
 		},
 		{
 			name:     "unsupported slice",
@@ -1105,7 +1111,7 @@ func TestSafeToFloat64(t *testing.T) {
 			name:     "empty string",
 			input:    "",
 			expected: 0,
-			wantErr:  false,
+			wantErr:  true,
 		},
 		{
 			name:     "invalid string",

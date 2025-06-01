@@ -97,33 +97,32 @@ func SafeToInt64(v any) (int64, error) {
 
 	switch rv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v := rv.Int()
-		return v, nil
+		i := rv.Int()
+		return i, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		v := rv.Uint()
-		if v > math.MaxInt64 {
+		u := rv.Uint()
+		if u > math.MaxInt64 {
 			return 0, ErrOverflowUint64
 		}
-		return int64(v), nil
+		return int64(u), nil
 	case reflect.Float32, reflect.Float64:
-		v := rv.Float()
-		return int64(v), nil
+		f := rv.Float()
+		return int64(f), nil
 	case reflect.Complex64, reflect.Complex128:
-		v := rv.Complex()
-		return int64(real(v)), nil
+		c := rv.Complex()
+		return int64(real(c)), nil
 	case reflect.String:
 		s := rv.String()
-		v, err := strconv.ParseInt(s, 10, 64)
+		i, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
 			return 0, ErrParse
 		}
-		return v, nil
+		return i, nil
 	case reflect.Bool:
 		if rv.Bool() {
 			return 1, nil
-		} else {
-			return 0, nil
 		}
+		return 0, nil
 	default:
 		return 0, ErrType
 	}
@@ -143,38 +142,37 @@ func SafeToUint64(v any) (uint64, error) {
 
 	switch rv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v := rv.Int()
-		if v < 0 {
+		i := rv.Int()
+		if i < 0 {
 			return 0, ErrUnsignedInt
 		}
-		return uint64(v), nil
+		return uint64(i), nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return rv.Uint(), nil
 	case reflect.Float32, reflect.Float64:
-		v := rv.Float()
-		if v < 0 {
+		f := rv.Float()
+		if f < 0 {
 			return 0, ErrUnsignedInt
 		}
-		return uint64(v), nil
+		return uint64(f), nil
 	case reflect.Complex64, reflect.Complex128:
-		v := real(rv.Complex())
-		if v < 0 {
+		c := real(rv.Complex())
+		if c < 0 {
 			return 0, ErrUnsignedInt
 		}
-		return uint64(v), nil
+		return uint64(c), nil
 	case reflect.String:
 		s := rv.String()
-		v, err := strconv.ParseUint(s, 10, 64)
+		i, err := strconv.ParseUint(s, 10, 64)
 		if err != nil {
 			return 0, ErrParse
 		}
-		return v, nil
+		return i, nil
 	case reflect.Bool:
 		if rv.Bool() {
 			return 1, nil
-		} else {
-			return 0, nil
 		}
+		return 0, nil
 	default:
 		return 0, ErrType
 	}
@@ -205,13 +203,7 @@ func SafeToBool(v any) (bool, error) {
 	case reflect.Complex64, reflect.Complex128:
 		return real(rv.Complex()) != 0, nil
 	case reflect.String:
-		s := rv.String()
-		if s == "true" {
-			return true, nil
-		} else if s == "false" {
-			return false, nil
-		}
-		return s != "", nil
+		return strconv.ParseBool(rv.String())
 	default:
 		return false, ErrType
 	}
@@ -238,15 +230,8 @@ func SafeToFloat64(v any) (float64, error) {
 	case reflect.Complex64, reflect.Complex128:
 		return real(rv.Complex()), nil
 	case reflect.String:
-		v := rv.String()
-		if v == "" {
-			return 0, nil
-		}
-		floatValue, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return 0, err
-		}
-		return floatValue, nil
+		s := rv.String()
+		return strconv.ParseFloat(s, 64)
 	case reflect.Bool:
 		if rv.Bool() {
 			return 1, nil
