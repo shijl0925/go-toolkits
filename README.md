@@ -14,11 +14,18 @@ go get github.com/shijl0925/go-toolkits@latest
 ```
 
 ## Documentation
+- [Slice](https://github.com/shijl0925/go-toolkits#slice-function-list)
+- [itertools](https://github.com/shijl0925/go-toolkits#itertool-function-list)
+- [Map](https://github.com/shijl0925/go-toolkits#map-function-list)
+- [Struct](https://github.com/shijl0925/go-toolkits#struct-function-list)
+- [Set](https://github.com/shijl0925/go-toolkits#set-function-list)
+- [String](https://github.com/shijl0925/go-toolkits#string-function-list)
+- [Time](https://github.com/shijl0925/go-toolkits#time-function-list)
+- [Json](https://github.com/shijl0925/go-toolkits#json-function-list)
+- [math](https://github.com/shijl0925/go-toolkits#math-function-list)
+- [mutable](https://github.com/shijl0925/go-toolkits#mutable-function-list)
 
-#### Slice
-[Slice](https://pkg.go.dev/github.com/shijl0925/go-toolkits/slicex)
-
-#### Function list:
+### Slice Function List:
 - **<big>Sum</big>**:
     * Sum returns the sum of all elements in the slice.
 - **<big>Avg</big>**:
@@ -144,11 +151,20 @@ go get github.com/shijl0925/go-toolkits@latest
 - **<big>SortSlice</big>**:
   * 对任意类型的切片进行排序，使用提供的 less 函数定义排序规则。
 
+### itertools Function List:
 
+### Map Function List:
 
+### Struct Function List:
 
+### Set Function List:
 
+### String Function List:
 
+### Time Function List:
 
+#### Json Function List:
 
+#### Math Function List:
 
+#### mutable Function List:
