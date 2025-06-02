@@ -318,28 +318,11 @@ func SafeToInterface(v any) (interface{}, bool) {
 		rv = rv.Elem()
 	}
 
-	if rv.CanInterface() {
-		return rv.Interface(), true
-	}
-
-	switch rv.Kind() {
-	case reflect.Bool:
-		return rv.Bool(), true
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return rv.Int(), true
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return rv.Uint(), true
-	case reflect.Float32, reflect.Float64:
-		return rv.Float(), true
-	case reflect.Complex64, reflect.Complex128:
-		return rv.Complex(), true
-	case reflect.String:
-		return rv.String(), true
-	case reflect.Ptr, reflect.Interface:
-		return SafeToInterface(rv.Elem())
-	default:
+	if !rv.CanInterface() {
 		return nil, false
 	}
+
+	return rv.Interface(), true
 }
 
 // IsKindOf checks if the given value is an instance of the given kind.
