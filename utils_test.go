@@ -47,7 +47,19 @@ func TestSafeToString(t *testing.T) {
 			name:     "nil input",
 			input:    nil,
 			expected: "",
-			wantErr:  false,
+			wantErr:  true,
+		},
+		{
+			name:     "nil pointer",
+			input:    (*int)(nil),
+			expected: "",
+			wantErr:  true,
+		},
+		{
+			name:     "double nil pointer",
+			input:    (**int)(nil),
+			expected: "",
+			wantErr:  true,
 		},
 		{
 			name:     "string",
@@ -59,6 +71,12 @@ func TestSafeToString(t *testing.T) {
 			name:     "*string",
 			input:    func() *string { s := "world"; return &s }(),
 			expected: "world",
+			wantErr:  false,
+		},
+		{
+			name:     "**string",
+			input:    func() **string { s := "abc"; p := &s; return &p }(),
+			expected: "abc",
 			wantErr:  false,
 		},
 		{
@@ -77,6 +95,18 @@ func TestSafeToString(t *testing.T) {
 			name:     "int",
 			input:    123,
 			expected: "123",
+			wantErr:  false,
+		},
+		{
+			name:     "non-nil pointer to int",
+			input:    func() *int { i := 789; return &i }(),
+			expected: "789",
+			wantErr:  false,
+		},
+		{
+			name:     "double pointer",
+			input:    func() **int { i := 5; p := &i; return &p }(),
+			expected: "5",
 			wantErr:  false,
 		},
 		{
@@ -110,6 +140,12 @@ func TestSafeToString(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "float64 pointer",
+			input:    func() *float64 { f := 3.14; return &f }(),
+			expected: "3.14",
+			wantErr:  false,
+		},
+		{
 			name:     "bool true",
 			input:    true,
 			expected: "true",
@@ -119,6 +155,12 @@ func TestSafeToString(t *testing.T) {
 			name:     "bool false",
 			input:    false,
 			expected: "false",
+			wantErr:  false,
+		},
+		{
+			name:     "bool pointer",
+			input:    func() *bool { b := true; return &b }(),
+			expected: "true",
 			wantErr:  false,
 		},
 		{
@@ -134,26 +176,56 @@ func TestSafeToString(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "nil pointer",
-			input:    (*int)(nil),
-			expected: "",
-			wantErr:  false,
-		},
-		{
-			name:     "non-nil pointer to int",
-			input:    func() *int { i := 789; return &i }(),
-			expected: "789",
-			wantErr:  false,
-		},
-		{
 			name:     "struct type",
 			input:    struct{}{},
 			expected: "{}",
 			wantErr:  false,
 		},
 		{
+			name:     "struct pointer",
+			input:    &struct{}{},
+			expected: "{}",
+			wantErr:  false,
+		},
+		{
+			name:     "map",
+			input:    map[string]int{"a": 1},
+			expected: `{"a":1}`,
+			wantErr:  false,
+		},
+		{
+			name:     "map pointer",
+			input:    func() *map[string]int { m := map[string]int{"a": 1}; return &m }(),
+			expected: `{"a":1}`,
+			wantErr:  false,
+		},
+		{
+			name:     "slice",
+			input:    []int{1, 2, 3},
+			expected: `[1,2,3]`,
+			wantErr:  false,
+		},
+		{
+			name:     "slice pointer",
+			input:    func() *[]int { s := []int{1, 2, 3}; return &s }(),
+			expected: `[1,2,3]`,
+			wantErr:  false,
+		},
+		{
 			name:     "unmarshalable struct",
 			input:    UnmarshalableStruct{},
+			expected: "",
+			wantErr:  true,
+		},
+		{
+			name:     "function",
+			input:    func() {},
+			expected: "",
+			wantErr:  true,
+		},
+		{
+			name:     "channel",
+			input:    make(chan int),
 			expected: "",
 			wantErr:  true,
 		},
@@ -420,14 +492,6 @@ func TestIsNilValue(t *testing.T) {
 	}
 }
 
-func intPtr(i int) *int {
-	return &i
-}
-
-func stringPtr(s string) *string {
-	return &s
-}
-
 func TestSafeToInt64(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -448,8 +512,20 @@ func TestSafeToInt64(t *testing.T) {
 			wantErr:  true,
 		},
 		{
+			name:     "double nil pointer",
+			input:    (**int)(nil),
+			expected: 0,
+			wantErr:  true,
+		},
+		{
 			name:     "non-nil pointer",
-			input:    intPtr(42),
+			input:    func() *int { i := 42; return &i }(),
+			expected: 42,
+			wantErr:  false,
+		},
+		{
+			name:     "double pointer",
+			input:    func() **int { i := 42; p := &i; return &p }(),
 			expected: 42,
 			wantErr:  false,
 		},
@@ -490,6 +566,12 @@ func TestSafeToInt64(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "Integer float64 pointer",
+			input:    func() *float64 { f := 3.0; return &f }(),
+			expected: 3,
+			wantErr:  false,
+		},
+		{
 			name:     "Complex number",
 			input:    complex(3, 4),
 			expected: 3,
@@ -498,6 +580,18 @@ func TestSafeToInt64(t *testing.T) {
 		{
 			name:     "Parseable string",
 			input:    "123",
+			expected: 123,
+			wantErr:  false,
+		},
+		{
+			name:     "Parseable *string",
+			input:    func() *string { s := "123"; return &s }(),
+			expected: 123,
+			wantErr:  false,
+		},
+		{
+			name:     "Parseable **string",
+			input:    func() **string { s := "123"; p := &s; return &p }(),
 			expected: 123,
 			wantErr:  false,
 		},
@@ -522,6 +616,18 @@ func TestSafeToInt64(t *testing.T) {
 		{
 			name:     "Unsupported type",
 			input:    struct{}{},
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "function",
+			input:    func() {},
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "channel",
+			input:    make(chan int),
 			expected: 0,
 			wantErr:  true,
 		},
@@ -567,14 +673,26 @@ func TestSafeToBytes(t *testing.T) {
 			wantErr:  toolkits.ErrNilPointer,
 		},
 		{
-			name:     "non-nil pointer",
-			input:    stringPtr("hello"),
-			expected: []byte("hello"),
-			wantErr:  nil,
+			name:     "double nil pointer",
+			input:    (**int)(nil),
+			expected: nil,
+			wantErr:  toolkits.ErrNilPointer,
 		},
 		{
 			name:     "string",
 			input:    "hello",
+			expected: []byte("hello"),
+			wantErr:  nil,
+		},
+		{
+			name:     "non-nil pointer",
+			input:    func() *string { s := "hello"; return &s }(),
+			expected: []byte("hello"),
+			wantErr:  nil,
+		},
+		{
+			name:     "double pointer",
+			input:    func() **string { s := "hello"; p := &s; return &p }(),
 			expected: []byte("hello"),
 			wantErr:  nil,
 		},
@@ -671,19 +789,9 @@ func TestSafeToBytes(t *testing.T) {
 	}
 }
 
-// 测试无效值
-func Test_SafeToInterface_Invalid(t *testing.T) {
-	var v reflect.Value
-	result, ok := toolkits.SafeToInterface(v)
-	if result != nil || ok {
-		t.Errorf("Expected (nil, false), got (%v, %v)", result, ok)
-	}
-}
-
 // 测试 CanInterface 为 true 的情况
 func Test_SafeToInterface_CanInterface(t *testing.T) {
-	v := reflect.ValueOf(42)
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface(42)
 	if !ok || result.(int) != 42 {
 		t.Errorf("Expected (42, true), got (%v, %v)", result, ok)
 	}
@@ -691,8 +799,7 @@ func Test_SafeToInterface_CanInterface(t *testing.T) {
 
 // 测试布尔值
 func Test_SafeToInterface_Bool(t *testing.T) {
-	v := reflect.ValueOf(true)
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface(true)
 	if !ok || result.(bool) != true {
 		t.Errorf("Expected (true, true), got (%v, %v)", result, ok)
 	}
@@ -701,8 +808,7 @@ func Test_SafeToInterface_Bool(t *testing.T) {
 // 测试 Int 类型
 func Test_SafeToInterface_Int(t *testing.T) {
 	var i int64 = 123
-	v := reflect.ValueOf(&i).Elem()
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface(&i)
 	if !ok || result.(int64) != 123 {
 		t.Errorf("Expected (123, true), got (%v, %v)", result, ok)
 	}
@@ -711,8 +817,7 @@ func Test_SafeToInterface_Int(t *testing.T) {
 // 测试 Uint 类型
 func Test_SafeToInterface_Uint(t *testing.T) {
 	var u uint = 456
-	v := reflect.ValueOf(&u).Elem()
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface(&u)
 	if !ok || result.(uint) != 456 {
 		t.Errorf("Expected (456, true), got (%v, %v)", result, ok)
 	}
@@ -720,8 +825,7 @@ func Test_SafeToInterface_Uint(t *testing.T) {
 
 // 测试 Float 类型
 func Test_SafeToInterface_Float(t *testing.T) {
-	v := reflect.ValueOf(3.14)
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface(3.14)
 	if !ok || result.(float64) != 3.14 {
 		t.Errorf("Expected (3.14, true), got (%v, %v)", result, ok)
 	}
@@ -730,8 +834,7 @@ func Test_SafeToInterface_Float(t *testing.T) {
 // 测试 Complex 类型
 func Test_SafeToInterface_Complex(t *testing.T) {
 	c := complex(1, 2)
-	v := reflect.ValueOf(c)
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface(c)
 	if !ok || result.(complex128) != c {
 		t.Errorf("Expected (%v, true), got (%v, %v)", c, result, ok)
 	}
@@ -739,8 +842,7 @@ func Test_SafeToInterface_Complex(t *testing.T) {
 
 // 测试字符串
 func Test_SafeToInterface_String(t *testing.T) {
-	v := reflect.ValueOf("hello")
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface("hello")
 	if !ok || result.(string) != "hello" {
 		t.Errorf("Expected ('hello', true), got (%q, %v)", result, ok)
 	}
@@ -749,8 +851,7 @@ func Test_SafeToInterface_String(t *testing.T) {
 // 测试指针类型
 func Test_SafeToInterface_Ptr(t *testing.T) {
 	s := "abc"
-	v := reflect.ValueOf(&s).Elem()
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface(&s)
 	if !ok || result.(string) != "abc" {
 		t.Errorf("Expected ('abc', true), got (%q, %v)", result, ok)
 	}
@@ -759,8 +860,7 @@ func Test_SafeToInterface_Ptr(t *testing.T) {
 // 测试接口类型
 func Test_SafeToInterface_Interface(t *testing.T) {
 	var i interface{} = "xyz"
-	v := reflect.ValueOf(i)
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface(i)
 	if !ok || result.(string) != "xyz" {
 		t.Errorf("Expected ('xyz', true), got (%q, %v)", result, ok)
 	}
@@ -770,8 +870,7 @@ func Test_SafeToInterface_Interface(t *testing.T) {
 func Test_SafeToInterface_Struct(t *testing.T) {
 	type S struct{ X int }
 	s := S{X: 10}
-	v := reflect.ValueOf(s)
-	result, ok := toolkits.SafeToInterface(v)
+	result, ok := toolkits.SafeToInterface(s)
 	if !ok || result != s {
 		t.Errorf("Expected (nil, false), got (%v, %v)", result, ok)
 	}
@@ -786,13 +885,19 @@ func TestSafeToUint64(t *testing.T) {
 	}{
 		{
 			name:     "nil input",
-			input:    nil,
+			input:    nil, // nil value
 			expected: 0,
 			wantErr:  true,
 		},
 		{
 			name:     "nil pointer",
-			input:    (*int)(nil),
+			input:    (*int)(nil), // nil pointer
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "double nil pointer",
+			input:    (**int)(nil),
 			expected: 0,
 			wantErr:  true,
 		},
@@ -809,6 +914,18 @@ func TestSafeToUint64(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "non-nil pointer",
+			input:    func() *int { i := 42; return &i }(),
+			expected: 42,
+			wantErr:  false,
+		},
+		{
+			name:     "double pointer",
+			input:    func() **int { i := 42; p := &i; return &p }(),
+			expected: 42,
+			wantErr:  false,
+		},
+		{
 			name:     "uint",
 			input:    uint(456),
 			expected: 456,
@@ -817,6 +934,12 @@ func TestSafeToUint64(t *testing.T) {
 		{
 			name:     "float64 positive",
 			input:    78.9,
+			expected: 78,
+			wantErr:  false,
+		},
+		{
+			name:     "Integer float64 pointer",
+			input:    func() *float64 { f := 78.9; return &f }(),
 			expected: 78,
 			wantErr:  false,
 		},
@@ -841,6 +964,18 @@ func TestSafeToUint64(t *testing.T) {
 		{
 			name:     "string valid number",
 			input:    "123",
+			expected: 123,
+			wantErr:  false,
+		},
+		{
+			name:     "Parseable *string",
+			input:    func() *string { s := "123"; return &s }(),
+			expected: 123,
+			wantErr:  false,
+		},
+		{
+			name:     "Parseable **string",
+			input:    func() **string { s := "123"; p := &s; return &p }(),
 			expected: 123,
 			wantErr:  false,
 		},
@@ -876,13 +1011,25 @@ func TestSafeToUint64(t *testing.T) {
 		},
 		{
 			name:     "pointer to int",
-			input:    new(int),
+			input:    new(int), // pointer to 0
 			expected: 0,
 			wantErr:  false,
 		},
 		{
 			name:     "pointer to nil int",
-			input:    func() *int { var v *int; return v }(),
+			input:    func() *int { var v *int; return v }(), // nil pointer
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "function",
+			input:    func() {},
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "channel",
+			input:    make(chan int),
 			expected: 0,
 			wantErr:  true,
 		},
@@ -929,6 +1076,12 @@ func TestSafeToBool(t *testing.T) {
 			wantErr:  true,
 		},
 		{
+			name:     "double nil pointer",
+			input:    (**int)(nil),
+			expected: false,
+			wantErr:  true,
+		},
+		{
 			name:     "pointer to int",
 			input:    new(int),
 			expected: false,
@@ -943,6 +1096,18 @@ func TestSafeToBool(t *testing.T) {
 		{
 			name:     "bool false",
 			input:    false,
+			expected: false,
+			wantErr:  false,
+		},
+		{
+			name:     "non-nil pointer",
+			input:    func() *bool { i := true; return &i }(),
+			expected: true,
+			wantErr:  false,
+		},
+		{
+			name:     "double non-nil pointer",
+			input:    func() **bool { i := false; p := &i; return &p }(),
 			expected: false,
 			wantErr:  false,
 		},
@@ -1072,6 +1237,12 @@ func TestSafeToFloat64(t *testing.T) {
 			wantErr:  true,
 		},
 		{
+			name:     "double nil pointer",
+			input:    (**int)(nil),
+			expected: 0,
+			wantErr:  true,
+		},
+		{
 			name:     "int value",
 			input:    int(123),
 			expected: 123,
@@ -1090,8 +1261,32 @@ func TestSafeToFloat64(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "non-nil float32 pointer",
+			input:    func() *float32 { i := float32(3.14); return &i }(),
+			expected: float64(float32(3.14)),
+			wantErr:  false,
+		},
+		{
+			name:     "double float32 pointer",
+			input:    func() **float32 { i := float32(3.14); p := &i; return &p }(),
+			expected: float64(float32(3.14)),
+			wantErr:  false,
+		},
+		{
 			name:     "float64 value",
 			input:    3.14,
+			expected: 3.14,
+			wantErr:  false,
+		},
+		{
+			name:     "non-nil float64 pointer",
+			input:    func() *float64 { i := 3.14; return &i }(),
+			expected: 3.14,
+			wantErr:  false,
+		},
+		{
+			name:     "double float64 pointer",
+			input:    func() **float64 { i := 3.14; p := &i; return &p }(),
 			expected: 3.14,
 			wantErr:  false,
 		},

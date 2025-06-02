@@ -36,7 +36,7 @@ var (
 // for other type (slice, map, array, struct) will call json.Marshal.
 func SafeToString(v any) (str string, err error) {
 	if v == nil {
-		return "", nil
+		return "", ErrNilValue
 	}
 	switch value := v.(type) {
 	case string:
@@ -55,7 +55,7 @@ func SafeToString(v any) (str string, err error) {
 		rv := reflect.ValueOf(v)
 		if rv.Kind() == reflect.Ptr {
 			if rv.IsNil() {
-				return "", nil
+				return "", ErrNilValue
 			}
 			return SafeToString(rv.Elem().Interface())
 		}
@@ -88,7 +88,11 @@ func SafeToInt64(v any) (int64, error) {
 	}
 
 	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr {
+
+	for {
+		if rv.Kind() != reflect.Ptr {
+			break
+		}
 		if rv.IsNil() {
 			return 0, ErrNilPointer
 		}
@@ -133,7 +137,8 @@ func SafeToUint64(v any) (uint64, error) {
 		return 0, ErrNilValue
 	}
 	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr {
+
+	for rv.Kind() == reflect.Ptr {
 		if rv.IsNil() {
 			return 0, ErrNilPointer
 		}
@@ -184,7 +189,11 @@ func SafeToBool(v any) (bool, error) {
 	}
 
 	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr {
+
+	for {
+		if rv.Kind() != reflect.Ptr {
+			break
+		}
 		if rv.IsNil() {
 			return false, ErrNilPointer
 		}
@@ -213,13 +222,16 @@ func SafeToFloat64(v any) (float64, error) {
 	if v == nil {
 		return 0, ErrNilValue
 	}
+
 	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr {
+
+	for rv.Kind() == reflect.Ptr {
 		if rv.IsNil() {
 			return 0, ErrNilPointer
 		}
 		rv = rv.Elem()
 	}
+
 	switch rv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return float64(rv.Int()), nil
@@ -249,7 +261,10 @@ func SafeToBytes(v any) ([]byte, error) {
 
 	rv := reflect.ValueOf(v)
 
-	if rv.Kind() == reflect.Ptr {
+	for {
+		if rv.Kind() != reflect.Ptr {
+			break
+		}
 		if rv.IsNil() {
 			return nil, ErrNilPointer
 		}
@@ -289,30 +304,39 @@ func SafeToBytes(v any) ([]byte, error) {
 }
 
 // SafeToInterface converts reflect value to its interface type.
-func SafeToInterface(v reflect.Value) (interface{}, bool) {
-	if !v.IsValid() {
+func SafeToInterface(v any) (interface{}, bool) {
+	rv := reflect.ValueOf(v)
+
+	if !rv.IsValid() {
 		return nil, false
 	}
 
-	if v.CanInterface() {
-		return v.Interface(), true
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return nil, false
+		}
+		rv = rv.Elem()
 	}
 
-	switch v.Kind() {
+	if rv.CanInterface() {
+		return rv.Interface(), true
+	}
+
+	switch rv.Kind() {
 	case reflect.Bool:
-		return v.Bool(), true
+		return rv.Bool(), true
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int(), true
+		return rv.Int(), true
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return v.Uint(), true
+		return rv.Uint(), true
 	case reflect.Float32, reflect.Float64:
-		return v.Float(), true
+		return rv.Float(), true
 	case reflect.Complex64, reflect.Complex128:
-		return v.Complex(), true
+		return rv.Complex(), true
 	case reflect.String:
-		return v.String(), true
+		return rv.String(), true
 	case reflect.Ptr, reflect.Interface:
-		return SafeToInterface(v.Elem())
+		return SafeToInterface(rv.Elem())
 	default:
 		return nil, false
 	}
