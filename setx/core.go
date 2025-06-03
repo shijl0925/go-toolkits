@@ -174,9 +174,7 @@ func (s Set[T]) Pop() (v T, ok bool) {
 // fmt.Println(t) // map[1:{} 2:{} 4:{}]
 func (s Set[T]) Update(dst Set[T]) Set[T] {
 	for element := range dst {
-		if !s.Exists(element) {
-			s.Add(element)
-		}
+		s[element] = struct{}{}
 	}
 	return s
 }
