@@ -110,7 +110,8 @@ func Drop[T any](s *[]T, n int) ([]T, bool) {
 	}
 
 	if n > len(*s) {
-		return []T{}, true
+		*s = (*s)[:0] // Modify original slice to be empty
+		return *s, true
 	}
 
 	*s = (*s)[:len(*s)-n]
@@ -133,7 +134,8 @@ func DropLeft[T any](s *[]T, n int) ([]T, bool) {
 	}
 
 	if n > len(*s) {
-		return []T{}, true
+		*s = (*s)[:0] // Modify original slice to be empty
+		return *s, true
 	}
 
 	*s = (*s)[n:]
