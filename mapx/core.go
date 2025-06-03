@@ -9,6 +9,7 @@ import (
 
 // Keys 返回 map 里面的所有的 key。
 // 需要注意：这些 key 的顺序是随机。
+// This function is not concurrency-safe if the map is modified during iteration.
 func Keys[K comparable, V any](m map[K]V) []K {
 	keys := make([]K, 0, len(m))
 	for k := range m {
@@ -19,6 +20,7 @@ func Keys[K comparable, V any](m map[K]V) []K {
 
 // Values 返回 map 里面的所有的 value。
 // 需要注意：这些 value 的顺序是随机。
+// This function is not concurrency-safe if the map is modified during iteration.
 func Values[K comparable, V any](m map[K]V) []V {
 	values := make([]V, 0, len(m))
 	for _, v := range m {
@@ -36,11 +38,30 @@ func HasKey[K comparable, V any](m map[K]V, key K) bool {
 // Intersect returns the intersection between two maps.
 // 返回两个 map 的交集。
 func Intersect[K comparable, V any](src, dst map[K]V) map[K]V {
-	result := make(map[K]V)
+	if len(src) == 0 || len(dst) == 0 {
+		return make(map[K]V)
+	}
 
-	for key, value1 := range src {
-		if value2, ok := dst[key]; ok && reflect.DeepEqual(value1, value2) {
-			result[key] = value1
+	// 预估容量为较小 map 的大小
+	capHint := len(src)
+	if len(dst) < capHint {
+		capHint = len(dst)
+	}
+	result := make(map[K]V, capHint)
+
+	// 遍历较小的 map 以优化性能
+	var iterMap, checkMap map[K]V
+	if len(src) <= len(dst) {
+		iterMap = src
+		checkMap = dst
+	} else {
+		iterMap = dst
+		checkMap = src
+	}
+
+	for key, iterValue := range iterMap {
+		if checkValue, ok := checkMap[key]; ok && reflect.DeepEqual(iterValue, checkValue) {
+			result[key] = iterValue // 或 checkValue，它们是相等的
 		}
 	}
 
