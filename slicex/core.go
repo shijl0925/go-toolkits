@@ -515,6 +515,14 @@ func ContainsAny[T comparable](src, dst []T) bool {
 //
 //	r := ContainsAll([]int{1, 2, 3}, []int{2, 3}) //  r == true
 func ContainsAll[T comparable](src, dst []T) bool {
+	if len(dst) == 0 {
+		return true
+	}
+
+	if len(src) == 0 {
+		return false
+	}
+
 	srcMap := toMap(src)
 	for _, value := range dst {
 		if _, ok := srcMap[value]; !ok {
