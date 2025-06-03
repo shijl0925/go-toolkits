@@ -620,12 +620,35 @@ func Difference[T comparable](src, dst []T) []T {
 //	dst := []int{4, 5, 6, 7, 8}
 //	r := Intersect(src, dst) // r == []int{4, 5}
 func Intersect[T comparable](src, dst []T) []T {
-	dstMap := toMap(dst)
+	var (
+		iterSlice []T
+		mapSlice  []T
+	)
 
-	result := make([]T, 0, len(src))
+	// 将较短的切片转换为 map，遍历较长的切片
+	if len(src) < len(dst) {
+		mapSlice = src
+		iterSlice = dst
+	} else {
+		mapSlice = dst
+		iterSlice = src
+	}
 
-	for _, value := range src {
-		if _, ok := dstMap[value]; ok {
+	// 如果任何一个切片为空，或转换后的 map 为空，交集也为空
+	if len(mapSlice) == 0 {
+		return []T{}
+	}
+
+	set := toMap(mapSlice)
+	if len(set) == 0 {
+		return []T{}
+	}
+
+	// 预估结果切片的容量，基于 mapSlice 中唯一元素的数量
+	result := make([]T, 0, len(set))
+
+	for _, value := range iterSlice {
+		if _, ok := set[value]; ok {
 			result = append(result, value)
 		}
 	}
