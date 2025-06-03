@@ -248,16 +248,28 @@ func Intersect[T comparable](src, dst Set[T]) []T {
 // t := setx.New(1, 2, 4)
 // fmt.Println(setx.Union(s, t)) // [1 2 3 4]
 func Union[T comparable](src, dst Set[T]) []T {
+	// Create a new set to store the union to avoid modifying input sets.
+	// Estimate initial capacity for the union set.
+	// A reasonable estimate is the size of the larger set, or sum if many are unique.
+	// New() already handles Add, which is optimized.
+	initialCap := src.Len()
+	if dst.Len() > initialCap {
+		initialCap = dst.Len()
+	}
+	// If one set is empty, the union is the other set.
+	// NewFromSlice can be used if we convert the other set to slice first.
+	// Or, more simply, create a new set and add elements.
+
+	unionSet := make(Set[T], initialCap) // Preallocate based on larger set
+
 	for element := range src {
-		if !dst.Exists(element) {
-			dst.Add(element)
-		}
+		unionSet[element] = struct{}{}
 	}
 
-	result := make([]T, 0, dst.Len())
 	for element := range dst {
-		result = append(result, element)
+		unionSet[element] = struct{}{}
 	}
 
-	return result
+	// Convert the unionSet to a slice. Keys() preallocates correctly.
+	return unionSet.Keys()
 }
