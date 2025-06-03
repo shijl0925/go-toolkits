@@ -212,10 +212,25 @@ func Difference[T comparable](src, dst Set[T]) []T {
 // t := setx.New(1, 2, 4)
 // fmt.Println(setx.Intersect(s, t)) // [1 2]
 func Intersect[T comparable](src, dst Set[T]) []T {
-	result := make([]T, 0, src.Len())
+	if src.Len() == 0 || dst.Len() == 0 {
+		return []T{}
+	}
 
-	for element := range src {
-		if dst.Exists(element) {
+	var iterSet, checkSet Set[T]
+	// Iterate over the smaller set for efficiency
+	if src.Len() <= dst.Len() {
+		iterSet = src
+		checkSet = dst
+	} else {
+		iterSet = dst
+		checkSet = src
+	}
+
+	// The capacity of the result slice can be at most the size of the smaller set.
+	result := make([]T, 0, iterSet.Len())
+
+	for element := range iterSet {
+		if checkSet.Exists(element) {
 			result = append(result, element)
 		}
 	}
