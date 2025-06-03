@@ -31,9 +31,6 @@ func NewFromSlice[T comparable](s []T) Set[T] {
 // fmt.Println(s) // map[1:{} 2:{} 3:{} 4:{}]
 func (s Set[T]) Add(elements ...T) {
 	for _, element := range elements {
-		if s.Exists(element) {
-			continue
-		}
 		s[element] = struct{}{}
 	}
 }
