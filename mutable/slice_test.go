@@ -578,6 +578,12 @@ func TestMutableDrop(t *testing.T) {
 					t.Errorf("expected input slice to be modified to %v, but got %v", expectedModified, *tt.input)
 				}
 			}
+			if tt.input != nil && tt.ok && tt.n > len(original) {
+				expectedModified := original[:0]
+				if !reflect.DeepEqual(*tt.input, expectedModified) {
+					t.Errorf("expected input slice to be modified to %v, but got %v", expectedModified, *tt.input)
+				}
+			}
 		})
 	}
 }
@@ -657,6 +663,12 @@ func TestMutableDropLeft(t *testing.T) {
 			// Check if original slice was modified correctly
 			if tt.input != nil && tt.ok && tt.n >= 0 && tt.n <= len(original) {
 				expectedModified := original[tt.n:]
+				if !reflect.DeepEqual(*tt.input, expectedModified) {
+					t.Errorf("expected input slice to be modified to %v, but got %v", expectedModified, *tt.input)
+				}
+			}
+			if tt.input != nil && tt.ok && tt.n > len(original) {
+				expectedModified := original[:0]
 				if !reflect.DeepEqual(*tt.input, expectedModified) {
 					t.Errorf("expected input slice to be modified to %v, but got %v", expectedModified, *tt.input)
 				}
