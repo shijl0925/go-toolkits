@@ -476,9 +476,32 @@ func Contains[T comparable](src []T, dst T) bool {
 //
 //	r := ContainsAny([]int{1, 2, 3}, []int{2, 4}) //  r == true
 func ContainsAny[T comparable](src, dst []T) bool {
-	srcMap := toMap(src)
-	for _, value := range dst {
-		if _, ok := srcMap[value]; ok {
+	if len(src) == 0 || len(dst) == 0 {
+		return false
+	}
+
+	var iterSlice, mapSlice []T
+
+	// 将较短的切片转换为 map，遍历较长的切片
+	if len(src) < len(dst) {
+		// src is shorter or equal, map src, iterate dst
+		mapSlice = src
+		iterSlice = dst
+	} else {
+		// dst is shorter, map dst, iterate src
+		mapSlice = dst
+		iterSlice = src
+	}
+
+	set := toMap(mapSlice)
+	// if toMap results in an empty set (e.g. mapSlice was empty or all duplicates of one value not in iterSlice)
+	// and we haven't returned false from len(mapSlice) == 0 check, this check is also useful.
+	if len(set) == 0 {
+		return false // No elements in the set to find
+	}
+
+	for _, value := range iterSlice {
+		if _, ok := set[value]; ok {
 			return true
 		}
 	}
