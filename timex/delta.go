@@ -1,8 +1,9 @@
 package timex
 
 import (
-	"github.com/shijl0925/go-toolkits/internal"
 	"time"
+
+	"github.com/shijl0925/go-toolkits/internal"
 )
 
 type TimeDelta struct {
@@ -15,16 +16,68 @@ type TimeDelta struct {
 	Milliseconds int
 }
 
-// Duration returns time.Duration can be added to time.Date.
-func (td *TimeDelta) Duration() time.Duration {
-	return time.Duration(td.Weeks)*7*24*time.Hour +
-		time.Duration(td.Days)*24*time.Hour +
-		time.Duration(td.Hours)*time.Hour +
-		time.Duration(td.Minutes)*time.Minute +
-		time.Duration(td.Seconds)*time.Second +
-		time.Duration(td.Microseconds)*time.Microsecond +
-		time.Duration(td.Milliseconds)*time.Millisecond
+// Duration returns time.Duration that can be added to a time.Time.
+// It returns an error if the calculation results in an overflow of time.Duration.
+func (td *TimeDelta) Duration() (time.Duration, error) {
+	var totalDuration int64 // Accumulate in nanoseconds
 
+	// Helper to add a component and check for overflow
+	addComponent := func(currentTotal int64, value int, unitNanos int64) (int64, error) {
+		if value == 0 {
+			return currentTotal, nil
+		}
+		termNanos := int64(value) * unitNanos
+
+		// Check for multiplication overflow for the term itself
+		if value != 0 && unitNanos != 0 && termNanos/unitNanos != int64(value) {
+			return 0, OverflowError // Multiplication overflowed
+		}
+
+		// Check for addition overflow
+		newTotal := currentTotal + termNanos
+		if (termNanos > 0 && newTotal < currentTotal) || (termNanos < 0 && newTotal > currentTotal) {
+			return 0, OverflowError // Addition overflowed
+		}
+		return newTotal, nil
+	}
+
+	var err error
+	totalDuration, err = addComponent(totalDuration, td.Weeks, int64(7*24*time.Hour))
+	if err != nil {
+		return 0, err
+	}
+
+	totalDuration, err = addComponent(totalDuration, td.Days, int64(24*time.Hour))
+	if err != nil {
+		return 0, err
+	}
+
+	totalDuration, err = addComponent(totalDuration, td.Hours, int64(time.Hour))
+	if err != nil {
+		return 0, err
+	}
+
+	totalDuration, err = addComponent(totalDuration, td.Minutes, int64(time.Minute))
+	if err != nil {
+		return 0, err
+	}
+
+	totalDuration, err = addComponent(totalDuration, td.Seconds, int64(time.Second))
+	if err != nil {
+		return 0, err
+	}
+
+	totalDuration, err = addComponent(totalDuration, td.Milliseconds, int64(time.Millisecond))
+	if err != nil {
+		return 0, err
+	}
+
+	totalDuration, err = addComponent(totalDuration, td.Microseconds, int64(time.Microsecond))
+	if err != nil {
+		return 0, err
+	}
+
+	return time.Duration(totalDuration), nil
 }
 
 // Add returns the TimeDelta td+td2.
@@ -67,6 +120,11 @@ func (td *TimeDelta) Abs() TimeDelta {
 }
 
 // String returns a string representing the TimeDelta's duration in the form "72h3m0.5s".
+// If an overflow occurs when calculating the duration, it returns an error message string.
 func (td *TimeDelta) String() string {
-	return td.Duration().String()
+	d, err := td.Duration()
+	if err != nil {
+		return "TimeDelta(overflow)" // Or some other indicator of error
+	}
+	return d.String()
 }
