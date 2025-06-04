@@ -1,6 +1,7 @@
 package timex_test
 
 import (
+	"errors"
 	"github.com/shijl0925/go-toolkits/timex"
 	"testing"
 	"time"
@@ -45,14 +46,45 @@ func TestTimeDelta_Duration(t *testing.T) {
 			td:   timex.TimeDelta{},
 			want: 0,
 		},
+		{
+			name: "negative value",
+			td:   timex.TimeDelta{Seconds: -1},
+			want: -1 * time.Second,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.td.Duration(); got != tt.want {
+			if got, _ := tt.td.Duration(); got != tt.want {
 				t.Errorf("Duration() = %v; want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestTimeDelta_Duration_MultiplyOverflow_Positive(t *testing.T) {
+	// 设置一个极大值，使得 int64(int)*unitNanos 溢出
+	td := &timex.TimeDelta{
+		Weeks: 1 << 62, // 这会导致乘法溢出
+	}
+	_, err := td.Duration()
+	if err == nil {
+		t.Errorf("Expected error for multiplication overflow")
+	} else if !errors.Is(err, timex.OverflowError) {
+		t.Errorf("Expected OverflowError, got %v", err)
+	}
+}
+
+func TestTimeDelta_Duration_MultiplyOverflow_Negative(t *testing.T) {
+	// 设置一个极小负值，使得 int64(int)*unitNanos 溢出
+	td := &timex.TimeDelta{
+		Weeks: -(1 << 62),
+	}
+	_, err := td.Duration()
+	if err == nil {
+		t.Errorf("Expected error for multiplication overflow")
+	} else if !errors.Is(err, timex.OverflowError) {
+		t.Errorf("Expected OverflowError, got %v", err)
 	}
 }
 
@@ -106,7 +138,8 @@ func TestTimeDelta_Abs(t *testing.T) {
 
 func TestTimeDelta_String(t *testing.T) {
 	td := timex.TimeDelta{Hours: 2, Minutes: 3, Seconds: 1}
-	expected := td.Duration().String()
+	duration, _ := td.Duration()
+	expected := duration.String()
 
 	if got := td.String(); got != expected {
 		t.Errorf("String() = %q; want %q", got, expected)
