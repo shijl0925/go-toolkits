@@ -80,8 +80,8 @@ func Decode(data []byte, ptr any) error {
 	return json.Unmarshal(data, ptr)
 }
 
-// Loads decode json string to data ptr, panic if error
-// 将JSON文本解码为数据指针，如果发生错误则恐慌
+// Loads decode json string to data ptr.
+// 将JSON文本解码为数据指针。如果发生错误，则返回错误。
 //
 // Example:
 //
