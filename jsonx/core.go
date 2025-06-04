@@ -13,8 +13,8 @@ func Encode(v any) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-// Dumps encode data to json string, panic if error
-// 将数据编码为JSON文本，如果发生错误则panic
+// Dumps encode data to json string.
+// 将数据编码为JSON文本。如果发生错误，将返回错误。
 //
 // Example:
 //
@@ -28,8 +28,8 @@ func Dumps(v any) (string, error) {
 	return string(b), nil
 }
 
-// DumpsPretty encode data to json string with pretty format
-// 将数据编码为带格式的JSON文本, 如果发生错误则panic
+// DumpsPretty encode data to json string with pretty format.
+// 将数据编码为带格式的JSON文本。如果发生错误，将返回错误。
 //
 // Example:
 //
