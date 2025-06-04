@@ -127,16 +127,12 @@ func CreateDir(absPath string) error {
 	// 规范化路径
 	cleanedPath := filepath.Clean(absPath)
 
-	if IsExist(cleanedPath) {
-		return nil
-	}
-
+	// os.MkdirAll 会处理路径已存在的情况（如果它是一个目录），不会返回错误。
+	// 如果路径已存在但不是目录，它会返回错误。
 	err := os.MkdirAll(cleanedPath, 0750)
 	if err != nil {
-		// 忽略已存在
-		if os.IsExist(err) {
-			return nil
-		}
+		// 如果错误是因为路径已作为文件存在，os.MkdirAll 会返回一个错误。
+		// 我们不需要显式检查 os.IsExist(err) 然后返回 nil，因为 MkdirAll 的行为已经覆盖了这一点。
 		return fmt.Errorf("failed to create directory %q: %w", cleanedPath, err)
 	}
 	return nil
@@ -380,13 +376,12 @@ func ReadLines(path string) ([]string, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		// 读取当前行内容
-		line := scanner.Text()
-		result = append(result, line)
+		result = append(result, scanner.Text())
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		// Wrap scanner error for more context
+		return nil, fmt.Errorf("error scanning file %s: %w", filepath.Clean(path), err)
 	}
 
 	return result, nil
@@ -468,16 +463,18 @@ func FileSize(path string) (int64, error) {
 	if path == "" {
 		return 0, fmt.Errorf("path is empty")
 	}
-	f, err := os.Stat(path)
+	info, err := os.Lstat(path) // Use Lstat to get info about the link/file itself, not following symlinks
 	if err != nil {
-		// 可选：对特定错误进行封装或记录日志
-		return 0, fmt.Errorf("get file state %s: %w", path, err)
+		return 0, fmt.Errorf("failed to get file info for %s: %w", path, err)
 	}
 
-	if f.Mode()&os.ModeSymlink != 0 {
-		return 0, fmt.Errorf("path %s is a symlink; removing it is not allowed", path)
+	if info.Mode()&os.ModeSymlink != 0 {
+		return 0, fmt.Errorf("path '%s' is a symbolic link, operation not permitted on symlinks", path)
 	}
-	return f.Size(), nil
+
+	// For directories, Size() is platform-dependent and usually not the sum of contents.
+	// This behavior is consistent with os.FileInfo.Size().
+	return info.Size(), nil
 }
 
 // WalkResult 包含目录遍历结果
