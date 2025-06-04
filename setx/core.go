@@ -1,5 +1,7 @@
 package setx
 
+import "fmt"
+
 type Set[T comparable] map[T]struct{}
 
 // New creates a new set from a list of elements.
@@ -8,18 +10,22 @@ type Set[T comparable] map[T]struct{}
 // Example:
 //
 // s := setx.New(1, 2, 3)
-// // or s:= setx.New([]int{1, 2, 3}...)
+// // or s:= setx.New([]int{1, 2, 3})
 // fmt.Println(s) // map[1:{} 2:{} 3:{}]
-func New[T comparable](a ...T) Set[T] {
-	s := make(Set[T], len(a))
-	s.Add(a...)
+func New[T comparable](elements ...interface{}) Set[T] {
+	s := make(Set[T])
+	for _, v := range elements {
+		switch val := v.(type) {
+		case T:
+			s.Add(val)
+		case []T:
+			s.Add(val...)
+		default:
+			fmt.Printf("setx.New: invalid type")
+			continue
+		}
+	}
 	return s
-}
-
-func NewFromSlice[T comparable](s []T) Set[T] {
-	set := make(Set[T], len(s))
-	set.Add(s...)
-	return set
 }
 
 // Add adds an element to the set.

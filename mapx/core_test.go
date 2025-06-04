@@ -44,7 +44,7 @@ func TestKeys(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := mapx.Keys[int, int](tc.input)
-			if !setx.NewFromSlice(got).Equal(setx.NewFromSlice(tc.wantRes)) {
+			if !setx.New[int](got).Equal(setx.New[int](tc.wantRes)) {
 				t.Errorf("Keys() expected %v, got %v", tc.wantRes, got)
 			}
 		})
@@ -87,7 +87,7 @@ func TestValues(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := mapx.Values[int, int](tc.input)
-			if !setx.NewFromSlice(got).Equal(setx.NewFromSlice(tc.wantRes)) {
+			if !setx.New[int](got).Equal(setx.New[int](tc.wantRes)) {
 				t.Errorf("Values() expected %v, got %v", tc.wantRes, got)
 			}
 		})

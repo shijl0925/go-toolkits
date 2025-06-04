@@ -18,10 +18,59 @@ func TestNewSet(t *testing.T) {
 	})
 
 	t.Run("set with initial elements", func(t *testing.T) {
-		s := setx.New(3, 1, 2, 3)
+		s := setx.New[int](3, 1, 2, 3)
 		expected := setx.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}}
 		if !reflect.DeepEqual(s, expected) {
 			t.Errorf("expected %v, got %v", expected, s)
+		}
+	})
+}
+
+func TestNew(t *testing.T) {
+	t.Run("TC1 - 多个 T 值", func(t *testing.T) {
+		s := setx.New[int](1, 2, 3)
+		expected := setx.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}}
+		if !reflect.DeepEqual(s, expected) {
+			t.Errorf("Expected %v, got %v", expected, s)
+		}
+	})
+
+	t.Run("TC2 - 一个 []T 切片", func(t *testing.T) {
+		s := setx.New[int]([]int{1, 2, 3})
+		expected := setx.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}}
+		if !reflect.DeepEqual(s, expected) {
+			t.Errorf("Expected %v, got %v", expected, s)
+		}
+	})
+
+	t.Run("TC3 - 混合 T 和 []T", func(t *testing.T) {
+		s := setx.New[string]("a", []string{"b", "c"}, "d")
+		expected := setx.Set[string]{"a": struct{}{}, "b": struct{}{}, "c": struct{}{}, "d": struct{}{}}
+		if !reflect.DeepEqual(s, expected) {
+			t.Errorf("Expected %v, got %v", expected, s)
+		}
+	})
+
+	t.Run("TC4 - 包含非法类型", func(t *testing.T) {
+		s := setx.New[float64](1.1, "invalid", 2.2)
+		expected := setx.Set[float64]{1.1: struct{}{}, 2.2: struct{}{}}
+		if !reflect.DeepEqual(s, expected) {
+			t.Errorf("Expected %v, got %v", expected, s)
+		}
+	})
+
+	t.Run("TC4 - 空参数", func(t *testing.T) {
+		s := setx.New[bool]()
+		if len(s) != 0 {
+			t.Errorf("Expected empty set, got %v", s)
+		}
+	})
+
+	t.Run("TC6 - 非法类型优先", func(t *testing.T) {
+		s := setx.New[int]("first", 1, 2, "last")
+		expected := setx.Set[int]{1: struct{}{}, 2: struct{}{}}
+		if !reflect.DeepEqual(s, expected) {
+			t.Errorf("Expected %v, got %v", expected, s)
 		}
 	})
 }
@@ -50,7 +99,7 @@ func TestAdd(t *testing.T) {
 
 // TestRemove tests the Remove method.
 func TestRemove(t *testing.T) {
-	s := setx.New([]int{1, 2}...)
+	s := setx.New[int]([]int{1, 2})
 
 	t.Run("remove existing element", func(t *testing.T) {
 		s.Remove(1)
@@ -86,7 +135,7 @@ func TestLen(t *testing.T) {
 
 // TestExists tests the Exists method.
 func TestExists(t *testing.T) {
-	s := setx.New(1)
+	s := setx.New[int](1)
 
 	t.Run("existing element", func(t *testing.T) {
 		if !s.Exists(1) {
@@ -109,7 +158,7 @@ func Test_Keys(t *testing.T) {
 	}{
 		{
 			name: "TC01 - Src is not empty",
-			src:  setx.New(1, 2, 3),
+			src:  setx.New[int](1, 2, 3),
 			want: []int{3, 2, 1},
 		},
 		{
@@ -122,7 +171,7 @@ func Test_Keys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.src.Keys()
-			if !setx.NewFromSlice(got).Equal(setx.NewFromSlice(tt.want)) {
+			if !setx.New[int](got).Equal(setx.New[int](tt.want)) {
 				t.Errorf("Keys() = %v, want %v", got, tt.want)
 			}
 		})
@@ -138,14 +187,14 @@ func Test_DiffSet(t *testing.T) {
 	}{
 		{
 			name: "TC01 - Some elements in src not in dst",
-			src:  setx.New(1, 2, 3),
-			dst:  setx.New(2, 3, 4),
+			src:  setx.New[int](1, 2, 3),
+			dst:  setx.New[int](2, 3, 4),
 			want: []int{1},
 		},
 		{
 			name: "TC02 - Src is empty",
 			src:  setx.New[int](),
-			dst:  setx.New(1, 2),
+			dst:  setx.New[int](1, 2),
 			want: []int{},
 		},
 		{
@@ -171,7 +220,7 @@ func Test_DiffSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := setx.Difference(tt.src, tt.dst)
-			if !setx.NewFromSlice(got).Equal(setx.NewFromSlice(tt.want)) {
+			if !setx.New[int](got).Equal(setx.New[int](tt.want)) {
 				t.Errorf("Difference() = %v, want %v", got, tt.want)
 			}
 		})
@@ -181,7 +230,7 @@ func Test_DiffSet(t *testing.T) {
 // TestIterate 测试 Iterate 方法的行为
 func TestIterate(t *testing.T) {
 	t.Run("TC01 - Empty Set", func(t *testing.T) {
-		set := setx.New([]int{}...)
+		set := setx.New[int]([]int{})
 		called := false
 		set.Iterate(func(_ int) {
 			called = true
@@ -192,7 +241,7 @@ func TestIterate(t *testing.T) {
 	})
 
 	t.Run("TC02 - Non-empty Set", func(t *testing.T) {
-		set := setx.New([]string{}...)
+		set := setx.New[string]([]string{})
 		set.Add("a", "b", "c")
 
 		expected := map[string]bool{
@@ -217,7 +266,7 @@ func TestIterate(t *testing.T) {
 	})
 
 	t.Run("TC03 - Nil Set", func(t *testing.T) {
-		set := setx.New([]float64{}...) // nil map
+		set := setx.New[float64]([]float64{}) // nil map
 		called := false
 		set.Iterate(func(_ float64) {
 			called = true
@@ -230,14 +279,14 @@ func TestIterate(t *testing.T) {
 
 func TestIsEmpty(t *testing.T) {
 	t.Run("TC01 - Empty Set", func(t *testing.T) {
-		set := setx.New([]int{}...)
+		set := setx.New[int]([]int{})
 		if !set.IsEmpty() {
 			t.Errorf("expected set to be empty")
 		}
 	})
 
 	t.Run("TC02 - Non-empty Set", func(t *testing.T) {
-		set := setx.New([]string{}...)
+		set := setx.New[string]([]string{})
 		set.Add("a", "b", "c")
 		if set.IsEmpty() {
 			t.Errorf("expected set to be non-empty")
@@ -246,7 +295,7 @@ func TestIsEmpty(t *testing.T) {
 }
 
 func TestSet_Pop_Empty(t *testing.T) {
-	set := setx.New([]int{}...)
+	set := setx.New[int]([]int{})
 	val, ok := set.Pop()
 
 	if ok {
@@ -260,7 +309,7 @@ func TestSet_Pop_Empty(t *testing.T) {
 }
 
 func TestSet_Pop_NonEmpty(t *testing.T) {
-	set := setx.NewFromSlice([]string{"a", "b", "c"})
+	set := setx.New[string]([]string{"a", "b", "c"})
 
 	initialLen := set.Len()
 	val, ok := set.Pop()
@@ -279,7 +328,7 @@ func TestSet_Pop_NonEmpty(t *testing.T) {
 }
 
 func TestSet_Pop_MultipleTimes(t *testing.T) {
-	set := setx.NewFromSlice([]int{1, 2, 3})
+	set := setx.New[int]([]int{1, 2, 3})
 
 	expectedLen := 3
 	for expectedLen > 0 {
@@ -313,7 +362,7 @@ func TestSet_Pop_GenericType(t *testing.T) {
 		Name string
 	}
 
-	set := setx.NewFromSlice([]customStruct{
+	set := setx.New[customStruct]([]customStruct{
 		{ID: 1, Name: "Alice"},
 		{ID: 2, Name: "Bob"},
 	})
@@ -336,7 +385,7 @@ func TestSet_Pop_GenericType(t *testing.T) {
 
 // 测试用例：空集合
 func TestSet_ToSlice_Empty(t *testing.T) {
-	s := setx.New([]int{}...)
+	s := setx.New[int]([]int{})
 	result := s.ToSlice()
 	if len(result) != 0 {
 		t.Errorf("Expected empty slice, got %v", result)
@@ -346,7 +395,7 @@ func TestSet_ToSlice_Empty(t *testing.T) {
 // 测试用例：非空集合
 func TestSet_ToSlice_NonEmpty(t *testing.T) {
 	expected := []string{"a", "b", "c"}
-	s := setx.New(expected...)
+	s := setx.New[string](expected)
 
 	result := s.ToSlice()
 	if !slicex.EqualUnordered(result, expected) {
@@ -357,7 +406,7 @@ func TestSet_ToSlice_NonEmpty(t *testing.T) {
 // 测试用例：验证泛型支持（int 类型）
 func TestSet_ToSlice_Generic_Int(t *testing.T) {
 	expected := []int{1, 2, 3}
-	s := setx.NewFromSlice(expected)
+	s := setx.New[int](expected)
 
 	result := s.ToSlice()
 	if !slicex.EqualUnordered(result, expected) {
@@ -375,7 +424,7 @@ func TestSet_ToSlice_Generic_Struct(t *testing.T) {
 		{ID: 1, Name: "Alice"},
 		{ID: 2, Name: "Bob"},
 	}
-	s := setx.NewFromSlice(expected)
+	s := setx.New[user](expected)
 
 	result := s.ToSlice()
 	if !slicex.EqualUnordered(result, expected) {
@@ -392,14 +441,14 @@ func Test_IntersectSet(t *testing.T) {
 	}{
 		{
 			name: "TC01 - Some elements in src not in dst",
-			src:  setx.New(1, 2, 3),
-			dst:  setx.New(2, 3, 4),
+			src:  setx.New[int](1, 2, 3),
+			dst:  setx.New[int](2, 3, 4),
 			want: []int{2, 3},
 		},
 		{
 			name: "TC02 - Src is empty",
 			src:  setx.New[int](),
-			dst:  setx.New(1, 2),
+			dst:  setx.New[int](1, 2),
 			want: []int{},
 		},
 		{
@@ -425,7 +474,7 @@ func Test_IntersectSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := setx.Intersect(tt.src, tt.dst)
-			if !setx.NewFromSlice(got).Equal(setx.NewFromSlice(tt.want)) {
+			if !setx.New[int](got).Equal(setx.New[int](tt.want)) {
 				t.Errorf("Intersect() = %v, want %v", got, tt.want)
 			}
 		})
@@ -441,14 +490,14 @@ func Test_UnionSet(t *testing.T) {
 	}{
 		{
 			name: "TC01 - Some elements in src not in dst",
-			src:  setx.New(1, 2, 3),
-			dst:  setx.New(2, 3, 4),
+			src:  setx.New[int](1, 2, 3),
+			dst:  setx.New[int](2, 3, 4),
 			want: []int{1, 2, 3, 4},
 		},
 		{
 			name: "TC02 - Src is empty",
 			src:  setx.New[int](),
-			dst:  setx.New(1, 2),
+			dst:  setx.New[int](1, 2),
 			want: []int{1, 2},
 		},
 		{
@@ -474,7 +523,7 @@ func Test_UnionSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := setx.Union(tt.src, tt.dst)
-			if !setx.NewFromSlice(got).Equal(setx.NewFromSlice(tt.want)) {
+			if !setx.New[int](got).Equal(setx.New[int](tt.want)) {
 				t.Errorf("Union() = %v, want %v", got, tt.want)
 			}
 		})
@@ -577,10 +626,10 @@ func assertSetEqual[T comparable](t *testing.T, expected, actual setx.Set[T]) {
 
 // TC01: s 为空，dst 包含多个元素
 func TestUpdate_EmptySource(t *testing.T) {
-	dst := setx.New[int]([]int{1, 2, 3}...)
+	dst := setx.New[int]([]int{1, 2, 3})
 	s := make(setx.Set[int])
 
-	expected := setx.New[int]([]int{1, 2, 3}...)
+	expected := setx.New[int]([]int{1, 2, 3})
 	result := s.Update(dst)
 
 	assertSetEqual(t, expected, result)
@@ -588,10 +637,10 @@ func TestUpdate_EmptySource(t *testing.T) {
 
 // TC02: s 已有部分元素，dst 包含新旧混合元素
 func TestUpdate_OverlapElements(t *testing.T) {
-	s := setx.New[int]([]int{1, 2}...)
-	dst := setx.New[int]([]int{2, 3, 4}...)
+	s := setx.New[int]([]int{1, 2})
+	dst := setx.New[int]([]int{2, 3, 4})
 
-	expected := setx.New[int]([]int{1, 2, 3, 4}...)
+	expected := setx.New[int]([]int{1, 2, 3, 4})
 	result := s.Update(dst)
 
 	assertSetEqual(t, expected, result)
@@ -599,7 +648,7 @@ func TestUpdate_OverlapElements(t *testing.T) {
 
 // TC03: dst 为空，s 不变
 func TestUpdate_EmptyDestination(t *testing.T) {
-	s := setx.New[string]([]string{"a", "b"}...)
+	s := setx.New[string]([]string{"a", "b"})
 	dst := make(setx.Set[string])
 
 	expected := s // 原始集合不变
@@ -610,8 +659,8 @@ func TestUpdate_EmptyDestination(t *testing.T) {
 
 // TC04: dst 中所有元素都已存在于 s 中
 func TestUpdate_AllElementsExist(t *testing.T) {
-	s := setx.New[int]([]int{10, 20, 30}...)
-	dst := setx.New[int]([]int{10, 20}...)
+	s := setx.New[int]([]int{10, 20, 30})
+	dst := setx.New[int]([]int{10, 20})
 
 	expected := s // 不应改变
 	result := s.Update(dst)
