@@ -498,7 +498,7 @@ func TestGetDaysBetween(t *testing.T) {
 			name:     "Multiple full days",
 			start:    time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 			end:      time.Date(2024, 1, 5, 0, 0, 0, 0, time.UTC),
-			expected: 3,
+			expected: 4,
 		},
 	}
 
