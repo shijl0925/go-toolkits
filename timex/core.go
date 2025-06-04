@@ -130,10 +130,8 @@ func AddDay(t time.Time, days int) (time.Time, error) {
 	if t.IsZero() {
 		return time.Time{}, ErrTimeIsZero
 	}
-
-	duration := 24 * time.Hour * time.Duration(days)
-
-	return t.Add(duration), nil
+	// Using AddDate is safer and handles DST changes correctly.
+	return t.AddDate(0, 0, days), nil
 }
 
 // AddWeek add or sub weeks to the time.
@@ -141,10 +139,8 @@ func AddWeek(t time.Time, weeks int) (time.Time, error) {
 	if t.IsZero() {
 		return time.Time{}, ErrTimeIsZero
 	}
-
-	duration := time.Hour * 24 * 7 * time.Duration(weeks)
-
-	return t.Add(duration), nil
+	// Using AddDate is safer and handles DST changes correctly.
+	return t.AddDate(0, 0, weeks*7), nil
 }
 
 // AddMonth add or sub months to the time.
@@ -170,7 +166,12 @@ func AddTimeDelta(t time.Time, delta *TimeDelta) (time.Time, error) {
 	if delta == nil {
 		return time.Time{}, fmt.Errorf("delta is nil")
 	}
-	return t.Add(delta.Duration()), nil
+	d, err := delta.Duration()
+	if err != nil {
+		// Propagate the error from Duration(), which could be an OverflowError
+		return time.Time{}, fmt.Errorf("failed to get duration from TimeDelta: %w", err)
+	}
+	return t.Add(d), nil
 }
 
 // GetNowDate return format yyyy-mm-dd of current date.
@@ -193,11 +194,20 @@ func GetNowDateTime() string {
 
 // GetDaysBetween returns the number of days between two times.
 func GetDaysBetween(start, end time.Time) int {
-	// 确保 end 不早于 start，防止负数计算
+	// 确保 end 不早于 start，以得到非负结果或一致的顺序。
+	// 如果调用者期望根据原始顺序得到可能为负的结果，则此交换逻辑应移除或调整。
 	if end.Before(start) {
 		start, end = end, start
 	}
-	return int(end.Sub(start).Hours() / 24)
+
+	// 将时间标准化到各自日期的午夜，以计算日历天数的差异。
+	// 使用各自的原始 Location 来处理可能的时区差异。
+	startDay := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
+	endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, end.Location())
+
+	// 计算标准化日期之间的持续时间，并转换为天数。
+	// Sub().Hours()/24 对于已标准化到午夜的时间点是计算日历天差异的常用方法。
+	return int(endDay.Sub(startDay).Hours() / 24)
 }
 
 // GetMonthsBetween returns the number of months between two times.
