@@ -1,6 +1,9 @@
 package itertools
 
-import "github.com/shijl0925/go-toolkits/internal/constraints"
+import (
+	"github.com/shijl0925/go-toolkits/internal/constraints"
+	"math"
+)
 
 // Map applies a function to each element in a slice and returns a new slice with the results.
 func Map[T any, U any](s []T, fn func(T) U) []U {
@@ -118,14 +121,12 @@ func GroupBy[T any, U comparable](slice []T, fn func(T) U) map[U][]T {
 
 //nolint:typecheck
 func Range[T constraints.Integer | constraints.Float](start, end, step T) []T {
-	var result []T
-
-	if step == 0 {
+	if step == T(0) {
 		return []T{}
 	}
 
 	// 判断是否递增序列
-	ascending := step > 0
+	ascending := step > T(0)
 
 	// 判断是否满足生成条件
 	if ascending && start >= end {
@@ -135,6 +136,35 @@ func Range[T constraints.Integer | constraints.Float](start, end, step T) []T {
 		return []T{}
 	}
 
+	count := 0
+
+	var zeroT T
+
+	switch any(zeroT).(type) {
+	case int, int8, int16, int32, int64:
+		s, e, p := int64(any(start).(T)), int64(any(end).(T)), int64(any(step).(T))
+		if p > 0 { // ascending
+			count = int((e-1-s)/p) + 1
+		} else { // p < 0, descending
+			count = int((s-1-e)/(-p)) + 1
+		}
+	case uint, uint8, uint16, uint32, uint64, uintptr:
+		s, e, p := uint64(any(start).(T)), uint64(any(end).(T)), uint64(any(step).(T))
+		count = int((e-1-s)/p) + 1
+	case float32, float64:
+		s, e, p := float64(any(start).(T)), float64(any(end).(T)), float64(any(step).(T))
+		if p > 0.0 { // ascending
+			val := (e - s) / p
+			count = int(math.Ceil(val - 1e-9)) // Epsilon for exclusive end
+		} else { // p < 0.0, descending
+			val := (s - e) / (-p)
+			count = int(math.Ceil(val - 1e-9)) // Epsilon for exclusive end
+		}
+	default:
+		// Handle other types
+	}
+
+	result := make([]T, 0, count)
 	for i := start; (ascending && i < end) || (!ascending && i > end); i += step {
 		result = append(result, i)
 	}
