@@ -911,3 +911,171 @@ func TestInvertDuplicateValues(t *testing.T) {
 		t.Errorf("InvertWithErr(duplicate values) returned error: %v", err)
 	}
 }
+
+// 定义测试结构体
+type TestStruct struct {
+	Name    string   `json:"name"`
+	Age     int      `json:"-"`
+	Tags    []string `json:"tags"`
+	Score   float64  `json:"score"`
+	Active  bool     `json:"active"`
+	Weight  *int
+	Address Address `json:"address"`
+}
+
+type Address struct {
+	City string `json:"city"`
+}
+
+func TestMapToStruct(t *testing.T) {
+	// 测试用例 1: 成功转换简单结构体 (TC001)
+	t.Run("SuccessfulConversion", func(t *testing.T) {
+		m := map[string]any{
+			"name":   "Alice",
+			"age":    30,
+			"score":  85.0,
+			"active": true,
+			"tags":   []string{"golang", "python"},
+			"address": map[string]interface{}{
+				"city": "New York",
+			},
+		}
+
+		var s TestStruct
+		if err := mapx.MapToStruct(m, &s); err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		//fmt.Printf("s: %+v\n", s)
+
+		if s.Name != "Alice" || s.Age != 0 || s.Address.City != "New York" || s.Score != 85.0 || s.Active != true || !reflect.DeepEqual(s.Tags, []string{"golang", "python"}) {
+			t.Errorf("Unexpected values: %+v", s)
+		}
+	})
+
+	// 测试用例 2: 忽略带 "-" tag 的字段 (TC002)
+	t.Run("IgnoreFieldWithTagMinus", func(t *testing.T) {
+		m := map[string]any{
+			"age": 30, // age 字段被标记为 "-"
+		}
+
+		var s TestStruct
+		if err := mapx.MapToStruct(m, &s); err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if s.Age != 0 {
+			t.Errorf("Age should be ignored but got %d", s.Age)
+		}
+	})
+
+	// 测试用例 3: 处理未导出字段 (TC003)
+	t.Run("UnexportedFields", func(t *testing.T) {
+		// TestStruct 中没有未导出字段，创建一个新结构体
+		type S struct {
+			unexported string
+		}
+
+		m := map[string]any{
+			"unexported": "value",
+		}
+
+		var s S
+		if err := mapx.MapToStruct(m, &s); err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if s.unexported != "" {
+			t.Errorf("Unexported field should not be set")
+		}
+	})
+
+	// 测试用例 4: 非结构体指针输入 (TC009)
+	t.Run("NonStructPointerInput", func(t *testing.T) {
+		m := map[string]any{}
+		var i int
+
+		if err := mapx.MapToStruct(m, &i); err == nil {
+			t.Error("Expected error for non-struct pointer input, got nil")
+		} else if err.Error() != "must be a struct pointer" {
+			t.Errorf("Unexpected error message: %v", err)
+		}
+	})
+
+	// 测试用例 5: nil 指针输入 (TC010)
+	t.Run("NilPointerInput", func(t *testing.T) {
+		m := map[string]any{}
+		var s *TestStruct
+
+		if err := mapx.MapToStruct(m, s); err == nil {
+			t.Error("Expected error for nil pointer input, got nil")
+		} else if err.Error() != "must be a non empty struct pointer" {
+			t.Errorf("Unexpected error message: %v", err)
+		}
+	})
+
+	// 测试用例 6: 处理指针字段 - 零值 (TC004)
+	t.Run("ZeroValuePointerField", func(t *testing.T) {
+		m := map[string]any{}
+
+		var s TestStruct
+		s.Weight = new(int) // 初始化为非 nil(指向0的指针)
+		if err := mapx.MapToStruct(m, &s); err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		//fmt.Printf("s: %+v\n", s)
+
+		if *s.Weight != 0 {
+			t.Errorf("Weight should be nil")
+		}
+	})
+
+	// 测试用例 7: 处理指针字段 - 非零值 (TC005)
+	t.Run("NonZeroValuePointerField", func(t *testing.T) {
+		m := map[string]any{
+			"weight": 75,
+		}
+
+		var s TestStruct
+		if err := mapx.MapToStruct(m, &s); err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		//fmt.Printf("s: %+v\n", s)
+		if s.Weight == nil || *s.Weight != 75 {
+			t.Errorf("Weight should be 75 and not nil")
+		}
+	})
+
+	// 测试用例 8: 嵌套结构体转换 (TC006)
+	t.Run("NestedStructConversion", func(t *testing.T) {
+		m := map[string]any{
+			"address": map[string]any{
+				"city": "Beijing",
+			},
+		}
+
+		var s TestStruct
+		if err := mapx.MapToStruct(m, &s); err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		//fmt.Printf("s: %+v\n", s)
+		if s.Address.City != "Beijing" {
+			t.Errorf("Address.City should be Beijing")
+		}
+	})
+
+	// 测试用例 9: 不支持的类型转换 (TC007)
+	t.Run("UnsupportedTypeConversion", func(t *testing.T) {
+		type S struct {
+			Field int
+		}
+
+		m := map[string]any{
+			"field": "string_value",
+		}
+
+		var s S
+		if err := mapx.MapToStruct(m, &s); err == nil {
+			t.Error("Expected error for unsupported type conversion, got nil")
+		}
+	})
+}
