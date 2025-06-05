@@ -240,3 +240,122 @@ func ToJson(m map[string]any) (string, error) {
 	}
 	return string(data), nil
 }
+
+// MapToStruct 将 map 转换为指定的结构体指针
+func MapToStruct(m map[string]any, s any) error {
+	val := reflect.ValueOf(s)
+	if val.Kind() != reflect.Ptr || val.IsNil() {
+		return fmt.Errorf("must be a non empty struct pointer")
+	}
+
+	elem := val.Elem()
+	if elem.Kind() != reflect.Struct {
+		return fmt.Errorf("must be a struct pointer")
+	}
+
+	t := elem.Type()
+	for i := 0; i < elem.NumField(); i++ {
+		fieldValue := elem.Field(i)
+		if !fieldValue.CanSet() {
+			continue // 跳过不可导出的字段
+		}
+
+		fieldType := t.Field(i)
+		key, err := getFieldKey(fieldType, "json")
+
+		if err != nil {
+			return err
+		}
+		if key == "" {
+			continue // 跳过被忽略的字段
+		}
+
+		value, ok := m[key]
+
+		if !ok {
+			continue // 跳过不存在的键
+		}
+
+		if fieldType.Anonymous && fieldType.Type.Kind() == reflect.Struct {
+			continue // 跳过匿名结构体
+		}
+		if err := setField(fieldValue, value); err != nil {
+			return fmt.Errorf("field %v conversion failed: %v", fieldType.Name, err)
+		}
+	}
+	return nil
+}
+
+// getFieldKey 获取结构体字段对应的 map 键名
+func getFieldKey(field reflect.StructField, tag string) (string, error) {
+	filedTag := field.Tag.Get(tag)
+	if filedTag == "-" {
+		return "", nil // 忽略该字段
+	}
+
+	if filedTag != "" {
+		// 处理类似 `json:"name,omitempty"` 的情况
+		parts := strings.Split(filedTag, ",")
+		return parts[0], nil
+	}
+
+	// 默认使用字段名小写
+	return strings.ToLower(field.Name), nil
+}
+
+// setField 设置结构体字段值，处理类型转换
+func setField(field reflect.Value, value any) error {
+	targetType := field.Type()
+	if value == nil {
+		switch targetType.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+			if !field.CanSet() {
+				// This check should ideally be redundant if MapToStruct filters unexported fields.
+				return fmt.Errorf("internal error: cannot set field %s of type %s", field.Type().Name(), targetType)
+			}
+			field.Set(reflect.Zero(targetType)) // Sets to nil for these types
+			return nil
+		default:
+			// Cannot assign Go's untyped nil to a non-nilable field type (e.g. int, string, struct).
+			return fmt.Errorf("cannot assign nil to field of non-nilable type %v", targetType)
+		}
+	}
+
+	val := reflect.ValueOf(value)
+
+	// 类型完全匹配时直接赋值
+	if val.Type().AssignableTo(targetType) {
+		field.Set(val)
+		return nil
+	}
+
+	// 处理指针类型
+	if targetType.Kind() == reflect.Ptr {
+		if val.IsZero() { // 如果值为零值，则设置为 nil
+			field.Set(reflect.Zero(targetType))
+			return nil
+		}
+
+		elemType := targetType.Elem() // 获取指针指向的类型
+		newElem := reflect.New(elemType)
+		if err := setField(newElem.Elem(), value); err != nil {
+			return err
+		}
+		field.Set(newElem)
+		return nil
+	}
+
+	// 处理嵌套结构体或匿名内嵌结构体
+	if targetType.Kind() == reflect.Struct {
+		if nestedMap, ok := value.(map[string]any); ok {
+			newStruct := reflect.New(targetType).Elem()
+			if err := MapToStruct(nestedMap, newStruct.Addr().Interface()); err != nil {
+				return fmt.Errorf("failed to map to nested struct type %v: %w", targetType, err)
+			}
+			field.Set(newStruct)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("unsupported type conversion: value of type %v to field of type %v", val.Type(), targetType)
+}
