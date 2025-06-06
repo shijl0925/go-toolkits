@@ -70,11 +70,11 @@ func ExecCommand(command string, opts ...Option) (stdout, stderr string, err err
 	err = cmd.Run()
 
 	if err != nil {
-		stderr = string(errOut.Bytes())
+		stderr = errOut.String()
 		return "", stderr, err
 	}
 
-	stdout = string(out.Bytes())
+	stdout = out.String()
 
 	return stdout, "", nil
 }
