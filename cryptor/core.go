@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -62,7 +63,7 @@ func Md5File(filePath string) (string, error) {
 		return "", fmt.Errorf("file size exceeds limit of %d bytes", maxFileSize)
 	}
 
-	file, err := os.Open(filePath)
+	file, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q: %w", filePath, err)
 	}
@@ -107,7 +108,7 @@ func Sha256File(filePath string) (string, error) {
 		return "", fmt.Errorf("file size exceeds limit of %d bytes", maxFileSize)
 	}
 
-	file, err := os.Open(filePath)
+	file, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q: %w", filePath, err)
 	}
@@ -120,6 +121,6 @@ func Sha256File(filePath string) (string, error) {
 	if _, err := io.CopyBuffer(sh, file, buf); err != nil {
 		return "", fmt.Errorf("error reading file %q: %w", filePath, err)
 	}
-  
+
 	return hex.EncodeToString(sh.Sum(nil)), nil
 }
