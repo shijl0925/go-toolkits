@@ -667,3 +667,125 @@ func TestUpdate_AllElementsExist(t *testing.T) {
 
 	assertSetEqual(t, expected, result)
 }
+
+func TestContainAny(t *testing.T) {
+	tests := []struct {
+		name string
+		src  setx.Set[int]
+		dst  setx.Set[int]
+		want bool
+	}{
+		{
+			name: "TC1 - src is empty",
+			src:  setx.New[int](),
+			dst:  setx.New[int](1, 2, 3),
+			want: false,
+		},
+		{
+			name: "TC2 - dst is empty",
+			src:  setx.New[int](1, 2, 3),
+			dst:  setx.New[int](),
+			want: false,
+		},
+		{
+			name: "TC3 - no overlap",
+			src:  setx.New[int](1, 2, 3),
+			dst:  setx.New[int](4, 5, 6),
+			want: false,
+		},
+		{
+			name: "TC4 - has overlap (src smaller)",
+			src:  setx.New[int](1, 2),
+			dst:  setx.New[int](2, 3, 4, 5),
+			want: true,
+		},
+		{
+			name: "TC5 - has overlap (dst smaller)",
+			src:  setx.New[int](2, 3, 4, 5),
+			dst:  setx.New[int](1, 2),
+			want: true,
+		},
+		{
+			name: "TC6 - all elements same",
+			src:  setx.New[int](1, 2, 3),
+			dst:  setx.New[int](1, 2, 3),
+			want: true,
+		},
+		{
+			name: "TC7 - one common element",
+			src:  setx.New[int](1, 2, 3),
+			dst:  setx.New[int](3, 4, 5),
+			want: true,
+		},
+		{
+			name: "TC8 - no overlap",
+			src:  setx.New[int](4, 5, 6),
+			dst:  setx.New[int](1, 2, 3),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := setx.ContainAny(tt.src, tt.dst)
+			if got != tt.want {
+				t.Errorf("ContainAny() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestContainAll(t *testing.T) {
+	tests := []struct {
+		name     string
+		src      setx.Set[int]
+		dst      setx.Set[int]
+		expected bool
+	}{
+		{
+			name:     "TC1 - Empty src, non-empty dst",
+			src:      setx.New[int](),
+			dst:      setx.New[int](1),
+			expected: false,
+		},
+		{
+			name:     "TC2 - Non-empty src, empty dst",
+			src:      setx.New[int](1, 2),
+			dst:      setx.New[int](),
+			expected: true,
+		},
+		{
+			name:     "TC3 - Some elements not in src",
+			src:      setx.New[int](1),
+			dst:      setx.New[int](1, 2),
+			expected: false,
+		},
+		{
+			name:     "TC4 - All elements in src",
+			src:      setx.New[int](1, 2, 3),
+			dst:      setx.New[int](1, 2),
+			expected: true,
+		},
+		{
+			name:     "TC5 - Both sets are empty",
+			src:      setx.New[int](),
+			dst:      setx.New[int](),
+			expected: true,
+		},
+		{
+			name:     "TC6 - dst is exactly the same as src",
+			src:      setx.New[int](1, 2),
+			dst:      setx.New[int](1, 2),
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := setx.ContainAll(tt.src, tt.dst)
+			if result != tt.expected {
+				t.Errorf("ContainAll() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}

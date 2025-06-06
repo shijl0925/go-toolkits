@@ -274,3 +274,46 @@ func Union[T comparable](src, dst Set[T]) []T {
 	// Convert the unionSet to a slice. Keys() preallocates correctly.
 	return unionSet.Keys()
 }
+
+// ContainAny checks if any elements in the destination set exist in the source set.
+func ContainAny[T comparable](src, dst Set[T]) bool {
+	if src.Len() == 0 || dst.Len() == 0 {
+		return false
+	}
+	var iterSet, checkSet Set[T]
+	// Iterate over the smaller set for efficiency
+	if src.Len() <= dst.Len() {
+		iterSet = src
+		checkSet = dst
+	} else {
+		iterSet = dst
+		checkSet = src
+	}
+
+	for element := range iterSet {
+		if checkSet.Exists(element) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// ContainAll checks if set contains other set
+func ContainAll[T comparable](src, dst Set[T]) bool {
+	if dst.Len() == 0 {
+		return true
+	}
+
+	if src.Len() == 0 {
+		return false
+	}
+
+	for element := range dst {
+		if !src.Exists(element) {
+			return false
+		}
+	}
+
+	return true
+}
