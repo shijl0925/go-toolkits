@@ -1,8 +1,7 @@
 package cryptor
 
 import (
-	//nolint:G501
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -32,8 +31,7 @@ func Base64StdDecode(s string) (string, error) {
 // Md5Stream returns md5 hash of a string.
 // 适合流式处理大文件
 func Md5Stream(s string) string {
-	//nolint:G401
-	h := md5.New()
+	h := md5.New() //nolint:gosec
 	h.Write([]byte(s))
 	return hex.EncodeToString(h.Sum(nil))
 }
@@ -43,8 +41,7 @@ func Md5String(s string) string {
 	// Convert string to bytes
 	data := []byte(s)
 	// Compute MD5 hash
-	//nolint:G401
-	h := md5.Sum(data)
+	h := md5.Sum(data) //nolint:gosec
 	// Encode to hexadecimal string and return
 	return hex.EncodeToString(h[:])
 }
@@ -72,8 +69,7 @@ func Md5File(filePath string) (string, error) {
 	}
 	defer file.Close()
 
-	//nolint:G401
-	h := md5.New()
+	h := md5.New() //nolint:gosec
 
 	// Optional: use a buffer for better performance on large files
 	buf := make([]byte, 64*1024) // 64KB buffer
