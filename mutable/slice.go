@@ -1,6 +1,9 @@
 package mutable
 
-import "math/rand"
+import (
+	"fmt"
+	"math/rand"
+)
 
 // Map applies a function to each element of a slice.
 // It modifies the slice in place.
@@ -99,23 +102,22 @@ func Shift[T any](s *[]T) (T, bool) {
 // Example:
 //
 //	s := &[]int{1, 2, 3, 4, 5}
-//	r, _ := Drop(s, 2) //  r == []int{1, 2, 3}  s ==  []int{1, 2, 3}
-func Drop[T any](s *[]T, n int) ([]T, bool) {
+//	r, _ := Drop(s, 2) //  r == true  s ==  []int{1, 2, 3}
+func Drop[T any](s *[]T, n int) (bool, error) {
 	if s == nil {
-		return nil, true
+		return false, fmt.Errorf("cannot drop from a nil slice")
 	}
 
 	if n < 0 {
-		return *s, false
+		return false, fmt.Errorf("number of elements to drop cannot be negative")
 	}
 
 	if n > len(*s) {
-		*s = (*s)[:0] // Modify original slice to be empty
-		return *s, true
+		n = len(*s)
 	}
 
 	*s = (*s)[:len(*s)-n]
-	return *s, true
+	return true, nil
 }
 
 // DropLeft removes the n elements from the slice and returns the remaining elements.
@@ -123,23 +125,22 @@ func Drop[T any](s *[]T, n int) ([]T, bool) {
 // Example:
 //
 //	s := &[]int{1, 2, 3, 4, 5}
-//	r, _ := DropLeft(s, 2) //  r == []int{3, 4, 5}  s ==  []int{3, 4, 5}
-func DropLeft[T any](s *[]T, n int) ([]T, bool) {
+//	r, _ := DropLeft(s, 2) //  r == true  s ==  []int{3, 4, 5}
+func DropLeft[T any](s *[]T, n int) (bool, error) {
 	if s == nil {
-		return nil, true
+		return false, fmt.Errorf("cannot drop from a nil slice")
 	}
 
 	if n < 0 {
-		return *s, false
+		return false, fmt.Errorf("number of elements to drop cannot be negative")
 	}
 
 	if n > len(*s) {
-		*s = (*s)[:0] // Modify original slice to be empty
-		return *s, true
+		n = len(*s)
 	}
 
 	*s = (*s)[n:]
-	return *s, true
+	return true, nil
 }
 
 // Shuffle returns an array of shuffled values. Uses the Fisher-Yates shuffle algorithm.
