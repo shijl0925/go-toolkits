@@ -26,5 +26,5 @@ go get github.com/shijl0925/go-toolkits@latest
 - [mutable](https://github.com/shijl0925/go-toolkits/blob/main/mutable/README.md)
 - [filex](https://github.com/shijl0925/go-toolkits/blob/main/filex/README.md)
 - [algorithm](https://github.com/shijl0925/go-toolkits/blob/main/algorithm/README.md)
-- [cryptor](https://github.com/shijl0925/go-toolkits/blob/main/cryptor/README.md)]
+- [cryptor](https://github.com/shijl0925/go-toolkits/blob/main/cryptor/README.md)
 - [systemx](https://github.com/shijl0925/go-toolkits/blob/main/systemx/README.md)
