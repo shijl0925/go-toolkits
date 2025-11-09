@@ -30,7 +30,7 @@ func Filter[T any](s []T, fn func(T) bool) []T {
 // Example:
 //
 //	s := []int{1, 2, 3, 4, 5}
-//	r := DropWhile(s, func(i int) bool { return > 3 }) // r == []int{4, 5}
+//	r := DropWhile(s, func(i int) bool { return i > 3 }) // r == []int{4, 5}
 func DropWhile[T any](s []T, fn func(T) bool) []T {
 	i := 0
 	for ; i < len(s); i++ {
