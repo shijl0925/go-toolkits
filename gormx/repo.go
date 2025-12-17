@@ -12,11 +12,11 @@ import (
 
 // 使用说明
 //type UserRepo struct {
-//	BaseRepo[model.User] // 继承基础仓库功能
+//	gormx.BaseRepo[model.User] // 继承基础仓库功能
 //}
 //
 //type IUserRepo interface {
-//	IBaseRepo[model.User] // 嵌入基础接口
+//	gormx.IBaseRepo[model.User] // 嵌入基础接口
 //
 //	// 扩展用户相关业务方法
 //	// ...

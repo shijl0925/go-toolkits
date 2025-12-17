@@ -4,18 +4,18 @@ import "errors"
 
 // 使用说明:
 //type UserService struct {
-//	*ServiceImplement[repo.IUserRepo, model.User]
+//	*gormx.ServiceImplement[repo.IUserRepo, model.User]
 //}
 //
 //type IUserService interface {
-//	IBaseService[model.User]
+//	gormx.IBaseService[model.User]
 //	// 扩展用户相关业务方法
 //	// ...
 //}
 //
 //func NewIUserService() IUserService {
 //	return &UserService{
-//		ServiceImplement: NewServiceImplement[repo.IUserRepo, model.User](userRepo),
+//		gormx.ServiceImplement: gormx.NewServiceImplement[repo.IUserRepo, model.User](userRepo),
 //	}
 //}
 

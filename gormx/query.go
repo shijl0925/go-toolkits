@@ -2,6 +2,7 @@ package gormx
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/shijl0925/go-toolkits/stringx"
 	"gorm.io/gorm"
@@ -147,7 +148,7 @@ func (q *Query[T]) resolveFieldName(field interface{}) string {
 	// 只在字段名确实无效时才打印警告（即输入是字符串但无效）
 	if validFieldName == "" {
 		if str, ok := field.(string); ok && str != "" {
-			//logger.Warn("invalid field name: " + str)
+			log.Printf("invalid field name: " + str)
 		}
 	}
 	return validFieldName
@@ -434,7 +435,7 @@ func (q *Query[T]) Like(field interface{}, value interface{}) *Query[T] {
 		panic("like value must be a string")
 	}
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" like ?", "%"+strVal+"%"))
+	q.opts = append(q.opts, Where(fieldName+" LIKE ?", "%"+strVal+"%"))
 	return q
 }
 
@@ -527,7 +528,7 @@ func (q *Query[T]) Regexp(field interface{}, pattern string) *Query[T] {
 //   - 可以与其他查询条件组合使用
 func (q *Query[T]) IsNull(field interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" is null"))
+	q.opts = append(q.opts, Where(fieldName+" IS NULL"))
 	return q
 }
 
@@ -568,8 +569,32 @@ func (q *Query[T]) IsNull(field interface{}) *Query[T] {
 //   - 可以与其他查询条件组合使用
 func (q *Query[T]) IsNotNull(field interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" is not null"))
+	q.opts = append(q.opts, Where(fieldName+" IS NOT NULL"))
 	return q
+}
+
+// buildInPlaceholders 构建IN查询的占位符字符串和参数列表
+// 该方法用于处理切片类型的参数，生成对应的占位符和参数列表
+//
+// 参数:
+//   - value: 要处理的切片值
+//
+// 返回:
+//   - placeholderStr: 占位符字符串，如 "?,?,?"
+//   - args: 参数列表
+func (q *Query[T]) buildInPlaceholders(value interface{}) (string, []interface{}) {
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Slice {
+		placeholders := make([]string, rv.Len())
+		args := make([]interface{}, rv.Len())
+		for i := 0; i < rv.Len(); i++ {
+			placeholders[i] = "?"
+			args[i] = rv.Index(i).Interface()
+		}
+		return strings.Join(placeholders, ","), args
+	}
+	// 非切片情况，返回单个占位符和原始值
+	return "?", []interface{}{value}
 }
 
 // In 添加 in 条件 IN (?, ?, ?)
@@ -612,7 +637,11 @@ func (q *Query[T]) IsNotNull(field interface{}) *Query[T] {
 //   - 如果value为空，会生成IN ()条件，这在某些数据库中可能导致语法错误
 func (q *Query[T]) In(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" in (?)", value))
+	// 生成占位符字符串和参数列表
+	placeholderStr, args := q.buildInPlaceholders(value)
+	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
+		return db.Where(fieldName+" IN ("+placeholderStr+")", args...)
+	})
 	return q
 }
 
@@ -656,7 +685,11 @@ func (q *Query[T]) In(field interface{}, value interface{}) *Query[T] {
 //   - 如果value为空，会生成NOT IN ()条件，这在某些数据库中可能导致语法错误
 func (q *Query[T]) NotIn(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" not in (?)", value))
+	// 生成占位符字符串和参数列表
+	placeholderStr, args := q.buildInPlaceholders(value)
+	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
+		return db.Where(fieldName+" NOT IN ("+placeholderStr+")", args...)
+	})
 	return q
 }
 
@@ -702,7 +735,7 @@ func (q *Query[T]) NotIn(field interface{}, value interface{}) *Query[T] {
 //   - start和end参数类型应该与字段类型兼容
 func (q *Query[T]) Between(field interface{}, start, end interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" between ? and ?", start, end))
+	q.opts = append(q.opts, Where(fieldName+" BETWEEN ? AND ?", start, end))
 	return q
 }
 
@@ -748,7 +781,7 @@ func (q *Query[T]) Between(field interface{}, start, end interface{}) *Query[T] 
 //   - start和end参数类型应该与字段类型兼容
 func (q *Query[T]) NotBetween(field interface{}, start, end interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" not between ? and ?", start, end))
+	q.opts = append(q.opts, Where(fieldName+" NOT BETWEEN ? AND ?", start, end))
 	return q
 }
 
@@ -822,8 +855,13 @@ func (q *Query[T]) OrderDesc(fields ...interface{}) *Query[T] {
 	fieldNames := q.resolveFieldNames(fields)
 
 	for _, fieldName := range fieldNames {
+		// 创建 fieldName 的副本，避免闭包捕获问题
+		field := fieldName
+		if field == "" {
+			continue
+		}
 		q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-			return db.Order(fieldName + " desc")
+			return db.Order(field + " DESC")
 		})
 	}
 	return q
@@ -842,8 +880,13 @@ func (q *Query[T]) OrderAsc(fields ...interface{}) *Query[T] {
 	fieldNames := q.resolveFieldNames(fields)
 
 	for _, fieldName := range fieldNames {
+		// 创建 fieldName 的副本，避免闭包捕获问题
+		field := fieldName
+		if field == "" {
+			continue
+		}
 		q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-			return db.Order(fieldName + " asc")
+			return db.Order(field + " ASC")
 		})
 	}
 	return q
@@ -995,7 +1038,7 @@ func (q *Query[T]) Distinct(fields ...interface{}) *Query[T] {
 	if len(fields) == 0 {
 		// 无参数时，对整个查询去重
 		q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-			return db.Distinct()
+			return db.Distinct("*")
 		})
 		return q
 	}
@@ -1074,6 +1117,17 @@ func (q *Query[T]) Select(fields ...interface{}) *Query[T] {
 
 // Scan 扫描查询结果
 func (q *Query[T]) Scan(destination interface{}) error {
+	// 检查目标是否为nil
+	if destination == nil {
+		return errors.New("destination cannot be nil")
+	}
+
+	// 检查目标是否为零值（未初始化的指针）
+	rv := reflect.ValueOf(destination)
+	if !rv.IsValid() || (rv.Kind() == reflect.Ptr && rv.IsNil()) {
+		return fmt.Errorf("cannot scan into nil or invalid destination")
+	}
+
 	opts := q.ToOptions()
 	db := GetDb(opts...)
 	// 确保查询有正确的模型上下文
@@ -1173,6 +1227,22 @@ func (q *Query[T]) RawRows(sql string, args ...interface{}) (*sql.Rows, error) {
 //   - 如果字段无效，可能会生成字段名为空的查询条件
 //   - 可以与其他查询条件组合使用，如Where、Order等
 func (q *Query[T]) Pluck(field interface{}, destination interface{}) error {
+	// 检查目标是否为nil
+	if destination == nil {
+		return errors.New("destination cannot be nil")
+	}
+
+	// 检查目标是否为指针
+	rv := reflect.ValueOf(destination)
+	if rv.Kind() != reflect.Ptr {
+		return errors.New("destination must be a pointer to a slice")
+	}
+
+	// 检查目标是否为指向切片的指针
+	if rv.Elem().Kind() != reflect.Slice {
+		return errors.New("destination must be a pointer to a slice")
+	}
+
 	fieldName := q.resolveFieldName(field)
 	opts := q.ToOptions()
 	db := GetDb(opts...)
@@ -1492,7 +1562,21 @@ func (q *Query[T]) Count(field interface{}) *Query[T] {
 func (q *Query[T]) Sum(field interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
 	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Select("SUM(" + fieldName + ")")
+		// 构建select语句
+		var selectClause string
+
+		if len(db.Statement.Selects) > 0 {
+			// 如果已有select字段，则追加SUM字段
+			selects := make([]string, len(db.Statement.Selects))
+			copy(selects, db.Statement.Selects)
+			selects = append(selects, "SUM("+fieldName+")")
+			selectClause = strings.Join(selects, ", ")
+		} else {
+			// 只使用SUM字段
+			selectClause = "SUM(" + fieldName + ")"
+		}
+
+		return db.Select(selectClause)
 	})
 	return q
 }
@@ -1541,7 +1625,21 @@ func (q *Query[T]) Sum(field interface{}) *Query[T] {
 func (q *Query[T]) Avg(field interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
 	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Select("AVG(" + fieldName + ")")
+		// 构建select语句
+		var selectClause string
+
+		if len(db.Statement.Selects) > 0 {
+			// 如果已有select字段，则追加AVG字段
+			selects := make([]string, len(db.Statement.Selects))
+			copy(selects, db.Statement.Selects)
+			selects = append(selects, "AVG("+fieldName+")")
+			selectClause = strings.Join(selects, ", ")
+		} else {
+			// 只使用AVG字段
+			selectClause = "AVG(" + fieldName + ")"
+		}
+
+		return db.Select(selectClause)
 	})
 	return q
 }
@@ -1590,7 +1688,21 @@ func (q *Query[T]) Avg(field interface{}) *Query[T] {
 func (q *Query[T]) Max(field interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
 	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Select("MAX(" + fieldName + ")")
+		// 构建select语句
+		var selectClause string
+
+		if len(db.Statement.Selects) > 0 {
+			// 如果已有select字段，则追加MAX字段
+			selects := make([]string, len(db.Statement.Selects))
+			copy(selects, db.Statement.Selects)
+			selects = append(selects, "MAX("+fieldName+")")
+			selectClause = strings.Join(selects, ", ")
+		} else {
+			// 只使用MAX字段
+			selectClause = "MAX(" + fieldName + ")"
+		}
+
+		return db.Select(selectClause)
 	})
 	return q
 }
@@ -1639,7 +1751,21 @@ func (q *Query[T]) Max(field interface{}) *Query[T] {
 func (q *Query[T]) Min(field interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
 	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Select("MIN(" + fieldName + ")")
+		// 构建select语句
+		var selectClause string
+
+		if len(db.Statement.Selects) > 0 {
+			// 如果已有select字段，则追加MIN字段
+			selects := make([]string, len(db.Statement.Selects))
+			copy(selects, db.Statement.Selects)
+			selects = append(selects, "MIN("+fieldName+")")
+			selectClause = strings.Join(selects, ", ")
+		} else {
+			// 只使用MIN字段
+			selectClause = "MIN(" + fieldName + ")"
+		}
+
+		return db.Select(selectClause)
 	})
 	return q
 }
