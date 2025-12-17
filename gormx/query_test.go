@@ -29,6 +29,7 @@ type User struct {
 	Email    string  `gorm:"column:email"`
 	Phone    string  `gorm:"column:phone"`
 	Age      int     `gorm:"column:age"`
+	Score    float64 `gorm:"column:score"`
 	Address  string  `gorm:"column:address"`
 	IsActive bool    `gorm:"column:is_active"`
 	Salary   float64 `gorm:"column:salary"`
@@ -73,10 +74,10 @@ func init() {
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		"root",
-		"root@123",
+		"******",
 		"localhost",
 		"3306",
-		"vben2",
+		"vben",
 	)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -5695,4 +5696,2165 @@ func setupGroupByTestData(t *testing.T) {
 			t.Fatalf("Failed to create test post: %v", err)
 		}
 	}
+}
+
+// TestQuery_InSql 测试 InSql 方法的基本功能
+func TestQuery_InSql(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic in sql with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针和子查询SQL
+		result := query.InSql(&user.Status, "SELECT 1")
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("InSql should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("InSql should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test basic in sql with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串和子查询SQL
+		query.InSql("status", "SELECT 1")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test in sql with parameters", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试带参数的子查询SQL
+		query.InSql(&user.Status, "SELECT ? FROM dual", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status IN (SELECT ? FROM dual) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test chaining multiple in sql conditions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个InSql条件
+		query.InSql(&user.Status, "SELECT 1").
+			InSql(&user.Age, "SELECT 2").
+			InSql("name", "SELECT 'test'")
+
+		if len(query.ToOptions()) != 3 {
+			t.Error("Should have 3 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status IN (SELECT 1) AND age IN (SELECT 2) AND name IN (SELECT 'test') AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test in sql combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他查询方法组合使用
+		query.Eq(&user.IsActive, true).
+			InSql(&user.Status, "SELECT 1 UNION SELECT 2")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE is_active = ? AND status IN (SELECT 1 UNION SELECT 2) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != true {
+			t.Errorf("Expected args: [true], got: %v", args)
+		}
+	})
+
+	t.Run("test in sql with complex subquery", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试复杂的子查询
+		subQuery := "SELECT u.status FROM users u WHERE u.age > ? AND u.created_at > ?"
+		query.InSql(&user.Status, subQuery, 18, "2023-01-01")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status IN (SELECT u.status FROM users u WHERE u.age > ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != 18 || args[1] != "2023-01-01" {
+			t.Errorf("Expected args: [18 2023-01-01], got: %v", args)
+		}
+	})
+
+	t.Run("test in sql with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.InSql("invalid_field", "SELECT 1")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT * FROM `users` WHERE  IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test in sql with empty sql", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试空SQL（应该被忽略）
+		query.InSql(&user.Status, "")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test in sql with one-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在一对多关系中使用InSql
+		query.InSql(&user.ID, "SELECT DISTINCT user_id FROM posts WHERE status = ?", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test in sql with many-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在多对多关系中使用InSql
+		query.InSql(&user.ID, "SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)", "admin")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "admin" {
+			t.Errorf("Expected args: [admin], got: %v", args)
+		}
+	})
+
+	// LEFT JOIN 使用场景测试
+	t.Run("test in sql with left join scenario", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 模拟LEFT JOIN场景：查找有帖子的用户
+		query.InSql(&user.ID, "SELECT DISTINCT p.user_id FROM posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.status = ?", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id IN (SELECT DISTINCT p.user_id FROM posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.status = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test in sql with complex left join scenario", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 更复杂的LEFT JOIN场景：查找有特定角色的用户
+		subQuery := "SELECT DISTINCT u.id FROM users u LEFT JOIN user_roles ur ON u.id = ur.user_id LEFT JOIN roles r ON ur.role_id = r.id WHERE r.name IN (?, ?)"
+		query.InSql(&user.ID, subQuery, "admin", "editor")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：换行符会被压缩成空格
+		expectedSQL := "SELECT * FROM `users` WHERE id IN (SELECT DISTINCT u.id FROM users u LEFT JOIN user_roles ur ON u.id = ur.user_id LEFT JOIN roles r ON ur.role_id = r.id WHERE r.name IN (?, ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != "admin" || args[1] != "editor" {
+			t.Errorf("Expected args: [admin editor], got: %v", args)
+		}
+	})
+}
+
+// TestQuery_NotInSql 测试 NotInSql 方法的基本功能
+func TestQuery_NotInSql(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic not in sql with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针和子查询SQL
+		result := query.NotInSql(&user.Status, "SELECT 1")
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("NotInSql should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("NotInSql should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status NOT IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test not in sql with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串和子查询SQL
+		query.NotInSql("status", "SELECT 1")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status NOT IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test not in sql with parameters", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试带参数的子查询SQL
+		query.NotInSql(&user.Status, "SELECT ? FROM dual", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status NOT IN (SELECT ? FROM dual) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test chaining multiple not in sql conditions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个NotInSql条件
+		query.NotInSql(&user.Status, "SELECT 1").
+			NotInSql(&user.Age, "SELECT 2").
+			NotInSql("name", "SELECT 'test'")
+
+		if len(query.ToOptions()) != 3 {
+			t.Error("Should have 3 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status NOT IN (SELECT 1) AND age NOT IN (SELECT 2) AND name NOT IN (SELECT 'test') AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test not in sql combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他查询方法组合使用
+		query.Eq(&user.IsActive, true).
+			NotInSql(&user.Status, "SELECT 1 UNION SELECT 2")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE is_active = ? AND status NOT IN (SELECT 1 UNION SELECT 2) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != true {
+			t.Errorf("Expected args: [true], got: %v", args)
+		}
+	})
+
+	t.Run("test not in sql with complex subquery", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试复杂的子查询
+		subQuery := "SELECT u.status FROM users u WHERE u.age > ? AND u.created_at > ?"
+		query.NotInSql(&user.Status, subQuery, 18, "2023-01-01")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status NOT IN (SELECT u.status FROM users u WHERE u.age > ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != 18 || args[1] != "2023-01-01" {
+			t.Errorf("Expected args: [18 2023-01-01], got: %v", args)
+		}
+	})
+
+	t.Run("test not in sql with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.NotInSql("invalid_field", "SELECT 1")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT * FROM `users` WHERE  NOT IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test not in sql with empty sql", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试空SQL（应该被忽略）
+		query.NotInSql(&user.Status, "")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test not in sql with one-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在一对多关系中使用NotInSql
+		query.NotInSql(&user.ID, "SELECT DISTINCT user_id FROM posts WHERE status = ?", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id NOT IN (SELECT DISTINCT user_id FROM posts WHERE status = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test not in sql with many-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在多对多关系中使用NotInSql
+		query.NotInSql(&user.ID, "SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)", "admin")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id NOT IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "admin" {
+			t.Errorf("Expected args: [admin], got: %v", args)
+		}
+	})
+}
+
+// TestQuery_GtSql 测试 GtSql 方法的基本功能
+func TestQuery_GtSql(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic gt sql with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针和子查询SQL
+		result := query.GtSql(&user.Age, "SELECT AVG(age) FROM users")
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("GtSql should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("GtSql should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age > (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test gt sql with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串和子查询SQL
+		query.GtSql("age", "SELECT AVG(age) FROM users")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age > (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test gt sql with parameters", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试带参数的子查询SQL
+		query.GtSql(&user.Age, "SELECT AVG(age) FROM users WHERE department = ?", "IT")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age > (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "IT" {
+			t.Errorf("Expected args: [IT], got: %v", args)
+		}
+	})
+
+	t.Run("test chaining multiple gt sql conditions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个GtSql条件
+		query.GtSql(&user.Age, "SELECT 18").
+			GtSql(&user.Score, "SELECT 80").
+			GtSql("salary", "SELECT 5000")
+
+		if len(query.ToOptions()) != 3 {
+			t.Error("Should have 3 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age > (SELECT 18) AND score > (SELECT 80) AND salary > (SELECT 5000) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test gt sql combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他查询方法组合使用
+		query.Eq(&user.IsActive, true).
+			GtSql(&user.Age, "SELECT AVG(age) FROM users WHERE is_active = true")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE is_active = ? AND age > (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != true {
+			t.Errorf("Expected args: [true], got: %v", args)
+		}
+	})
+
+	t.Run("test gt sql with complex subquery", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试复杂的子查询
+		subQuery := "SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?"
+		query.GtSql(&user.Age, subQuery, "IT", "2023-01-01")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age > (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != "IT" || args[1] != "2023-01-01" {
+			t.Errorf("Expected args: [IT 2023-01-01], got: %v", args)
+		}
+	})
+
+	t.Run("test gt sql with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.GtSql("invalid_field", "SELECT 1")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT * FROM `users` WHERE  > (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test gt sql with empty sql", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试空SQL（应该被忽略）
+		query.GtSql(&user.Age, "")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test gt sql with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用GtSql
+		query.GtSql(&post.UserID, "SELECT MIN(user_id) FROM posts WHERE status = ?", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `posts` WHERE user_id > (SELECT MIN(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test gt sql with many-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在多对多关系中使用GtSql
+		query.GtSql(&user.ID, "SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)", "IT")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id > (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "IT" {
+			t.Errorf("Expected args: [IT], got: %v", args)
+		}
+	})
+}
+
+// TestQuery_GeSql 测试 GeSql 方法的基本功能
+func TestQuery_GeSql(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic ge sql with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针和子查询SQL
+		result := query.GeSql(&user.Age, "SELECT AVG(age) FROM users")
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("GeSql should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("GeSql should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age >= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test ge sql with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串和子查询SQL
+		query.GeSql("age", "SELECT AVG(age) FROM users")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age >= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test ge sql with parameters", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试带参数的子查询SQL
+		query.GeSql(&user.Age, "SELECT AVG(age) FROM users WHERE department = ?", "IT")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age >= (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "IT" {
+			t.Errorf("Expected args: [IT], got: %v", args)
+		}
+	})
+
+	t.Run("test chaining multiple ge sql conditions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个GeSql条件
+		query.GeSql(&user.Age, "SELECT 18").
+			GeSql(&user.Score, "SELECT 80").
+			GeSql("salary", "SELECT 5000")
+
+		if len(query.ToOptions()) != 3 {
+			t.Error("Should have 3 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age >= (SELECT 18) AND score >= (SELECT 80) AND salary >= (SELECT 5000) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test ge sql combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他查询方法组合使用
+		query.Eq(&user.IsActive, true).
+			GeSql(&user.Age, "SELECT AVG(age) FROM users WHERE is_active = true")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE is_active = ? AND age >= (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != true {
+			t.Errorf("Expected args: [true], got: %v", args)
+		}
+	})
+
+	t.Run("test ge sql with complex subquery", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试复杂的子查询
+		subQuery := "SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?"
+		query.GeSql(&user.Age, subQuery, "IT", "2023-01-01")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age >= (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != "IT" || args[1] != "2023-01-01" {
+			t.Errorf("Expected args: [IT 2023-01-01], got: %v", args)
+		}
+	})
+
+	t.Run("test ge sql with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.GeSql("invalid_field", "SELECT 1")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT * FROM `users` WHERE  >= (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test ge sql with empty sql", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试空SQL（应该被忽略）
+		query.GeSql(&user.Age, "")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test ge sql with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用GeSql
+		query.GeSql(&post.UserID, "SELECT MIN(user_id) FROM posts WHERE status = ?", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `posts` WHERE user_id >= (SELECT MIN(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test ge sql with many-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在多对多关系中使用GeSql
+		query.GeSql(&user.ID, "SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)", "IT")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id >= (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "IT" {
+			t.Errorf("Expected args: [IT], got: %v", args)
+		}
+	})
+}
+
+// TestQuery_LtSql 测试 LtSql 方法的基本功能
+func TestQuery_LtSql(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic lt sql with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针和子查询SQL
+		result := query.LtSql(&user.Age, "SELECT AVG(age) FROM users")
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("LtSql should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("LtSql should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age < (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test lt sql with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串和子查询SQL
+		query.LtSql("age", "SELECT AVG(age) FROM users")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age < (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test lt sql with parameters", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试带参数的子查询SQL
+		query.LtSql(&user.Age, "SELECT AVG(age) FROM users WHERE department = ?", "IT")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age < (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "IT" {
+			t.Errorf("Expected args: [IT], got: %v", args)
+		}
+	})
+
+	t.Run("test chaining multiple lt sql conditions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个LtSql条件
+		query.LtSql(&user.Age, "SELECT 65").
+			LtSql(&user.Score, "SELECT 90").
+			LtSql("salary", "SELECT 10000")
+
+		if len(query.ToOptions()) != 3 {
+			t.Error("Should have 3 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age < (SELECT 65) AND score < (SELECT 90) AND salary < (SELECT 10000) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test lt sql combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他查询方法组合使用
+		query.Eq(&user.IsActive, true).
+			LtSql(&user.Age, "SELECT AVG(age) FROM users WHERE is_active = true")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE is_active = ? AND age < (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != true {
+			t.Errorf("Expected args: [true], got: %v", args)
+		}
+	})
+
+	t.Run("test lt sql with complex subquery", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试复杂的子查询
+		subQuery := "SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?"
+		query.LtSql(&user.Age, subQuery, "IT", "2023-01-01")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age < (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != "IT" || args[1] != "2023-01-01" {
+			t.Errorf("Expected args: [IT 2023-01-01], got: %v", args)
+		}
+	})
+
+	t.Run("test lt sql with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.LtSql("invalid_field", "SELECT 1")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT * FROM `users` WHERE  < (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test lt sql with empty sql", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试空SQL（应该被忽略）
+		query.LtSql(&user.Age, "")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test lt sql with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用LtSql
+		query.LtSql(&post.UserID, "SELECT MAX(user_id) FROM posts WHERE status = ?", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `posts` WHERE user_id < (SELECT MAX(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test lt sql with many-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在多对多关系中使用LtSql
+		query.LtSql(&user.ID, "SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)", "IT")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id < (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "IT" {
+			t.Errorf("Expected args: [IT], got: %v", args)
+		}
+	})
+}
+
+// TestQuery_LeSql 测试 LeSql 方法的基本功能
+func TestQuery_LeSql(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic le sql with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针和子查询SQL
+		result := query.LeSql(&user.Age, "SELECT AVG(age) FROM users")
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("LeSql should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("LeSql should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age <= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test le sql with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串和子查询SQL
+		query.LeSql("age", "SELECT AVG(age) FROM users")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age <= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test le sql with parameters", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试带参数的子查询SQL
+		query.LeSql(&user.Age, "SELECT AVG(age) FROM users WHERE department = ?", "IT")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age <= (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "IT" {
+			t.Errorf("Expected args: [IT], got: %v", args)
+		}
+	})
+
+	t.Run("test chaining multiple le sql conditions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个LeSql条件
+		query.LeSql(&user.Age, "SELECT 65").
+			LeSql(&user.Score, "SELECT 90").
+			LeSql("salary", "SELECT 10000")
+
+		if len(query.ToOptions()) != 3 {
+			t.Error("Should have 3 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age <= (SELECT 65) AND score <= (SELECT 90) AND salary <= (SELECT 10000) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test le sql combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他查询方法组合使用
+		query.Eq(&user.IsActive, true).
+			LeSql(&user.Age, "SELECT AVG(age) FROM users WHERE is_active = true")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE is_active = ? AND age <= (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != true {
+			t.Errorf("Expected args: [true], got: %v", args)
+		}
+	})
+
+	t.Run("test le sql with complex subquery", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试复杂的子查询
+		subQuery := "SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?"
+		query.LeSql(&user.Age, subQuery, "IT", "2023-01-01")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age <= (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != "IT" || args[1] != "2023-01-01" {
+			t.Errorf("Expected args: [IT 2023-01-01], got: %v", args)
+		}
+	})
+
+	t.Run("test le sql with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.LeSql("invalid_field", "SELECT 1")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT * FROM `users` WHERE  <= (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test le sql with empty sql", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试空SQL（应该被忽略）
+		query.LeSql(&user.Age, "")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test le sql with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用LeSql
+		query.LeSql(&post.UserID, "SELECT MAX(user_id) FROM posts WHERE status = ?", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `posts` WHERE user_id <= (SELECT MAX(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test le sql with many-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在多对多关系中使用LeSql
+		query.LeSql(&user.ID, "SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)", "IT")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id <= (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "IT" {
+			t.Errorf("Expected args: [IT], got: %v", args)
+		}
+	})
+}
+
+// TestQuery_Not 测试 Not 方法的基本功能
+func TestQuery_Not(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic not with string condition", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字符串条件的Not方法
+		result := query.Not("status = ?", 0)
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("Not should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("Not should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE NOT status = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 0 {
+			t.Errorf("Expected args: [0], got: %v", args)
+		}
+	})
+
+	//t.Run("test not with struct condition", func(t *testing.T) {
+	//	query, _ := gormx.NewQuery[User]()
+	//
+	//	// 测试使用结构体条件的Not方法
+	//	query.Not(User{Status: 0})
+	//
+	//	sql, args := query.ToSQLAndArgs()
+	//	expectedSQL := "SELECT * FROM `users` WHERE NOT (`users`.`status` = ?) AND `users`.`deleted_at` IS NULL"
+	//	if sql != expectedSQL {
+	//		t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+	//	}
+	//
+	//	if len(args) != 1 || args[0] != 0 {
+	//		t.Errorf("Expected args: [0], got: %v", args)
+	//	}
+	//})
+
+	t.Run("test not with map condition", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用map条件的Not方法
+		query.Not(map[string]interface{}{"status": 0})
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`status` <> ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 0 {
+			t.Errorf("Expected args: [0], got: %v", args)
+		}
+	})
+
+	t.Run("test chaining multiple not conditions", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试链式调用多个Not条件
+		query.Not("status = ?", 0).
+			Not("is_active = ?", false).
+			Not("age < ?", 18)
+
+		if len(query.ToOptions()) != 3 {
+			t.Error("Should have 3 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE NOT status = ? AND NOT is_active = ? AND NOT age < ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 3 {
+			t.Errorf("Expected 3 args, got: %d", len(args))
+		}
+
+		expectedArgs := []interface{}{0, false, 18}
+		for i, expected := range expectedArgs {
+			if args[i] != expected {
+				t.Errorf("Expected arg[%d]: %v, got: %v", i, expected, args[i])
+			}
+		}
+	})
+
+	t.Run("test not combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Not方法与其他查询方法组合使用
+		query.Eq(&user.Name, "testuser").
+			Not("status = ?", 0)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE name = ? AND NOT status = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != "testuser" || args[1] != 0 {
+			t.Errorf("Expected args: [testuser 0], got: %v", args)
+		}
+	})
+
+	t.Run("test not with complex condition", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试复杂的Not条件
+		query.Not("age < ? OR department = ?", 18, "IT")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE NOT (age < ? OR department = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != 18 || args[1] != "IT" {
+			t.Errorf("Expected args: [18 IT], got: %v", args)
+		}
+	})
+
+	t.Run("test not with multiple parameters", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试带多个参数的Not条件
+		query.Not("status IN (?) AND age BETWEEN ? AND ?", []int{0, -1}, 18, 65)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE NOT (status IN (?,?) AND age BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 4 { // 1个slice参数会展开为多个值
+			t.Errorf("Expected 4 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test not with one-to-many relationship", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试在一对多关系中使用Not
+		query.Not("id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?)", 0)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE NOT id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 0 {
+			t.Errorf("Expected args: [0], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test not with many-to-many relationship", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试在多对多关系中使用Not
+		query.Not("id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?))", "banned")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE NOT id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "banned" {
+			t.Errorf("Expected args: [banned], got: %v", args)
+		}
+	})
+
+	t.Run("test not with subquery condition", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用子查询的Not条件
+		subQuery := "SELECT id FROM users WHERE created_at < ? AND is_active = ?"
+		query.Not("id IN ("+subQuery+")", "2023-01-01", true)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE NOT (id IN (SELECT id FROM users WHERE created_at < ? AND is_active = ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != "2023-01-01" || args[1] != true {
+			t.Errorf("Expected args: [2023-01-01 true], got: %v", args)
+		}
+	})
+
+	t.Run("test not with like condition", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试Not与LIKE条件结合使用
+		query.Not("name LIKE ?", "%test%")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE NOT name LIKE ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "%test%" {
+			t.Errorf("Expected args: [%%test%%], got: %v", args)
+		}
+	})
+
+	t.Run("test multiple not conditions with and logic", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试多个Not条件以AND逻辑连接
+		query.Not("status = ?", 0).
+			Not("is_active = ?", false).
+			Not("name LIKE ?", "%inactive%")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE NOT status = ? AND NOT is_active = ? AND NOT name LIKE ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 3 {
+			t.Errorf("Expected 3 args, got: %d", len(args))
+		}
+	})
+}
+
+// TestQuery_Or 测试 Or 方法的基本功能
+func TestQuery_Or(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic or with string condition", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字符串条件的Or方法
+		result := query.Eq(&user.Status, 1).
+			Or("age > ? AND age < ?", 18, 65)
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("Or should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 2 {
+			t.Error("Or should add one option, making total 2 options")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR (age > ? AND age < ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 3 {
+			t.Errorf("Expected 3 args, got: %d", len(args))
+		}
+
+		expectedArgs := []interface{}{1, 18, 65}
+		for i, expected := range expectedArgs {
+			if args[i] != expected {
+				t.Errorf("Expected arg[%d]: %v, got: %v", i, expected, args[i])
+			}
+		}
+	})
+
+	t.Run("test chaining multiple or conditions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个Or条件
+		query.Eq(&user.Status, 1).
+			Or("age > ?", 18).
+			Or("is_active = ?", true)
+
+		if len(query.ToOptions()) != 3 {
+			t.Error("Should have 3 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR age > ? OR is_active = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 3 {
+			t.Errorf("Expected 3 args, got: %d", len(args))
+		}
+
+		expectedArgs := []interface{}{1, 18, true}
+		for i, expected := range expectedArgs {
+			if args[i] != expected {
+				t.Errorf("Expected arg[%d]: %v, got: %v", i, expected, args[i])
+			}
+		}
+	})
+
+	t.Run("test or with complex condition", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试复杂的Or条件
+		query.Eq(&user.Status, 1).
+			Or("department = ? OR salary > ?", "IT", 50000.0)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR (department = ? OR salary > ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 3 || args[0] != 1 || args[1] != "IT" || args[2] != 50000.0 {
+			t.Errorf("Expected args: [1 IT 50000.0], got: %v", args)
+		}
+	})
+
+	t.Run("test or with like condition", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Or与LIKE条件结合使用
+		query.Eq(&user.Status, 1).
+			Or("name LIKE ?", "%admin%")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR name LIKE ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != 1 || args[1] != "%admin%" {
+			t.Errorf("Expected args: [1 %%admin%%], got: %v", args)
+		}
+	})
+
+	t.Run("test or with in condition", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Or与IN条件结合使用
+		query.Eq(&user.Status, 1).
+			Or("id IN (?)", []int{2, 3, 4})
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR id IN (?,?,?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 4 { // 1个值 + 3个slice展开的值
+			t.Errorf("Expected 4 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test or with between condition", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Or与BETWEEN条件结合使用
+		query.Eq(&user.Status, 1).
+			Or("age BETWEEN ? AND ?", 20, 40)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR (age BETWEEN ? AND ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 3 || args[0] != 1 || args[1] != 20 || args[2] != 40 {
+			t.Errorf("Expected args: [1 20 40], got: %v", args)
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test or with one-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在一对多关系中使用Or
+		query.Eq(&user.Status, 1).
+			Or("id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?)", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?)) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != 1 || args[1] != 1 {
+			t.Errorf("Expected args: [1 1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test or with many-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试在多对多关系中使用Or
+		query.Eq(&user.Status, 1).
+			Or("id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?))", "admin")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?))) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != 1 || args[1] != "admin" {
+			t.Errorf("Expected args: [1 admin], got: %v", args)
+		}
+	})
+
+	t.Run("test or with subquery condition", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用子查询的Or条件
+		subQuery := "SELECT id FROM users WHERE created_at < ? AND is_active = ?"
+		query.Eq(&user.Status, 1).
+			Or("id IN ("+subQuery+")", "2023-01-01", true)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR (id IN (SELECT id FROM users WHERE created_at < ? AND is_active = ?))) AND `users`.`deleted_at` IS NULL"
+
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 3 || args[0] != 1 || args[1] != "2023-01-01" || args[2] != true {
+			t.Errorf("Expected args: [1 2023-01-01 true], got: %v", args)
+		}
+	})
+
+	t.Run("test multiple or conditions with and logic connection", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试多个Or条件与其他条件的逻辑连接
+		query.Eq(&user.Status, 1).
+			Or("is_active = ?", false).
+			Or("name LIKE ?", "%test%").
+			Eq(&user.Age, 25)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR is_active = ? OR name LIKE ? AND age = ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 4 {
+			t.Errorf("Expected 4 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test or with null condition", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Or与NULL条件结合使用
+		query.Eq(&user.Status, 1).
+			Or("email IS NULL")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR email IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test or with not null condition", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Or与NOT NULL条件结合使用
+		query.Eq(&user.Status, 1).
+			Or("phone IS NOT NULL")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE (status = ? OR phone IS NOT NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+}
+
+// TestQuery_SubQueryEq 测试 SubQueryEq 方法的基本功能
+func TestQuery_SubQueryEq(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic subquery eq with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建子查询
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("name = ?", "testuser1")
+
+		// 测试使用字段指针的SubQueryEq方法
+		result := query.SubQueryEq(&user.ID, subDB)
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("SubQueryEq should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("SubQueryEq should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "testuser1" {
+			t.Errorf("Expected args: [testuser1], got: %v", args)
+		}
+	})
+
+	t.Run("test subquery eq with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 创建子查询
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("name = ?", "testuser2")
+
+		// 测试使用字段名字符串的SubQueryEq方法
+		query.SubQueryEq("id", subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "testuser2" {
+			t.Errorf("Expected args: [testuser2], got: %v", args)
+		}
+	})
+
+	t.Run("test chaining multiple subquery eq conditions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建多个子查询
+		subDB1 := gormx.GetDb().Model(&User{}).Select("id").Where("name = ?", "testuser1")
+		subDB2 := gormx.GetDb().Model(&User{}).Select("status").Where("age = ?", 25)
+
+		// 测试链式调用多个SubQueryEq条件
+		query.SubQueryEq(&user.ID, subDB1).
+			SubQueryEq(&user.Status, subDB2)
+
+		if len(query.ToOptions()) != 2 {
+			t.Error("Should have 2 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND status = (SELECT `status` FROM `users` WHERE age = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 {
+			t.Errorf("Expected 2 args, got: %d", len(args))
+		}
+
+		expectedArgs := []interface{}{"testuser1", 25}
+		for i, expected := range expectedArgs {
+			if args[i] != expected {
+				t.Errorf("Expected arg[%d]: %v, got: %v", i, expected, args[i])
+			}
+		}
+	})
+
+	t.Run("test subquery eq combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建子查询
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("name = ?", "testuser1")
+
+		// 测试SubQueryEq方法与其他查询方法组合使用
+		query.Eq(&user.IsActive, true).
+			SubQueryEq(&user.ID, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE is_active = ? AND id = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != true || args[1] != "testuser1" {
+			t.Errorf("Expected args: [true testuser1], got: %v", args)
+		}
+	})
+
+	t.Run("test subquery eq with complex subquery", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建复杂子查询
+		subDB := gormx.GetDb().Model(&User{}).
+			Select("MAX(age)").
+			Where("status = ?", 1).Group("is_active")
+
+		// 测试使用复杂子查询的SubQueryEq方法
+		query.SubQueryEq(&user.Age, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE age = (SELECT MAX(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL GROUP BY `is_active`) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test subquery eq with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 创建子查询 - 查找特定用户的ID
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("name = ?", "testuser1")
+
+		// 测试在一对多关系中使用SubQueryEq
+		query.SubQueryEq(&post.UserID, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `posts` WHERE user_id = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "testuser1" {
+			t.Errorf("Expected args: [testuser1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test subquery eq with many-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建子查询 - 查找具有特定角色的用户ID
+		subDB := gormx.GetDb().Model(&UserRole{}).
+			Select("user_id").
+			Where("role_id = (SELECT id FROM roles WHERE name = ?)", "admin")
+
+		// 测试在多对多关系中使用SubQueryEq
+		query.SubQueryEq(&user.ID, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id = (SELECT `user_id` FROM `user_roles` WHERE role_id = (SELECT id FROM roles WHERE name = ?) AND `user_roles`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "admin" {
+			t.Errorf("Expected args: [admin], got: %v", args)
+		}
+	})
+
+	t.Run("test subquery eq with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 创建子查询
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("name = ?", "testuser")
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.SubQueryEq("invalid_field", subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT * FROM `users` WHERE  = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "testuser" {
+			t.Errorf("Expected args: [testuser], got: %v", args)
+		}
+	})
+
+	t.Run("test subquery eq with subquery returning multiple values", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建返回多个值的子查询（这在实际使用中会导致数据库错误）
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("status = ?", 1)
+
+		// 测试SubQueryEq方法与返回多个值的子查询
+		query.SubQueryEq(&user.ID, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id = (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+}
+
+// TestQuery_SubQueryIn 测试 SubQueryIn 方法的基本功能
+func TestQuery_SubQueryIn(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic subquery in with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建子查询
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("status = ?", 1)
+
+		// 测试使用字段指针的SubQueryIn方法
+		result := query.SubQueryIn(&user.ID, subDB)
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("SubQueryIn should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("SubQueryIn should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test subquery in with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 创建子查询
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("status = ?", 1)
+
+		// 测试使用字段名字符串的SubQueryIn方法
+		query.SubQueryIn("id", subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test chaining multiple subquery in conditions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建多个子查询
+		subDB1 := gormx.GetDb().Model(&User{}).Select("id").Where("status = ?", 1)
+		subDB2 := gormx.GetDb().Model(&User{}).Select("id").Where("age > ?", 18)
+
+		// 测试链式调用多个SubQueryIn条件
+		query.SubQueryIn(&user.ID, subDB1).
+			SubQueryIn(&user.Status, subDB2)
+
+		if len(query.ToOptions()) != 2 {
+			t.Error("Should have 2 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND status IN (SELECT `id` FROM `users` WHERE age > ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 {
+			t.Errorf("Expected 2 args, got: %d", len(args))
+		}
+
+		expectedArgs := []interface{}{1, 18}
+		for i, expected := range expectedArgs {
+			if args[i] != expected {
+				t.Errorf("Expected arg[%d]: %v, got: %v", i, expected, args[i])
+			}
+		}
+	})
+
+	t.Run("test subquery in combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建子查询
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("status = ?", 1)
+
+		// 测试SubQueryIn方法与其他查询方法组合使用
+		query.Eq(&user.IsActive, true).
+			SubQueryIn(&user.ID, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE is_active = ? AND id IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != true || args[1] != 1 {
+			t.Errorf("Expected args: [true 1], got: %v", args)
+		}
+	})
+
+	t.Run("test subquery in with complex subquery", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建复杂子查询
+		subDB := gormx.GetDb().Model(&User{}).
+			Select("id").
+			Where("created_at > ?", "2023-01-01").
+			Group("status").
+			Having("COUNT(*) > ?", 1)
+
+		// 测试使用复杂子查询的SubQueryIn方法
+		query.SubQueryIn(&user.ID, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id IN (SELECT `id` FROM `users` WHERE created_at > ? AND `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(*) > ?) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != "2023-01-01" || args[1] != 1 {
+			t.Errorf("Expected args: [2023-01-01 1], got: %v", args)
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test subquery in with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 创建子查询 - 查找特定状态的用户IDs
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("status = ?", 1)
+
+		// 测试在一对多关系中使用SubQueryIn
+		query.SubQueryIn(&post.UserID, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `posts` WHERE user_id IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test subquery in with many-to-many relationship", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建子查询 - 查找具有特定角色的用户IDs
+		subDB := gormx.GetDb().Model(&UserRole{}).
+			Select("user_id").
+			Where("role_id IN (SELECT id FROM roles WHERE name = ?)", "admin")
+
+		// 测试在多对多关系中使用SubQueryIn
+		query.SubQueryIn(&user.ID, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE id IN (SELECT `user_id` FROM `user_roles` WHERE role_id IN (SELECT id FROM roles WHERE name = ?) AND `user_roles`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "admin" {
+			t.Errorf("Expected args: [admin], got: %v", args)
+		}
+	})
+
+	t.Run("test subquery in with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 创建子查询
+		subDB := gormx.GetDb().Model(&User{}).Select("id").Where("status = ?", 1)
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.SubQueryIn("invalid_field", subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT * FROM `users` WHERE  IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test subquery in with subquery returning single column", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 创建返回单列数据的子查询
+		subDB := gormx.GetDb().Model(&User{}).Select("status").Where("age > ?", 25)
+
+		// 测试SubQueryIn方法与返回单列数据的子查询
+		query.SubQueryIn(&user.Status, subDB)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT * FROM `users` WHERE status IN (SELECT `status` FROM `users` WHERE age > ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 25 {
+			t.Errorf("Expected args: [25], got: %v", args)
+		}
+	})
 }
