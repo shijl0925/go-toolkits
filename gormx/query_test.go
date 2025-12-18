@@ -1,6 +1,7 @@
 package gormx_test
 
 import (
+	"errors"
 	"fmt"
 	"github.com/shijl0925/go-toolkits/gormx"
 	"gorm.io/driver/mysql"
@@ -93,6 +94,56 @@ func init() {
 
 	// 初始化 gormx
 	gormx.Init(db)
+}
+
+// ValidateQuery 验证给定的模型查询是否能正确执行
+func ValidateQuery[T any](t *testing.T, query *gormx.Query[T]) error {
+	sql, args := query.ToSQLAndArgs()
+
+	db := gormx.GetDb()
+	if db == nil {
+		return errors.New("database is nil")
+	}
+
+	if strings.TrimSpace(sql) == "" {
+		return errors.New("SQL statement is empty")
+	}
+
+	// 检查SQL中占位符数量与参数数量是否匹配
+	placeholderCount := strings.Count(sql, "?")
+	if placeholderCount != len(args) {
+		return errors.New("SQL statement placeholder count does not match argument count")
+	}
+
+	// 使用EXPLAIN语句检查生成的SQL语法(MySQL特有)
+	// db.Dialector.Name() == "mysql"
+	if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(sql)), "SELECT") {
+		explainSQL := "EXPLAIN " + sql
+		if err := db.Raw(explainSQL, args...).Error; err != nil {
+			return fmt.Errorf("failed to execute EXPLAIN statement: %v", err)
+		}
+	} else {
+		// 使用DryRun模式检查生成的SQL语法
+		sessionDB := db.Session(&gorm.Session{PrepareStmt: true, DryRun: true})
+
+		var result T
+		stmt := sessionDB.Model(&result).Where(sql, args...)
+
+		if err := stmt.Error; err != nil {
+			return fmt.Errorf("failed to execute SQL statement: %v", err)
+		}
+	}
+
+	return nil
+}
+
+// AssertQueryValid 断言给定的模型查询是否能正确执行
+func AssertQueryValid[T any](t *testing.T, query *gormx.Query[T]) {
+	t.Helper() // 标记这是一个测试辅助函数
+
+	if err := ValidateQuery(t, query); err != nil {
+		t.Errorf("Query validation failed: %v", err)
+	}
 }
 
 // TestQuery_Eq 测试 Eq 方法的基本功能
