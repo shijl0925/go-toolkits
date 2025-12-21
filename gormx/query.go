@@ -1601,15 +1601,25 @@ func (q *Query[T]) Sum(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
+		// 使用clause.Column来安全处理字段名，然后构造SUM表达式
+		var sumSQL string
+		if fieldName != "" {
+			// 使用GORM的QuoteTo方法来安全地引用字段名
+			column := clause.Column{Name: fieldName}
+			sumSQL = fmt.Sprintf("SUM(`%s`)", column.Name)
+		} else {
+			sumSQL = "SUM(*)" // 备用方案
+		}
+
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加SUM字段
 			selects := make([]string, len(db.Statement.Selects))
 			copy(selects, db.Statement.Selects)
-			selects = append(selects, "SUM("+fieldName+")")
+			selects = append(selects, sumSQL)
 			selectClause = strings.Join(selects, ", ")
 		} else {
 			// 只使用SUM字段
-			selectClause = "SUM(" + fieldName + ")"
+			selectClause = sumSQL
 		}
 
 		return db.Select(selectClause)
@@ -1664,15 +1674,25 @@ func (q *Query[T]) Avg(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
+		// 使用clause.Column来安全处理字段名，然后构造AVG表达式
+		var avgSQL string
+		if fieldName != "" {
+			// 使用GORM的QuoteTo方法来安全地引用字段名
+			column := clause.Column{Name: fieldName}
+			avgSQL = fmt.Sprintf("AVG(`%s`)", column.Name)
+		} else {
+			avgSQL = "AVG(*)" // 备用方案
+		}
+
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加AVG字段
 			selects := make([]string, len(db.Statement.Selects))
 			copy(selects, db.Statement.Selects)
-			selects = append(selects, "AVG("+fieldName+")")
+			selects = append(selects, avgSQL)
 			selectClause = strings.Join(selects, ", ")
 		} else {
 			// 只使用AVG字段
-			selectClause = "AVG(" + fieldName + ")"
+			selectClause = avgSQL
 		}
 
 		return db.Select(selectClause)
@@ -1727,15 +1747,25 @@ func (q *Query[T]) Max(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
+		// 使用clause.Column来安全处理字段名，然后构造MAX表达式
+		var maxSQL string
+		if fieldName != "" {
+			// 使用GORM的QuoteTo方法来安全地引用字段名
+			column := clause.Column{Name: fieldName}
+			maxSQL = fmt.Sprintf("MAX(`%s`)", column.Name)
+		} else {
+			maxSQL = "MAX(*)" // 备用方案
+		}
+
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加MAX字段
 			selects := make([]string, len(db.Statement.Selects))
 			copy(selects, db.Statement.Selects)
-			selects = append(selects, "MAX("+fieldName+")")
+			selects = append(selects, maxSQL)
 			selectClause = strings.Join(selects, ", ")
 		} else {
 			// 只使用MAX字段
-			selectClause = "MAX(" + fieldName + ")"
+			selectClause = maxSQL
 		}
 
 		return db.Select(selectClause)
@@ -1790,15 +1820,25 @@ func (q *Query[T]) Min(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
+		// 使用clause.Column来安全处理字段名，然后构造MIN表达式
+		var minSQL string
+		if fieldName != "" {
+			// 使用GORM的QuoteTo方法来安全地引用字段名
+			column := clause.Column{Name: fieldName}
+			minSQL = fmt.Sprintf("MIN(`%s`)", column.Name)
+		} else {
+			minSQL = "MIN(*)" // 备用方案
+		}
+
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加MIN字段
 			selects := make([]string, len(db.Statement.Selects))
 			copy(selects, db.Statement.Selects)
-			selects = append(selects, "MIN("+fieldName+")")
+			selects = append(selects, minSQL)
 			selectClause = strings.Join(selects, ", ")
 		} else {
 			// 只使用MIN字段
-			selectClause = "MIN(" + fieldName + ")"
+			selectClause = minSQL
 		}
 
 		return db.Select(selectClause)

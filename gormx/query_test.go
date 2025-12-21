@@ -4018,7 +4018,7 @@ func TestQuery_Select(t *testing.T) {
 			OrderDesc(&post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `title`,`user_id`,`status` FROM `posts` WHERE status = ? AND `posts`.`deleted_at` IS NULL ORDER BY created_at DESC"
+		expectedSQL := "SELECT `title`,`user_id`,`status` FROM `posts` WHERE status = ? AND `posts`.`deleted_at` IS NULL ORDER BY `created_at` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5569,7 +5569,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			Count(&user.ID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := "SELECT status, COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5588,7 +5588,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			Sum(&user.Salary)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, SUM(salary) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := "SELECT status, SUM(`salary`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5607,7 +5607,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			Avg(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := "SELECT status, AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5627,7 +5627,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			Having("COUNT(id) > ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(id) > ?"
+		expectedSQL := "SELECT status, COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(id) > ?"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5666,7 +5666,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			OrderAsc(&user.Status)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` ORDER BY status ASC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` ORDER BY `status`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5727,7 +5727,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			OrderDesc(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT user_id, COUNT(id) as count FROM `posts` WHERE status = ? AND `posts`.`deleted_at` IS NULL GROUP BY `user_id` ORDER BY user_id DESC"
+		expectedSQL := "SELECT user_id, COUNT(`id`) as count FROM `posts` WHERE status = ? AND `posts`.`deleted_at` IS NULL GROUP BY `user_id` ORDER BY `user_id` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8195,7 +8195,7 @@ func TestQuery_Sum(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8212,7 +8212,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum("age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8234,7 +8234,7 @@ func TestQuery_Sum(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count, SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`id`) as count, SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8252,7 +8252,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8270,7 +8270,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT status, SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8288,7 +8288,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8307,7 +8307,7 @@ func TestQuery_Sum(t *testing.T) {
 			Having("SUM(age) > ?", 100)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING SUM(age) > ?"
+		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING SUM(age) > ?"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8325,7 +8325,7 @@ func TestQuery_Sum(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT SUM() FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT SUM(*) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8343,7 +8343,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(user_id) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT SUM(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8361,7 +8361,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(role_id) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT SUM(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8378,7 +8378,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(created_at) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT SUM(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8412,7 +8412,7 @@ func TestQuery_Avg(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8429,7 +8429,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg("age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8451,7 +8451,7 @@ func TestQuery_Avg(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count, AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`id`) as count, AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8469,7 +8469,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8487,7 +8487,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT status, AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8505,7 +8505,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8524,7 +8524,7 @@ func TestQuery_Avg(t *testing.T) {
 			Having("AVG(age) > ?", 18)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING AVG(age) > ?"
+		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING AVG(age) > ?"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8542,7 +8542,7 @@ func TestQuery_Avg(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT AVG() FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT AVG(*) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8560,7 +8560,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(user_id) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT AVG(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8578,7 +8578,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(role_id) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT AVG(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8595,7 +8595,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(created_at) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT AVG(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8629,7 +8629,7 @@ func TestQuery_Max(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8646,7 +8646,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max("age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8668,7 +8668,7 @@ func TestQuery_Max(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count, MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`id`) as count, MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8686,7 +8686,7 @@ func TestQuery_Max(t *testing.T) {
 			Max(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8704,7 +8704,7 @@ func TestQuery_Max(t *testing.T) {
 			Max(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT status, MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8722,7 +8722,7 @@ func TestQuery_Max(t *testing.T) {
 			Max(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8741,7 +8741,7 @@ func TestQuery_Max(t *testing.T) {
 			Having("MAX(age) > ?", 18)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MAX(age) > ?"
+		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MAX(age) > ?"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8759,7 +8759,7 @@ func TestQuery_Max(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT MAX() FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MAX(*) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8777,7 +8777,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(user_id) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MAX(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8795,7 +8795,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(role_id) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MAX(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8812,7 +8812,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(created_at) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MAX(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8846,7 +8846,7 @@ func TestQuery_Min(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8863,7 +8863,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min("age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8885,7 +8885,7 @@ func TestQuery_Min(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count, MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`id`) as count, MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8903,7 +8903,7 @@ func TestQuery_Min(t *testing.T) {
 			Min(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8921,7 +8921,7 @@ func TestQuery_Min(t *testing.T) {
 			Min(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT status, MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8939,7 +8939,7 @@ func TestQuery_Min(t *testing.T) {
 			Min(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8958,7 +8958,7 @@ func TestQuery_Min(t *testing.T) {
 			Having("MIN(age) > ?", 18)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MIN(age) > ?"
+		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MIN(age) > ?"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8976,7 +8976,7 @@ func TestQuery_Min(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT MIN() FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MIN(*) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8994,7 +8994,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(user_id) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MIN(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9012,7 +9012,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(role_id) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MIN(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9029,7 +9029,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(created_at) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT MIN(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9151,7 +9151,7 @@ func TestQuery_Join(t *testing.T) {
 			OrderAsc("users.created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE posts.status = ? AND `posts`.`deleted_at` IS NULL ORDER BY users.created_at ASC"
+		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE posts.status = ? AND `posts`.`deleted_at` IS NULL ORDER BY `users`.`created_at`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9170,7 +9170,7 @@ func TestQuery_Join(t *testing.T) {
 			Count("posts.id")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(posts.id) as count FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL GROUP BY `users`.`id`"
+		expectedSQL := "SELECT COUNT(`posts`.`id`) as count FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL GROUP BY `users`.`id`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
