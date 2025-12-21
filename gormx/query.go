@@ -882,7 +882,9 @@ func (q *Query[T]) OrderDesc(fields ...interface{}) *Query[T] {
 			continue
 		}
 		q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-			return db.Order(field + " DESC")
+			return db.Order(clause.OrderByColumn{
+				Column: clause.Column{Name: field}, Desc: true,
+			})
 		})
 	}
 	return q
@@ -907,7 +909,9 @@ func (q *Query[T]) OrderAsc(fields ...interface{}) *Query[T] {
 			continue
 		}
 		q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-			return db.Order(field + " ASC")
+			return db.Order(clause.OrderByColumn{
+				Column: clause.Column{Name: field}, Desc: false,
+			})
 		})
 	}
 	return q
@@ -1522,15 +1526,26 @@ func (q *Query[T]) Count(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
+		// 使用clause.Column来安全处理字段名，然后构造COUNT表达式
+		var countSQL string
+		if fieldName == "*" {
+			countSQL = "COUNT(*)"
+		} else {
+			// 使用GORM的QuoteTo方法来安全地引用字段名
+			column := clause.Column{Name: fieldName}
+			countSQL = fmt.Sprintf("COUNT(`%s`)", column.Name)
+		}
+
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加COUNT字段
-			selects := make([]string, len(db.Statement.Selects))
+			selects := make([]string, len(db.Statement.Selects)+1)
 			copy(selects, db.Statement.Selects)
-			selects = append(selects, "COUNT("+fieldName+") as count")
+
+			selects[len(selects)-1] = fmt.Sprintf("%s as count", countSQL)
 			selectClause = strings.Join(selects, ", ")
 		} else {
 			// 只使用COUNT字段
-			selectClause = "COUNT(" + fieldName + ") as count"
+			selectClause = fmt.Sprintf("%s as count", countSQL)
 		}
 
 		return db.Select(selectClause)

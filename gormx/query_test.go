@@ -2389,7 +2389,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 
 		// 验证生成的SQL
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at DESC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2406,7 +2406,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at DESC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2423,7 +2423,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc(&user.CreatedAt, &user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at DESC,name DESC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2440,7 +2440,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc("created_at", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at DESC,name DESC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2457,7 +2457,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc(&user.CreatedAt, "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at DESC,name DESC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2475,7 +2475,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 			OrderDesc(&user.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL ORDER BY created_at DESC"
+		expectedSQL := "SELECT * FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2497,7 +2497,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 			OrderDesc(&user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at DESC,name DESC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2532,7 +2532,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc(&user.CreatedAt, "invalid_field", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at DESC,name DESC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2550,7 +2550,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc(&post.UserID, &post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL ORDER BY user_id DESC,created_at DESC"
+		expectedSQL := "SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL ORDER BY `user_id` DESC,`created_at` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2568,7 +2568,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 			OrderDesc(&post.UserID, &post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE status = ? AND `posts`.`deleted_at` IS NULL ORDER BY user_id DESC,created_at DESC"
+		expectedSQL := "SELECT * FROM `posts` WHERE status = ? AND `posts`.`deleted_at` IS NULL ORDER BY `user_id` DESC,`created_at` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2603,7 +2603,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 
 		// 验证生成的SQL
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at ASC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2620,7 +2620,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at ASC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2637,7 +2637,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc(&user.CreatedAt, &user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at ASC,name ASC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2654,7 +2654,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc("created_at", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at ASC,name ASC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2671,7 +2671,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc(&user.CreatedAt, "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at ASC,name ASC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2689,7 +2689,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 			OrderAsc(&user.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL ORDER BY created_at ASC"
+		expectedSQL := "SELECT * FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL ORDER BY `created_at`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2711,7 +2711,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 			OrderAsc(&user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at ASC,name ASC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2746,7 +2746,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc(&user.CreatedAt, "invalid_field", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at ASC,name ASC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2764,7 +2764,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc(&post.UserID, &post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL ORDER BY user_id ASC,created_at ASC"
+		expectedSQL := "SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL ORDER BY `user_id`,`created_at`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2782,7 +2782,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 			OrderAsc(&post.UserID, &post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE status = ? AND `posts`.`deleted_at` IS NULL ORDER BY user_id ASC,created_at ASC"
+		expectedSQL := "SELECT * FROM `posts` WHERE status = ? AND `posts`.`deleted_at` IS NULL ORDER BY `user_id`,`created_at`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2805,7 +2805,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 			OrderDesc(&user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY created_at ASC,name DESC"
+		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name` DESC"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7962,7 +7962,7 @@ func TestQuery_Count(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7979,7 +7979,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count("id")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8035,7 +8035,7 @@ func TestQuery_Count(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count, COUNT(age) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`id`) as count, COUNT(age) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8053,7 +8053,7 @@ func TestQuery_Count(t *testing.T) {
 			Count(&user.ID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8071,7 +8071,7 @@ func TestQuery_Count(t *testing.T) {
 			Count(&user.ID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT status, COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8089,7 +8089,7 @@ func TestQuery_Count(t *testing.T) {
 			Count(&user.ID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8108,7 +8108,7 @@ func TestQuery_Count(t *testing.T) {
 			Having("COUNT(id) > ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(id) > ?"
+		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(id) > ?"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8126,7 +8126,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(user_id) as count FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`user_id`) as count FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8144,7 +8144,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(role_id) as count FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`role_id`) as count FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8161,7 +8161,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(created_at) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`created_at`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
