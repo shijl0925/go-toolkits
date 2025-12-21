@@ -1791,7 +1791,45 @@ func (q *Query[T]) Min(field interface{}) *Query[T] {
 	return q
 }
 
-// Join 添加join条件
+// Join 添加join条件，支持自定义的 JOIN 查询语句
+// 这个方法允许你你在查询中引入与其他表的关联查询，从而能够执行更复杂的多表联合查询。
+//
+// 参数:
+//   - query: 字符串类型，表示要添加的 JOIN 子句，可以包含占位符 ?
+//   - args: 可选参数，用于替换 JOIN 语句中的占位符
+//
+// 返回:
+//   - *Query[T]: 返回查询构建器本身，支持链式调用
+//
+// 使用示例:
+//
+//  // 基本的 JOIN 查询
+//  query, post := gormx.NewQuery[Post]()
+//  query.Join("JOIN users ON posts.user_id = users.id")
+//  var results []Post
+//  err := query.Find(&results)
+//  // 生成SQL: SELECT * FROM posts JOIN users ON posts.user_id = users.id WHERE posts.deleted_at IS NULL
+//
+//  // 带条件的 JOIN 查询
+//  query, post := gormx.NewQuery[Post]()
+//  query.Join("JOIN users ON posts.user_id = users.id AND users.status = ?", 1)
+//  var results []Post
+//  err := query.Find(&results)
+//  // 生成SQL: SELECT * FROM posts JOIN users ON posts.user_id = users.id AND users.status = 1 WHERE posts.deleted_at IS NULL
+//
+//  // 多个 JOIN 条件
+//  query, post := gormx.NewQuery[Post]()
+//  query.Join("JOIN users ON posts.user_id = users.id").
+//        Join("JOIN categories ON posts.category_id = categories.id")
+//  var results []Post
+//  err := query.Find(&results)
+//  // 生成SQL: SELECT * FROM posts JOIN users ON posts.user_id = users.id JOIN categories ON posts.category_id = categories.id WHERE posts.deleted_at IS NULL
+//
+// 注意事项:
+//   - 使用参数化查询（即使用 ? 占位符和 args 参数）可以有效防止 SQL 注入攻击
+//   - 在复杂的查询中，建议使用表别名以增强可读性和避免歧义
+//   - JOIN 操作可能会影响查询性能，特别是在涉及大表的情况下，应当合理设计索引
+//   - 如果模型启用了软删除，生成的 SQL 会自动包含软删除条件
 func (q *Query[T]) Join(query string, args ...interface{}) *Query[T] {
 	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
 		return db.Joins(query, args...)
@@ -1799,13 +1837,13 @@ func (q *Query[T]) Join(query string, args ...interface{}) *Query[T] {
 	return q
 }
 
-// LeftJoin 添加left join条件
-func (q *Query[T]) LeftJoin(query string, args ...interface{}) *Query[T] {
-	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Joins("LEFT "+query, args...)
-	})
-	return q
-}
+//// LeftJoin 添加left join条件
+//func (q *Query[T]) LeftJoin(query string, args ...interface{}) *Query[T] {
+//	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
+//		return db.Joins("LEFT "+query, args...)
+//	})
+//	return q
+//}
 
 // SubQueryEq 子查询等于条件
 // 该方法用于添加等于子查询的条件，将字段与另一个查询结果进行比较，判断字段值是否等于子查询结果

@@ -129,23 +129,26 @@ func TestBaseRepo_SelectOneByOpts(t *testing.T) {
 		}
 	})
 
-	//t.Run("test select one record by options with joins", func(t *testing.T) {
-	//	// 测试带JOIN的查询
-	//	query, user := gormx.NewQuery[User]()
-	//	query.Eq(&user.Status, 1).Eq(&user.Email, "test1@example.com").
-	//		Join("LEFT JOIN posts ON users.id = posts.user_id").
-	//		Select(&user.ID, &user.Name)
-	//
-	//	result, err := repo.SelectOneByOpts(query.ToOptions()...)
-	//
-	//	if err != nil {
-	//		t.Errorf("Expected no error, got: %v", err)
-	//	}
-	//
-	//	if result.Status != 1 {
-	//		t.Errorf("Expected status: 1, got: %d", result.Status)
-	//	}
-	//})
+	t.Run("test select one record by options with joins", func(t *testing.T) {
+		// 测试带JOIN的查询
+		query, _ := gormx.NewQuery[User]()
+		query.Eq("users.status", 1).Eq("users.email", "test1@example.com").
+			Join("LEFT JOIN posts ON users.id = posts.user_id").
+			Select("users.id", "users.name", "users.status")
+
+		sql, args := query.ToSQLAndArgs()
+		t.Logf("SQL: %s, args: %v", sql, args)
+
+		result, err := repo.SelectOneByOpts(query.ToOptions()...)
+
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+
+		if result.Status != 1 {
+			t.Errorf("Expected status: 1, got: %d", result.Status)
+		}
+	})
 
 	t.Run("test select one record by options with group by", func(t *testing.T) {
 		// 测试带GROUP BY的查询（这类查询可能不适合此方法，但需要测试其行为）
@@ -174,7 +177,7 @@ func TestBaseRepo_SelectOneByOpts(t *testing.T) {
 
 		found := false
 		for _, status := range []int{0, 1} {
-			if int(result.Status) == status {
+			if result.Status == status {
 				found = true
 				break
 			}

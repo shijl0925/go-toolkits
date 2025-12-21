@@ -9010,3 +9010,168 @@ func TestQuery_Min(t *testing.T) {
 		}
 	})
 }
+
+// TestQuery_Join 测试 Join 方法的基本功能
+func TestQuery_Join(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	// 一对多关系使用场景测试
+	t.Run("test join with one-to-many relationship", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用Join
+		query.Join("JOIN users ON posts.user_id = users.id").
+			Eq("posts.status", 1).
+			Eq("users.name", "testuser1")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE posts.status = ? AND users.name = ? AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != 1 || args[1] != "testuser1" {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test join with many-to-many relationship", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试在多对多关系中使用Join
+		query.Join("JOIN user_roles ON users.id = user_roles.user_id").
+			Join("JOIN roles ON user_roles.role_id = roles.id").
+			Eq("users.name", "testuser1")
+		//Select("users.id", "users.name")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`deleted_at`,`users`.`name`,`users`.`email`,`users`.`phone`,`users`.`age`,`users`.`score`,`users`.`address`,`users`.`is_active`,`users`.`salary`,`users`.`status` FROM `users` JOIN user_roles ON users.id = user_roles.user_id JOIN roles ON user_roles.role_id = roles.id WHERE users.name = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "testuser1" {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test join with parameters", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试带参数的Join
+		query.Join("JOIN users ON posts.user_id = users.id AND users.status = ?", 1).
+			Eq("posts.status", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id AND users.status = ? WHERE posts.status = ? AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != 1 || args[1] != 1 {
+			t.Errorf("Expected args: [1 1], got: %v", args)
+		}
+	})
+
+	t.Run("test join combined with other query methods", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试Join方法与其他查询方法组合使用
+		query.Join("JOIN users ON posts.user_id = users.id").
+			Eq("posts.status", 1).
+			Like("users.name", "admin")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE posts.status = ? AND users.name LIKE ? AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 2 || args[0] != 1 || args[1] != "%admin%" {
+			t.Errorf("Expected args: [1 admin], got: %v", args)
+		}
+	})
+
+	t.Run("test join with select fields", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试Join方法与Select组合使用
+		query.Select("posts.title", "users.name").
+			Join("JOIN users ON posts.user_id = users.id").
+			Eq("posts.status", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT posts.title,users.name FROM `posts` JOIN users ON posts.user_id = users.id WHERE posts.status = ? AND `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test join with order by", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试Join方法与OrderBy组合使用
+		query.Join("JOIN users ON posts.user_id = users.id").
+			Eq("posts.status", 1).
+			OrderAsc("users.created_at")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE posts.status = ? AND `posts`.`deleted_at` IS NULL ORDER BY users.created_at ASC"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test join with group by", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试Join方法与GroupBy组合使用
+		query.Join("JOIN users ON posts.user_id = users.id").
+			GroupBy("users.id").
+			Count("posts.id")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(posts.id) as count FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL GROUP BY `users`.`id`"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test multiple joins", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试多个Join
+		result := query.Join("JOIN users ON posts.user_id = users.id").
+			Join("JOIN categories ON posts.category_id = categories.id").
+			Join("LEFT JOIN tags ON posts.tag_id = tags.id")
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("Join should return the same query instance for chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id JOIN categories ON posts.category_id = categories.id LEFT JOIN tags ON posts.tag_id = tags.id WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+}
