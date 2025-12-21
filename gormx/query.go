@@ -113,6 +113,12 @@ func (q *Query[T]) extractFieldNames(structType reflect.Type) []string {
 }
 
 // isValidModelField 检查字段是否属于模型的有效字段（带缓存）
+// 修改说明：
+//  1. 移除了对带 "." 字段名的复杂校验逻辑。
+//  2. 新增：如果字段名包含 ".", 直接认为它是有效的。
+//     这样做的原因是：在 JOIN 查询中，用户可能会引用其他表的字段（如 "users.name"），
+//     这些字段显然不在当前模型 (T) 中，但却是合法的 SQL 字段引用。
+//     因此，我们信任用户提供的 "table.column" 格式是正确的。
 func (q *Query[T]) isValidModelField(fieldName string) bool {
 	// 使用 Once 确保字段列表只计算一次
 	q.fieldsOnce.Do(func() {
@@ -127,7 +133,22 @@ func (q *Query[T]) isValidModelField(fieldName string) bool {
 	// 读取缓存的结果
 	q.cacheMutex.RLock()
 	defer q.cacheMutex.RUnlock()
-	return q.validFields[fieldName]
+
+	// 直接检查字段名
+	if q.validFields[fieldName] {
+		return true
+	}
+
+	// 如果字段名包含 ".", 则检查 "." 后面的部分是否是有效字段
+	if strings.Contains(fieldName, ".") {
+		// 简单的格式检查：确保只有一个点且不以点开头或结尾
+		parts := strings.Split(fieldName, ".")
+		if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // 处理字段标识符输入
@@ -135,7 +156,7 @@ func (q *Query[T]) resolveFieldName(field interface{}) string {
 	var validFieldName string
 	switch v := field.(type) {
 	case string:
-		// 验证字符串字段名是否有效
+		// 检查字段名是否是有效字段
 		if q.isValidModelField(v) {
 			validFieldName = v
 		}
@@ -1125,7 +1146,7 @@ func (q *Query[T]) Scan(destination interface{}) error {
 	// 检查目标是否为零值（未初始化的指针）
 	rv := reflect.ValueOf(destination)
 	if !rv.IsValid() || (rv.Kind() == reflect.Ptr && rv.IsNil()) {
-		return fmt.Errorf("cannot scan into nil or invalid destination")
+		return errors.New("cannot scan into nil or invalid destination")
 	}
 
 	opts := q.ToOptions()

@@ -7909,3 +7909,1104 @@ func TestQuery_SubQueryIn(t *testing.T) {
 		}
 	})
 }
+
+// TestQuery_Count 测试 Count 方法的基本功能
+func TestQuery_Count(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic count with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针的Count方法
+		result := query.Count(&user.ID)
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("Count should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("Count should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test count with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串的Count方法
+		query.Count("id")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test count with nil field", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用nil字段的Count方法
+		query.Count(nil)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(*) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test count with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用无效字段名的Count方法
+		query.Count("invalid_field")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(*) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test chaining multiple aggregate functions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个聚合函数
+		query.Count(&user.ID).
+			Count(&user.Age)
+
+		if len(query.ToOptions()) != 2 {
+			t.Error("Should have 2 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count, COUNT(age) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test count combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Count方法与其他查询方法组合使用
+		query.Eq(&user.Status, 1).
+			Count(&user.ID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test count with select fields", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Count方法与Select组合使用
+		query.Select(&user.Status).
+			Count(&user.ID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT status, COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test count with group by", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Count方法与GroupBy组合使用
+		query.GroupBy(&user.Status).
+			Count(&user.ID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test count with having", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Count方法与Having组合使用
+		query.GroupBy(&user.Status).
+			Count(&user.ID).
+			Having("COUNT(id) > ?", 1)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(id) > ?"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test count with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用Count
+		query.Count(&post.UserID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(user_id) as count FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test count with many-to-many relationship", func(t *testing.T) {
+		query, userRole := gormx.NewQuery[UserRole]()
+
+		// 测试在多对多关系中使用Count
+		query.Count(&userRole.RoleID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(role_id) as count FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test count with complex field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用复杂字段名的Count方法
+		query.Count("created_at")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(created_at) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+}
+
+// TestQuery_Sum 测试 Sum 方法的基本功能
+func TestQuery_Sum(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic sum with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针的Sum方法
+		result := query.Sum(&user.Age)
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("Sum should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("Sum should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串的Sum方法
+		query.Sum("age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test chaining multiple aggregate functions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个聚合函数
+		query.Count(&user.ID).
+			Sum(&user.Age)
+
+		if len(query.ToOptions()) != 2 {
+			t.Error("Should have 2 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count, SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Sum方法与其他查询方法组合使用
+		query.Eq(&user.Status, 1).
+			Sum(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test sum with select fields", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Sum方法与Select组合使用
+		query.Select(&user.Status).
+			Sum(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT status, SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum with group by", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Sum方法与GroupBy组合使用
+		query.GroupBy(&user.Status).
+			Sum(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum with having", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Sum方法与Having组合使用
+		query.GroupBy(&user.Status).
+			Sum(&user.Age).
+			Having("SUM(age) > ?", 100)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING SUM(age) > ?"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 100 {
+			t.Errorf("Expected args: [100], got: %v", args)
+		}
+	})
+
+	t.Run("test sum with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.Sum("invalid_field")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT SUM() FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test sum with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用Sum
+		query.Sum(&post.UserID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(user_id) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test sum with many-to-many relationship", func(t *testing.T) {
+		query, userRole := gormx.NewQuery[UserRole]()
+
+		// 测试在多对多关系中使用Sum
+		query.Sum(&userRole.RoleID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(role_id) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum with complex field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用复杂字段名的Sum方法
+		query.Sum("created_at")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(created_at) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+}
+
+// TestQuery_Avg 测试 Avg 方法的基本功能
+func TestQuery_Avg(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic avg with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针的Avg方法
+		result := query.Avg(&user.Age)
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("Avg should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("Avg should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串的Avg方法
+		query.Avg("age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test chaining multiple aggregate functions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个聚合函数
+		query.Count(&user.ID).
+			Avg(&user.Age)
+
+		if len(query.ToOptions()) != 2 {
+			t.Error("Should have 2 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count, AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Avg方法与其他查询方法组合使用
+		query.Eq(&user.Status, 1).
+			Avg(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test avg with select fields", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Avg方法与Select组合使用
+		query.Select(&user.Status).
+			Avg(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT status, AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg with group by", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Avg方法与GroupBy组合使用
+		query.GroupBy(&user.Status).
+			Avg(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg with having", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Avg方法与Having组合使用
+		query.GroupBy(&user.Status).
+			Avg(&user.Age).
+			Having("AVG(age) > ?", 18)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING AVG(age) > ?"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 18 {
+			t.Errorf("Expected args: [18], got: %v", args)
+		}
+	})
+
+	t.Run("test avg with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.Avg("invalid_field")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT AVG() FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test avg with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用Avg
+		query.Avg(&post.UserID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(user_id) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test avg with many-to-many relationship", func(t *testing.T) {
+		query, userRole := gormx.NewQuery[UserRole]()
+
+		// 测试在多对多关系中使用Avg
+		query.Avg(&userRole.RoleID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(role_id) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg with complex field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用复杂字段名的Avg方法
+		query.Avg("created_at")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(created_at) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+}
+
+// TestQuery_Max 测试 Max 方法的基本功能
+func TestQuery_Max(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic max with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针的Max方法
+		result := query.Max(&user.Age)
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("Max should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("Max should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串的Max方法
+		query.Max("age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test chaining multiple aggregate functions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个聚合函数
+		query.Count(&user.ID).
+			Max(&user.Age)
+
+		if len(query.ToOptions()) != 2 {
+			t.Error("Should have 2 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count, MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Max方法与其他查询方法组合使用
+		query.Eq(&user.Status, 1).
+			Max(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test max with select fields", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Max方法与Select组合使用
+		query.Select(&user.Status).
+			Max(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT status, MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max with group by", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Max方法与GroupBy组合使用
+		query.GroupBy(&user.Status).
+			Max(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max with having", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Max方法与Having组合使用
+		query.GroupBy(&user.Status).
+			Max(&user.Age).
+			Having("MAX(age) > ?", 18)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MAX(age) > ?"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 18 {
+			t.Errorf("Expected args: [18], got: %v", args)
+		}
+	})
+
+	t.Run("test max with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.Max("invalid_field")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT MAX() FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test max with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用Max
+		query.Max(&post.UserID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(user_id) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test max with many-to-many relationship", func(t *testing.T) {
+		query, userRole := gormx.NewQuery[UserRole]()
+
+		// 测试在多对多关系中使用Max
+		query.Max(&userRole.RoleID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(role_id) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max with complex field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用复杂字段名的Max方法
+		query.Max("created_at")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(created_at) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+}
+
+// TestQuery_Min 测试 Min 方法的基本功能
+func TestQuery_Min(t *testing.T) {
+	// 准备测试数据
+	setupTestData(t)
+
+	t.Run("test basic min with field pointer", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试使用字段指针的Min方法
+		result := query.Min(&user.Age)
+
+		// 验证返回的是同一个查询实例（链式调用）
+		if result != query {
+			t.Error("Min should return the same query instance for chaining")
+		}
+
+		// 验证选项被正确添加
+		if len(query.ToOptions()) != 1 {
+			t.Error("Min should add one option")
+		}
+
+		// 验证生成的SQL和参数
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with field name string", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用字段名字符串的Min方法
+		query.Min("age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test chaining multiple aggregate functions", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试链式调用多个聚合函数
+		query.Count(&user.ID).
+			Min(&user.Age)
+
+		if len(query.ToOptions()) != 2 {
+			t.Error("Should have 2 options after chaining")
+		}
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT COUNT(id) as count, MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min combined with other query methods", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Min方法与其他查询方法组合使用
+		query.Eq(&user.Status, 1).
+			Min(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test min with select fields", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Min方法与Select组合使用
+		query.Select(&user.Status).
+			Min(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT status, MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with group by", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Min方法与GroupBy组合使用
+		query.GroupBy(&user.Status).
+			Min(&user.Age)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with having", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试Min方法与Having组合使用
+		query.GroupBy(&user.Status).
+			Min(&user.Age).
+			Having("MIN(age) > ?", 18)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(age) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MIN(age) > ?"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 18 {
+			t.Errorf("Expected args: [18], got: %v", args)
+		}
+	})
+
+	t.Run("test min with invalid field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效字段名（应该不会panic，但会在实际查询时处理）
+		query.Min("invalid_field")
+
+		sql, args := query.ToSQLAndArgs()
+		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
+		expectedSQL := "SELECT MIN() FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 一对多关系使用场景测试
+	t.Run("test min with one-to-many relationship", func(t *testing.T) {
+		query, post := gormx.NewQuery[Post]()
+
+		// 测试在一对多关系中使用Min
+		query.Min(&post.UserID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(user_id) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	// 多对多关系使用场景测试
+	t.Run("test min with many-to-many relationship", func(t *testing.T) {
+		query, userRole := gormx.NewQuery[UserRole]()
+
+		// 测试在多对多关系中使用Min
+		query.Min(&userRole.RoleID)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(role_id) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with complex field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用复杂字段名的Min方法
+		query.Min("created_at")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(created_at) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+}
