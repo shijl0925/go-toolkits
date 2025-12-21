@@ -3113,10 +3113,21 @@ func setupTestData(t *testing.T) {
 		}
 	}
 
-	// 插入测试帖子数据
+	// 获取刚创建的用户ID
+	var createdUsers []User
+	if err := db.Find(&createdUsers).Error; err != nil {
+		t.Fatalf("Failed to fetch created users: %v", err)
+	}
+
+	// 确保有足够的用户用于创建帖子
+	if len(createdUsers) < 2 {
+		t.Fatal("Not enough users created for testing posts")
+	}
+
+	// 插入测试帖子数据，使用实际创建的用户ID
 	posts := []Post{
-		{UserID: 1, Title: "Test Post 1", Content: "Content 1", Status: 1},
-		{UserID: 2, Title: "Test Post 2", Content: "Content 2", Status: 1},
+		{UserID: createdUsers[0].ID, Title: "Test Post 1", Content: "Content 1", Status: 1},
+		{UserID: createdUsers[1].ID, Title: "Test Post 2", Content: "Content 2", Status: 1},
 	}
 
 	for i := range posts {
@@ -5344,12 +5355,24 @@ func setupPreloadTestData(t *testing.T) {
 		{Name: "testuser1", Email: "test1@example.com", Age: 25, IsActive: true, Salary: 5000.0, Status: 1},
 		{Name: "testuser2", Email: "test2@example.com", Age: 30, IsActive: true, Salary: 6000.0, Status: 1},
 		{Name: "testuser3", Email: "test3@example.com", Age: 35, IsActive: false, Salary: 7000.0, Status: 1},
+		{Name: "otheruser", Email: "other@example.com", Age: 28, IsActive: true, Salary: 5500.0, Status: 0},
 	}
 
 	for i := range users {
 		if err := db.Create(&users[i]).Error; err != nil {
 			t.Fatalf("Failed to create test user: %v", err)
 		}
+	}
+
+	// 获取刚创建的用户ID
+	var createdUsers []User
+	if err := db.Find(&createdUsers).Error; err != nil {
+		t.Fatalf("Failed to fetch created users: %v", err)
+	}
+
+	// 确保有足够的用户用于创建帖子
+	if len(createdUsers) < 2 {
+		t.Fatal("Not enough users created for testing posts")
 	}
 
 	// 插入测试角色数据
@@ -5365,12 +5388,18 @@ func setupPreloadTestData(t *testing.T) {
 		}
 	}
 
-	// 插入用户角色关联数据
+	// 获取刚创建的角色ID
+	var createdRoles []Role
+	if err := db.Find(&createdRoles).Error; err != nil {
+		t.Fatalf("Failed to fetch created roles: %v", err)
+	}
+
+	// 插入用户角色关联数据，使用实际创建的用户和角色ID
 	userRoles := []UserRole{
-		{UserID: 1, RoleID: 1}, // testuser1 -> Admin
-		{UserID: 1, RoleID: 2}, // testuser1 -> Editor
-		{UserID: 2, RoleID: 2}, // testuser2 -> Editor
-		{UserID: 2, RoleID: 3}, // testuser2 -> Viewer
+		{UserID: createdUsers[0].ID, RoleID: createdRoles[0].ID}, // testuser1 -> Admin
+		{UserID: createdUsers[0].ID, RoleID: createdRoles[1].ID}, // testuser1 -> Editor
+		{UserID: createdUsers[1].ID, RoleID: createdRoles[1].ID}, // testuser2 -> Editor
+		{UserID: createdUsers[1].ID, RoleID: createdRoles[2].ID}, // testuser2 -> Viewer
 	}
 
 	for i := range userRoles {
@@ -5379,11 +5408,11 @@ func setupPreloadTestData(t *testing.T) {
 		}
 	}
 
-	// 插入测试帖子数据
+	// 插入测试帖子数据，使用实际创建的用户ID
 	posts := []Post{
-		{UserID: 1, Title: "Test Post 1", Content: "Content 1", Status: 1},
-		{UserID: 1, Title: "Test Post 2", Content: "Content 2", Status: 1},
-		{UserID: 2, Title: "Test Post 3", Content: "Content 3", Status: 1},
+		{UserID: createdUsers[0].ID, Title: "Test Post 1", Content: "Content 1", Status: 1},
+		{UserID: createdUsers[0].ID, Title: "Test Post 2", Content: "Content 2", Status: 1},
+		{UserID: createdUsers[1].ID, Title: "Test Post 3", Content: "Content 3", Status: 1},
 	}
 
 	for i := range posts {
@@ -5394,8 +5423,8 @@ func setupPreloadTestData(t *testing.T) {
 
 	// 插入测试资料数据
 	profiles := []Profile{
-		{UserID: 1, Avatar: "avatar1.jpg", PhoneNumber: "1234567890", Bio: "Bio of testuser1"},
-		{UserID: 2, Avatar: "avatar2.jpg", PhoneNumber: "0987654321", Bio: "Bio of testuser2"},
+		{UserID: createdUsers[0].ID, Avatar: "avatar1.jpg", PhoneNumber: "1234567890", Bio: "Bio of testuser1"},
+		{UserID: createdUsers[1].ID, Avatar: "avatar2.jpg", PhoneNumber: "0987654321", Bio: "Bio of testuser2"},
 	}
 
 	for i := range profiles {

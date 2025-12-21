@@ -1803,27 +1803,27 @@ func (q *Query[T]) Min(field interface{}) *Query[T] {
 //
 // 使用示例:
 //
-//  // 基本的 JOIN 查询
-//  query, post := gormx.NewQuery[Post]()
-//  query.Join("JOIN users ON posts.user_id = users.id")
-//  var results []Post
-//  err := query.Find(&results)
-//  // 生成SQL: SELECT * FROM posts JOIN users ON posts.user_id = users.id WHERE posts.deleted_at IS NULL
+//	// 基本的 JOIN 查询
+//	query, post := gormx.NewQuery[Post]()
+//	query.Join("JOIN users ON posts.user_id = users.id")
+//	var results []Post
+//	err := query.Find(&results)
+//	// 生成SQL: SELECT * FROM posts JOIN users ON posts.user_id = users.id WHERE posts.deleted_at IS NULL
 //
-//  // 带条件的 JOIN 查询
-//  query, post := gormx.NewQuery[Post]()
-//  query.Join("JOIN users ON posts.user_id = users.id AND users.status = ?", 1)
-//  var results []Post
-//  err := query.Find(&results)
-//  // 生成SQL: SELECT * FROM posts JOIN users ON posts.user_id = users.id AND users.status = 1 WHERE posts.deleted_at IS NULL
+//	// 带条件的 JOIN 查询
+//	query, post := gormx.NewQuery[Post]()
+//	query.Join("JOIN users ON posts.user_id = users.id AND users.status = ?", 1)
+//	var results []Post
+//	err := query.Find(&results)
+//	// 生成SQL: SELECT * FROM posts JOIN users ON posts.user_id = users.id AND users.status = 1 WHERE posts.deleted_at IS NULL
 //
-//  // 多个 JOIN 条件
-//  query, post := gormx.NewQuery[Post]()
-//  query.Join("JOIN users ON posts.user_id = users.id").
-//        Join("JOIN categories ON posts.category_id = categories.id")
-//  var results []Post
-//  err := query.Find(&results)
-//  // 生成SQL: SELECT * FROM posts JOIN users ON posts.user_id = users.id JOIN categories ON posts.category_id = categories.id WHERE posts.deleted_at IS NULL
+//	// 多个 JOIN 条件
+//	query, post := gormx.NewQuery[Post]()
+//	query.Join("JOIN users ON posts.user_id = users.id").
+//	      Join("JOIN categories ON posts.category_id = categories.id")
+//	var results []Post
+//	err := query.Find(&results)
+//	// 生成SQL: SELECT * FROM posts JOIN users ON posts.user_id = users.id JOIN categories ON posts.category_id = categories.id WHERE posts.deleted_at IS NULL
 //
 // 注意事项:
 //   - 使用参数化查询（即使用 ? 占位符和 args 参数）可以有效防止 SQL 注入攻击
