@@ -75,8 +75,8 @@ func init() {
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		"root",
-		"******",
-		"localhost",
+		"root@123",
+		"127.0.0.1",
 		"3306",
 		"vben",
 	)
