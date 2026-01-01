@@ -8035,7 +8035,7 @@ func TestQuery_Count(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count, COUNT(age) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := "SELECT COUNT(`id`) as count, COUNT(`age`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
