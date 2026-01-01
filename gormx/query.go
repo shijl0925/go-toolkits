@@ -1534,9 +1534,19 @@ func (q *Query[T]) Count(field interface{}) *Query[T] {
 		if fieldName == "*" {
 			countSQL = "COUNT(*)"
 		} else {
-			// 使用GORM的QuoteTo方法来安全地引用字段名
-			column := clause.Column{Name: fieldName}
-			countSQL = fmt.Sprintf("COUNT(`%s`)", column.Name)
+			// 检查字段名是否包含点号，如果是则需要特殊处理
+			if strings.Contains(fieldName, ".") {
+				parts := strings.Split(fieldName, ".")
+				quotedParts := make([]string, len(parts))
+				for i, part := range parts {
+					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
+				}
+				countSQL = fmt.Sprintf("COUNT(%s)", strings.Join(quotedParts, "."))
+			} else {
+				// 使用GORM的QuoteTo方法来安全地引用字段名
+				column := clause.Column{Name: fieldName}
+				countSQL = fmt.Sprintf("COUNT(`%s`)", column.Name)
+			}
 		}
 
 		if len(db.Statement.Selects) > 0 {
@@ -1607,9 +1617,19 @@ func (q *Query[T]) Sum(field interface{}) *Query[T] {
 		// 使用clause.Column来安全处理字段名，然后构造SUM表达式
 		var sumSQL string
 		if fieldName != "" {
-			// 使用GORM的QuoteTo方法来安全地引用字段名
-			column := clause.Column{Name: fieldName}
-			sumSQL = fmt.Sprintf("SUM(`%s`)", column.Name)
+			// 检查字段名是否包含点号，如果是则需要特殊处理
+			if strings.Contains(fieldName, ".") {
+				parts := strings.Split(fieldName, ".")
+				quotedParts := make([]string, len(parts))
+				for i, part := range parts {
+					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
+				}
+				sumSQL = fmt.Sprintf("SUM(%s)", strings.Join(quotedParts, "."))
+			} else {
+				// 使用GORM的QuoteTo方法来安全地引用字段名
+				column := clause.Column{Name: fieldName}
+				sumSQL = fmt.Sprintf("SUM(`%s`)", column.Name)
+			}
 		} else {
 			sumSQL = "SUM(*)" // 备用方案
 		}
@@ -1680,9 +1700,19 @@ func (q *Query[T]) Avg(field interface{}) *Query[T] {
 		// 使用clause.Column来安全处理字段名，然后构造AVG表达式
 		var avgSQL string
 		if fieldName != "" {
-			// 使用GORM的QuoteTo方法来安全地引用字段名
-			column := clause.Column{Name: fieldName}
-			avgSQL = fmt.Sprintf("AVG(`%s`)", column.Name)
+			// 检查字段名是否包含点号，如果是则需要特殊处理
+			if strings.Contains(fieldName, ".") {
+				parts := strings.Split(fieldName, ".")
+				quotedParts := make([]string, len(parts))
+				for i, part := range parts {
+					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
+				}
+				avgSQL = fmt.Sprintf("AVG(%s)", strings.Join(quotedParts, "."))
+			} else {
+				// 使用GORM的QuoteTo方法来安全地引用字段名
+				column := clause.Column{Name: fieldName}
+				avgSQL = fmt.Sprintf("AVG(`%s`)", column.Name)
+			}
 		} else {
 			avgSQL = "AVG(*)" // 备用方案
 		}
@@ -1753,9 +1783,19 @@ func (q *Query[T]) Max(field interface{}) *Query[T] {
 		// 使用clause.Column来安全处理字段名，然后构造MAX表达式
 		var maxSQL string
 		if fieldName != "" {
-			// 使用GORM的QuoteTo方法来安全地引用字段名
-			column := clause.Column{Name: fieldName}
-			maxSQL = fmt.Sprintf("MAX(`%s`)", column.Name)
+			// 检查字段名是否包含点号，如果是则需要特殊处理
+			if strings.Contains(fieldName, ".") {
+				parts := strings.Split(fieldName, ".")
+				quotedParts := make([]string, len(parts))
+				for i, part := range parts {
+					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
+				}
+				maxSQL = fmt.Sprintf("MAX(%s)", strings.Join(quotedParts, "."))
+			} else {
+				// 使用GORM的QuoteTo方法来安全地引用字段名
+				column := clause.Column{Name: fieldName}
+				maxSQL = fmt.Sprintf("MAX(`%s`)", column.Name)
+			}
 		} else {
 			maxSQL = "MAX(*)" // 备用方案
 		}
@@ -1826,9 +1866,19 @@ func (q *Query[T]) Min(field interface{}) *Query[T] {
 		// 使用clause.Column来安全处理字段名，然后构造MIN表达式
 		var minSQL string
 		if fieldName != "" {
-			// 使用GORM的QuoteTo方法来安全地引用字段名
-			column := clause.Column{Name: fieldName}
-			minSQL = fmt.Sprintf("MIN(`%s`)", column.Name)
+			// 检查字段名是否包含点号，如果是则需要特殊处理
+			if strings.Contains(fieldName, ".") {
+				parts := strings.Split(fieldName, ".")
+				quotedParts := make([]string, len(parts))
+				for i, part := range parts {
+					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
+				}
+				minSQL = fmt.Sprintf("MIN(%s)", strings.Join(quotedParts, "."))
+			} else {
+				// 使用GORM的QuoteTo方法来安全地引用字段名
+				column := clause.Column{Name: fieldName}
+				minSQL = fmt.Sprintf("MIN(`%s`)", column.Name)
+			}
 		} else {
 			minSQL = "MIN(*)" // 备用方案
 		}
