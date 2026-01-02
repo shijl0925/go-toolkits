@@ -159,10 +159,11 @@ func (q *Query[T]) resolveFieldName(field interface{}) string {
 	var validFieldName string
 	switch v := field.(type) {
 	case string:
-		// 检查字段名是否是有效字段
-		if q.isValidModelField(v) {
-			validFieldName = v
-		}
+		//// 检查字段名是否是有效字段
+		//if q.isValidModelField(v) {
+		//	validFieldName = v
+		//}
+		validFieldName = v
 	case nil:
 		validFieldName = ""
 	default:
@@ -272,6 +273,65 @@ func extractColumnFromGormTag(tag string) string {
 	return ""
 }
 
+// createComparisonCondition 创建比较条件的公共函数
+// 该函数用于构建安全的字段比较查询条件，支持字段名包含表名前缀的格式
+//
+// 参数:
+//   - fieldName: 字段名，可以是简单的字段名（如 "status"）或带表名前缀的格式（如 "users.status"）
+//   - operator: 比较操作符，如 "="、"!="、">"、">="、"<"、"<=" 等
+//   - value: 要比较的值，将作为参数传递给查询
+//   - clauseBuilder: 函数参数，用于构建具体的比较表达式（如 clause.Eq、clause.Neq 等）
+//
+// 返回:
+//   - *Query[T]: 返回查询构建器本身，支持链式调用
+//
+// 使用示例:
+//
+//	// 构建等于条件
+//	q.createComparisonCondition("status", "=", 1, func(column clause.Column, val interface{}) clause.Expression {
+//	    return clause.Eq{Column: column, Value: val}
+//	})
+//
+//	// 构建不等于条件
+//	q.createComparisonCondition("users.status", "!=", 0, func(column clause.Column, val interface{}) clause.Expression {
+//	    return clause.Neq{Column: column, Value: val}
+//	})
+//
+// 功能说明:
+//  1. 智能处理字段名格式：自动识别是否包含表名前缀（table.column）
+//  2. 安全字段引用：使用 GORM 的 clause.Column 确保字段名安全引用
+//  3. 参数化查询：所有值都通过参数传递，防止 SQL 注入
+//  4. 格式兼容：对不规范的表字段格式回退到传统字符串拼接方式
+//
+// 注意事项:
+//   - 当字段名包含点号且格式为 "table.column" 时，会使用 clause.Column 安全构建查询
+//   - 当字段名不包含点号时，直接使用字段名构建 clause.Column
+//   - 如果字段名包含点号但格式不正确，会回退到传统的字符串拼接方式（保持向后兼容）
+func (q *Query[T]) createComparisonCondition(fieldName string, operator string, value interface{}, clauseBuilder func(clause.Column, interface{}) clause.Expression) *Query[T] {
+	if strings.Contains(fieldName, ".") {
+		// 处理表名.字段名格式
+		parts := strings.Split(fieldName, ".")
+		if len(parts) == 2 {
+			column := clause.Column{Table: parts[0], Name: parts[1]}
+			// 构建安全的查询条件
+			q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
+				return db.Where(clauseBuilder(column, value))
+			})
+		} else {
+			q.opts = append(q.opts, Where(clause.Expr{
+				SQL:  "? " + operator + " ?",
+				Vars: []interface{}{clause.Column{Name: fieldName}, value},
+			}))
+		}
+	} else {
+		column := clause.Column{Name: fieldName}
+		q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
+			return db.Where(clauseBuilder(column, value))
+		})
+	}
+	return q
+}
+
 // Eq 添加 = 条件
 // 该方法用于添加等于条件到查询中，判断字段值是否等于指定值
 //
@@ -311,8 +371,10 @@ func extractColumnFromGormTag(tag string) string {
 //   - value参数的类型应该与字段类型兼容
 func (q *Query[T]) Eq(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" = ?", value))
-	return q
+
+	return q.createComparisonCondition(fieldName, "=", value, func(column clause.Column, val interface{}) clause.Expression {
+		return clause.Eq{Column: column, Value: val}
+	})
 }
 
 // Ne 添加 != 条件
@@ -331,8 +393,10 @@ func (q *Query[T]) Eq(field interface{}, value interface{}) *Query[T] {
 //   - value参数的类型应该与字段类型兼容
 func (q *Query[T]) Ne(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" <> ?", value))
-	return q
+
+	return q.createComparisonCondition(fieldName, "!=", value, func(column clause.Column, val interface{}) clause.Expression {
+		return clause.Neq{Column: column, Value: val}
+	})
 }
 
 // Gt 添加 > 条件
@@ -351,8 +415,10 @@ func (q *Query[T]) Ne(field interface{}, value interface{}) *Query[T] {
 //   - value参数的类型应该与字段类型兼容
 func (q *Query[T]) Gt(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" > ?", value))
-	return q
+
+	return q.createComparisonCondition(fieldName, ">", value, func(column clause.Column, val interface{}) clause.Expression {
+		return clause.Gt{Column: column, Value: val}
+	})
 }
 
 // Ge 添加 >= 条件
@@ -371,8 +437,10 @@ func (q *Query[T]) Gt(field interface{}, value interface{}) *Query[T] {
 //   - value参数的类型应该与字段类型兼容
 func (q *Query[T]) Ge(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" >= ?", value))
-	return q
+
+	return q.createComparisonCondition(fieldName, ">=", value, func(column clause.Column, val interface{}) clause.Expression {
+		return clause.Gte{Column: column, Value: val}
+	})
 }
 
 // Lt 添加 < 条件
@@ -391,8 +459,10 @@ func (q *Query[T]) Ge(field interface{}, value interface{}) *Query[T] {
 //   - value参数的类型应该与字段类型兼容
 func (q *Query[T]) Lt(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" < ?", value))
-	return q
+
+	return q.createComparisonCondition(fieldName, "<", value, func(column clause.Column, val interface{}) clause.Expression {
+		return clause.Lt{Column: column, Value: val}
+	})
 }
 
 // Le 添加 <= 条件
@@ -411,8 +481,10 @@ func (q *Query[T]) Lt(field interface{}, value interface{}) *Query[T] {
 //   - value参数的类型应该与字段类型兼容
 func (q *Query[T]) Le(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" <= ?", value))
-	return q
+
+	return q.createComparisonCondition(fieldName, "<=", value, func(column clause.Column, val interface{}) clause.Expression {
+		return clause.Lte{Column: column, Value: val}
+	})
 }
 
 // Like 添加 like 模糊匹配条件
@@ -458,9 +530,12 @@ func (q *Query[T]) Like(field interface{}, value interface{}) *Query[T] {
 	if !ok {
 		panic("like value must be a string")
 	}
+
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" LIKE ?", "%"+strVal+"%"))
-	return q
+
+	return q.createComparisonCondition(fieldName, "LIKE", "%"+strVal+"%", func(column clause.Column, val interface{}) clause.Expression {
+		return clause.Like{Column: column, Value: val}
+	})
 }
 
 // Regexp 添加正则表达式匹配条件
@@ -511,7 +586,11 @@ func (q *Query[T]) Regexp(field interface{}, pattern string) *Query[T] {
 	// 如果需要支持其他数据库，可以根据需要添加判断逻辑
 	// 例如对于 PostgreSQL 可以使用 ~ 操作符
 
-	q.opts = append(q.opts, Where(fieldName+" "+operator+" ?", pattern))
+	column := clause.Column{Name: fieldName}
+	q.opts = append(q.opts, Where(clause.Expr{
+		SQL:  "? " + operator + " ?",
+		Vars: []interface{}{column, pattern},
+	}))
 	return q
 }
 
@@ -552,7 +631,13 @@ func (q *Query[T]) Regexp(field interface{}, pattern string) *Query[T] {
 //   - 可以与其他查询条件组合使用
 func (q *Query[T]) IsNull(field interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" IS NULL"))
+
+	column := clause.Column{Name: fieldName}
+	q.opts = append(q.opts, Where(clause.Expr{
+		SQL:  "? IS NULL",
+		Vars: []interface{}{column},
+	}))
+
 	return q
 }
 
@@ -593,7 +678,13 @@ func (q *Query[T]) IsNull(field interface{}) *Query[T] {
 //   - 可以与其他查询条件组合使用
 func (q *Query[T]) IsNotNull(field interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" IS NOT NULL"))
+
+	column := clause.Column{Name: fieldName}
+	q.opts = append(q.opts, Where(clause.Expr{
+		SQL:  "? IS NOT NULL",
+		Vars: []interface{}{column},
+	}))
+
 	return q
 }
 
@@ -661,11 +752,17 @@ func (q *Query[T]) buildInPlaceholders(value interface{}) (string, []interface{}
 //   - 如果value为空，会生成IN ()条件，这在某些数据库中可能导致语法错误
 func (q *Query[T]) In(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
+
 	// 生成占位符字符串和参数列表
-	placeholderStr, args := q.buildInPlaceholders(value)
-	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Where(fieldName+" IN ("+placeholderStr+")", args...)
-	})
+	_, args := q.buildInPlaceholders(value)
+
+	// 使用GORM的clause.IN来安全构建IN查询条件，防止SQL注入
+	column := clause.Column{Name: fieldName}
+	q.opts = append(q.opts, Where(clause.IN{
+		Column: column,
+		Values: args,
+	}))
+
 	return q
 }
 
@@ -709,11 +806,16 @@ func (q *Query[T]) In(field interface{}, value interface{}) *Query[T] {
 //   - 如果value为空，会生成NOT IN ()条件，这在某些数据库中可能导致语法错误
 func (q *Query[T]) NotIn(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
+
 	// 生成占位符字符串和参数列表
-	placeholderStr, args := q.buildInPlaceholders(value)
-	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Where(fieldName+" NOT IN ("+placeholderStr+")", args...)
-	})
+	_, args := q.buildInPlaceholders(value)
+
+	// 使用GORM的clause.Not来安全构建NOT IN查询条件，防止SQL注入
+	column := clause.Column{Name: fieldName}
+	q.opts = append(q.opts, Where(clause.Not(clause.IN{
+		Column: column,
+		Values: args,
+	})))
 	return q
 }
 
@@ -759,7 +861,14 @@ func (q *Query[T]) NotIn(field interface{}, value interface{}) *Query[T] {
 //   - start和end参数类型应该与字段类型兼容
 func (q *Query[T]) Between(field interface{}, start, end interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" BETWEEN ? AND ?", start, end))
+
+	// 使用GORM的clause.Expr来安全构建BETWEEN查询条件，防止SQL注入
+	column := clause.Column{Name: fieldName}
+	q.opts = append(q.opts, Where(clause.Expr{
+		SQL:  "? BETWEEN ? AND ?",
+		Vars: []interface{}{column, start, end},
+	}))
+
 	return q
 }
 
@@ -805,7 +914,14 @@ func (q *Query[T]) Between(field interface{}, start, end interface{}) *Query[T] 
 //   - start和end参数类型应该与字段类型兼容
 func (q *Query[T]) NotBetween(field interface{}, start, end interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
-	q.opts = append(q.opts, Where(fieldName+" NOT BETWEEN ? AND ?", start, end))
+
+	// 使用GORM的clause.Expr来安全构建BETWEEN查询条件，防止SQL注入
+	column := clause.Column{Name: fieldName}
+	q.opts = append(q.opts, Where(clause.Expr{
+		SQL:  "? NOT BETWEEN ? AND ?",
+		Vars: []interface{}{column, start, end},
+	}))
+
 	return q
 }
 
@@ -1979,8 +2095,14 @@ func (q *Query[T]) Join(query string, args ...interface{}) *Query[T] {
 //   - 子查询返回多个值时，数据库会报错
 func (q *Query[T]) SubQueryEq(field interface{}, subDB *gorm.DB) *Query[T] {
 	fieldName := q.resolveFieldName(field)
+	// 使用clause.Column来安全处理字段名
+	column := clause.Column{Name: fieldName}
+
 	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Where(fieldName+" = (?)", subDB)
+		return db.Where(clause.Expr{
+			SQL:  "? = (?)",
+			Vars: []interface{}{column, subDB},
+		})
 	})
 	return q
 }
@@ -2029,8 +2151,14 @@ func (q *Query[T]) SubQueryEq(field interface{}, subDB *gorm.DB) *Query[T] {
 //   - 如果字段无效，会生成字段名为空的条件（如: "" IN (...)）
 func (q *Query[T]) SubQueryIn(field interface{}, subDB *gorm.DB) *Query[T] {
 	fieldName := q.resolveFieldName(field)
+	// 使用clause.Column来安全处理字段名
+	column := clause.Column{Name: fieldName}
+
 	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Where(fieldName+" IN (?)", subDB)
+		return db.Where(clause.Expr{
+			SQL:  "? IN (?)",
+			Vars: []interface{}{column, subDB},
+		})
 	})
 	return q
 }
@@ -2154,7 +2282,12 @@ func (q *Query[T]) addSubQueryCondition(field interface{}, operator string, sql 
 
 	normalizedSQL := strings.TrimSpace(sql)
 	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-		return db.Where(safeField+" "+op+" (?)", gorm.Expr(normalizedSQL, args...))
+		// 使用GORM的clause.Column来安全构建字段引用，防止SQL注入
+		column := clause.Column{Name: safeField}
+		return db.Where(clause.Expr{
+			SQL:  "? " + op + " (?)",
+			Vars: []interface{}{column, gorm.Expr(normalizedSQL, args...)},
+		})
 	})
 	return q
 }
