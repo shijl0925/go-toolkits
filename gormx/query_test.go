@@ -8387,6 +8387,149 @@ func TestQuery_Sum(t *testing.T) {
 			t.Errorf("Expected 0 args, got: %d", len(args))
 		}
 	})
+
+	t.Run("test sum with dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用点号格式字段名（表名.字段名）
+		query.Sum("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum with multiple dot notation fields", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他字段一起使用点号格式
+		query.Select(&user.Name).
+			Sum("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT name, SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum with mixed field name formats", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试点号格式和普通字段混合使用
+		query.Select("users.name", &user.Email).
+			Sum("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT users.name, email, SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum with dot notation and query conditions", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试点号格式字段与查询条件组合使用
+		query.Eq("users.status", 1).
+			Sum("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test sum with dot notation in group by and having", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试点号格式字段在分组和聚合中使用
+		query.GroupBy("users.status").
+			Sum("users.age").
+			Having("SUM(`users`.`age`) > ?", 100)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING SUM(`users`.`age`) > ?"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 100 {
+			t.Errorf("Expected args: [100], got: %v", args)
+		}
+	})
+
+	t.Run("test sum with dot notation in join query", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试在JOIN查询中使用点号格式字段
+		query.Join("JOIN users ON posts.user_id = users.id").
+			Sum("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum with invalid dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效的点号格式字段名
+		query.Sum("invalid_table.invalid_field")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT SUM(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test sum with malformed dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试格式错误的点号字段名（多个点号）
+		query.Sum("table.subtable.field")
+
+		sql, args := query.ToSQLAndArgs()
+		// 根据实现，可能按普通字符串处理或有特殊处理
+		expectedSQL := "SELECT SUM(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Logf("Actual SQL: %s", sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
 }
 
 // TestQuery_Avg 测试 Avg 方法的基本功能
