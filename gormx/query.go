@@ -178,8 +178,13 @@ func (q *Query[T]) resolveFieldName(field interface{}) string {
 // 通过反射获取字段名
 func (q *Query[T]) getFieldNameByReflection(field interface{}) string {
 	// 检查是否为指针类型
-	fieldPtr := reflect.ValueOf(field)
-	if fieldPtr.Kind() != reflect.Ptr {
+	fieldVal := reflect.ValueOf(field)
+	if fieldVal.Kind() != reflect.Ptr {
+		return ""
+	}
+
+	// 检查指针是否有效（非nil）
+	if fieldVal.IsNil() {
 		return ""
 	}
 
@@ -190,7 +195,7 @@ func (q *Query[T]) getFieldNameByReflection(field interface{}) string {
 	}
 
 	// 获取字段指针地址
-	targetAddr := fieldPtr.Pointer()
+	targetAddr := fieldVal.Pointer()
 
 	// 使用统一的实例获取字段信息
 	instanceValue := reflect.ValueOf(q.instance).Elem()
@@ -259,14 +264,24 @@ func (q *Query[T]) findFieldByAddress(structType reflect.Type, instanceValue ref
 
 // 从gorm标签中提取列名
 func extractColumnFromGormTag(tag string) string {
-	// 解析gorm标签，提取column部分
-	parts := strings.Split(tag, ";")
-	for _, part := range parts {
-		if strings.HasPrefix(part, "column:") {
-			return strings.TrimPrefix(part, "column:")
-		}
+	// 查找"column:"的起始位置
+	colStart := strings.Index(tag, "column:")
+	if colStart == -1 {
+		return ""
 	}
-	return ""
+
+	// 计算列名的起始位置（跳过"column:"）
+	valStart := colStart + len("column:")
+
+	// 查找列名后的分隔符（分号或字符串结束）
+	sepIndex := strings.Index(tag[valStart:], ";")
+	if sepIndex == -1 {
+		// 没有分号，取到字符串结尾
+		return tag[valStart:]
+	}
+
+	// 返回column:和分号之间的部分
+	return tag[valStart : valStart+sepIndex]
 }
 
 // createComparisonCondition 创建比较条件的公共函数
