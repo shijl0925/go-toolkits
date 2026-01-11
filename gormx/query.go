@@ -159,10 +159,6 @@ func (q *Query[T]) resolveFieldName(field interface{}) string {
 	var validFieldName string
 	switch v := field.(type) {
 	case string:
-		//// 检查字段名是否是有效字段
-		//if q.isValidModelField(v) {
-		//	validFieldName = v
-		//}
 		validFieldName = v
 	case nil:
 		validFieldName = ""
@@ -1589,6 +1585,22 @@ func (q *Query[T]) Offset(offset int) *Query[T] {
 	return q
 }
 
+// buildAggregateSQL 构建聚合函数的SQL表达式
+func (q *Query[T]) buildAggregateSQL(aggFunc string, fieldName string) string {
+	if fieldName == "" || fieldName == "*" {
+		return fmt.Sprintf("%s(*)", aggFunc)
+	}
+	if strings.Contains(fieldName, ".") {
+		parts := strings.Split(fieldName, ".")
+		quotedParts := make([]string, len(parts))
+		for i, part := range parts {
+			quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
+		}
+		return fmt.Sprintf("%s(%s)", aggFunc, strings.Join(quotedParts, "."))
+	}
+	return fmt.Sprintf("%s(`%s`)", aggFunc, fieldName)
+}
+
 // Count 添加count聚合函数
 // 该方法用于计算记录数量，生成COUNT()聚合函数查询
 //
@@ -1645,25 +1657,7 @@ func (q *Query[T]) Count(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		// 使用clause.Column来安全处理字段名，然后构造COUNT表达式
-		var countSQL string
-		if fieldName == "*" {
-			countSQL = "COUNT(*)"
-		} else {
-			// 检查字段名是否包含点号，如果是则需要特殊处理
-			if strings.Contains(fieldName, ".") {
-				parts := strings.Split(fieldName, ".")
-				quotedParts := make([]string, len(parts))
-				for i, part := range parts {
-					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
-				}
-				countSQL = fmt.Sprintf("COUNT(%s)", strings.Join(quotedParts, "."))
-			} else {
-				// 使用GORM的QuoteTo方法来安全地引用字段名
-				column := clause.Column{Name: fieldName}
-				countSQL = fmt.Sprintf("COUNT(`%s`)", column.Name)
-			}
-		}
+		countSQL := q.buildAggregateSQL("COUNT", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加COUNT字段
@@ -1730,25 +1724,7 @@ func (q *Query[T]) Sum(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		// 使用clause.Column来安全处理字段名，然后构造SUM表达式
-		var sumSQL string
-		if fieldName != "" {
-			// 检查字段名是否包含点号，如果是则需要特殊处理
-			if strings.Contains(fieldName, ".") {
-				parts := strings.Split(fieldName, ".")
-				quotedParts := make([]string, len(parts))
-				for i, part := range parts {
-					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
-				}
-				sumSQL = fmt.Sprintf("SUM(%s)", strings.Join(quotedParts, "."))
-			} else {
-				// 使用GORM的QuoteTo方法来安全地引用字段名
-				column := clause.Column{Name: fieldName}
-				sumSQL = fmt.Sprintf("SUM(`%s`)", column.Name)
-			}
-		} else {
-			sumSQL = "SUM(*)" // 备用方案
-		}
+		sumSQL := q.buildAggregateSQL("SUM", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加SUM字段
@@ -1813,25 +1789,7 @@ func (q *Query[T]) Avg(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		// 使用clause.Column来安全处理字段名，然后构造AVG表达式
-		var avgSQL string
-		if fieldName != "" {
-			// 检查字段名是否包含点号，如果是则需要特殊处理
-			if strings.Contains(fieldName, ".") {
-				parts := strings.Split(fieldName, ".")
-				quotedParts := make([]string, len(parts))
-				for i, part := range parts {
-					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
-				}
-				avgSQL = fmt.Sprintf("AVG(%s)", strings.Join(quotedParts, "."))
-			} else {
-				// 使用GORM的QuoteTo方法来安全地引用字段名
-				column := clause.Column{Name: fieldName}
-				avgSQL = fmt.Sprintf("AVG(`%s`)", column.Name)
-			}
-		} else {
-			avgSQL = "AVG(*)" // 备用方案
-		}
+		avgSQL := q.buildAggregateSQL("AVG", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加AVG字段
@@ -1896,25 +1854,7 @@ func (q *Query[T]) Max(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		// 使用clause.Column来安全处理字段名，然后构造MAX表达式
-		var maxSQL string
-		if fieldName != "" {
-			// 检查字段名是否包含点号，如果是则需要特殊处理
-			if strings.Contains(fieldName, ".") {
-				parts := strings.Split(fieldName, ".")
-				quotedParts := make([]string, len(parts))
-				for i, part := range parts {
-					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
-				}
-				maxSQL = fmt.Sprintf("MAX(%s)", strings.Join(quotedParts, "."))
-			} else {
-				// 使用GORM的QuoteTo方法来安全地引用字段名
-				column := clause.Column{Name: fieldName}
-				maxSQL = fmt.Sprintf("MAX(`%s`)", column.Name)
-			}
-		} else {
-			maxSQL = "MAX(*)" // 备用方案
-		}
+		maxSQL := q.buildAggregateSQL("MAX", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加MAX字段
@@ -1979,25 +1919,7 @@ func (q *Query[T]) Min(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		// 使用clause.Column来安全处理字段名，然后构造MIN表达式
-		var minSQL string
-		if fieldName != "" {
-			// 检查字段名是否包含点号，如果是则需要特殊处理
-			if strings.Contains(fieldName, ".") {
-				parts := strings.Split(fieldName, ".")
-				quotedParts := make([]string, len(parts))
-				for i, part := range parts {
-					quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
-				}
-				minSQL = fmt.Sprintf("MIN(%s)", strings.Join(quotedParts, "."))
-			} else {
-				// 使用GORM的QuoteTo方法来安全地引用字段名
-				column := clause.Column{Name: fieldName}
-				minSQL = fmt.Sprintf("MIN(`%s`)", column.Name)
-			}
-		} else {
-			minSQL = "MIN(*)" // 备用方案
-		}
+		minSQL := q.buildAggregateSQL("MIN", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加MIN字段
@@ -2060,14 +1982,6 @@ func (q *Query[T]) Join(query string, args ...interface{}) *Query[T] {
 	})
 	return q
 }
-
-//// LeftJoin 添加left join条件
-//func (q *Query[T]) LeftJoin(query string, args ...interface{}) *Query[T] {
-//	q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-//		return db.Joins("LEFT "+query, args...)
-//	})
-//	return q
-//}
 
 // SubQueryEq 子查询等于条件
 // 该方法用于添加等于子查询的条件，将字段与另一个查询结果进行比较，判断字段值是否等于子查询结果
@@ -2162,19 +2076,6 @@ func (q *Query[T]) SubQueryIn(field interface{}, subDB *gorm.DB) *Query[T] {
 	})
 	return q
 }
-
-//// SubQueryIn 子查询in条件
-//func (q *Query[T]) SubQueryIn(field interface{}, subQuery interface{ ToOptions() []DBOption }) *Query[T] {
-//    fieldName := q.resolveFieldName(field)
-//    subOpts := subQuery.ToOptions()
-//    q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
-//        subDB := GetDb(subOpts...)
-//		// 确保子查询有正确的模型上下文
-//        // 由于无法通过接口获取具体类型，需要在调用时确保子查询已正确设置模型
-//        return db.Where(fieldName+" IN (?)", subDB)
-//    })
-//    return q
-//}
 
 // Or 添加OR条件
 // 该方法用于添加OR逻辑条件到查询中，支持自定义查询条件和参数
