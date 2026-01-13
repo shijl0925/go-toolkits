@@ -169,7 +169,7 @@ func (q *Query[T]) resolveFieldName(field interface{}) string {
 	// 只在字段名确实无效时才打印警告（即输入是字符串但无效）
 	if validFieldName == "" {
 		if str, ok := field.(string); ok && str != "" {
-			log.Printf("invalid field name: " + str)
+			log.Printf("invalid field name: %s", str)
 		}
 	}
 	return validFieldName
@@ -236,19 +236,12 @@ func (q *Query[T]) findFieldByAddress(structType reflect.Type, instanceValue ref
 		fieldAddr := fieldValue.Addr().Pointer()
 		if fieldAddr == targetAddr {
 			// 计算字段名
-			var fieldName string
+			fieldName := stringx.ToSnake(structField.Name)
 
 			if tag := structField.Tag.Get("gorm"); tag != "" {
-				// 获取gorm标签中的column名称
 				if columnName := extractColumnFromGormTag(tag); columnName != "" {
 					fieldName = columnName
-				} else {
-					// 如果没有gorm标签，使用字段名的蛇形命名
-					fieldName = stringx.ToSnake(structField.Name)
 				}
-			} else {
-				// 如果没有gorm标签，使用字段名的蛇形命名
-				fieldName = stringx.ToSnake(structField.Name)
 			}
 
 			// 缓存结果
