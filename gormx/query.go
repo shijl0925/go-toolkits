@@ -257,24 +257,16 @@ func (q *Query[T]) findFieldByAddress(structType reflect.Type, instanceValue ref
 
 // 从gorm标签中提取列名
 func extractColumnFromGormTag(tag string) string {
-	// 查找"column:"的起始位置
-	colStart := strings.Index(tag, "column:")
-	if colStart == -1 {
-		return ""
-	}
-
-	// 计算列名的起始位置（跳过"column:"）
-	valStart := colStart + len("column:")
-
-	// 查找列名后的分隔符（分号或字符串结束）
-	sepIndex := strings.Index(tag[valStart:], ";")
-	if sepIndex == -1 {
-		// 没有分号，取到字符串结尾
+	// 解析gorm标签，提取column部分
+	if idx := strings.Index(tag, "column:"); idx != -1 {
+		// 从 column: 开始提取到分号或结束
+		valStart := idx + len("column:")
+		if endIdx := strings.Index(tag[idx:], ";"); endIdx != -1 {
+			return tag[valStart : idx+endIdx]
+		}
 		return tag[valStart:]
 	}
-
-	// 返回column:和分号之间的部分
-	return tag[valStart : valStart+sepIndex]
+	return ""
 }
 
 // createComparisonCondition 创建比较条件的公共函数
@@ -312,27 +304,33 @@ func extractColumnFromGormTag(tag string) string {
 //   - 当字段名不包含点号时，直接使用字段名构建 clause.Column
 //   - 如果字段名包含点号但格式不正确，会回退到传统的字符串拼接方式（保持向后兼容）
 func (q *Query[T]) createComparisonCondition(fieldName string, operator string, value interface{}, clauseBuilder func(clause.Column, interface{}) clause.Expression) *Query[T] {
-	if strings.Contains(fieldName, ".") {
-		// 处理表名.字段名格式
-		parts := strings.Split(fieldName, ".")
-		if len(parts) == 2 {
-			column := clause.Column{Table: parts[0], Name: parts[1]}
-			// 构建安全的查询条件
+	column := clause.Column{Name: fieldName}
+
+	// 处理表名.字段名格式
+	if idx := strings.Index(fieldName, "."); idx != -1 {
+		if len(fieldName) > idx+1 && !strings.Contains(fieldName[idx+1:], ".") {
+			column.Table = fieldName[:idx]
+			column.Name = fieldName[idx+1:]
+
 			q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
 				return db.Where(clauseBuilder(column, value))
 			})
-		} else {
-			q.opts = append(q.opts, Where(clause.Expr{
-				SQL:  "? " + operator + " ?",
-				Vars: []interface{}{clause.Column{Name: fieldName}, value},
-			}))
+			return q
 		}
-	} else {
-		column := clause.Column{Name: fieldName}
+	}
+
+	// 处理普通字段名或不规范格式
+	if !strings.Contains(fieldName, ".") {
 		q.opts = append(q.opts, func(db *gorm.DB) *gorm.DB {
 			return db.Where(clauseBuilder(column, value))
 		})
+	} else {
+		q.opts = append(q.opts, Where(clause.Expr{
+			SQL:  "? " + operator + " ?",
+			Vars: []interface{}{column, value},
+		}))
 	}
+
 	return q
 }
 
