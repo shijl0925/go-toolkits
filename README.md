@@ -28,3 +28,4 @@ go get github.com/shijl0925/go-toolkits@latest
 - [algorithm](https://github.com/shijl0925/go-toolkits/blob/main/algorithm/README.md)
 - [cryptor](https://github.com/shijl0925/go-toolkits/blob/main/cryptor/README.md)
 - [systemx](https://github.com/shijl0925/go-toolkits/blob/main/systemx/README.md)
+- [gormx](https://github.com/shijl0925/go-toolkits/blob/main/gormx/README.md)
