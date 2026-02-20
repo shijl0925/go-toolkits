@@ -88,7 +88,7 @@ func (r *BaseRepo[T]) SelectOneByOpts(opts ...DBOption) (T, error) {
 	} else if size > 1 {
 		var zero T
 
-		errMessage := fmt.Sprintf("expected one result (or null) to be returned by SelectOneByOpts(), but found:  %d", size)
+		errMessage := fmt.Sprintf("expected one result (or null) to be returned by SelectOneByOpts(), but multiple matches")
 		return zero, errors.New(errMessage)
 	}
 
@@ -126,7 +126,7 @@ func (r *BaseRepo[T]) SelectOneByMap(columnMap map[string]interface{}) (T, error
 	} else if size > 1 {
 		var zero T
 
-		errMessage := fmt.Sprintf("expected one result (or null) to be returned by SelectOneByMap(), but found:  %d", size)
+		errMessage := fmt.Sprintf("expected one result (or null) to be returned by SelectOneByMap(), but multiple matches")
 		return zero, errors.New(errMessage)
 	}
 
@@ -422,12 +422,15 @@ func (r *BaseRepo[T]) GetOrCreate(whereCond map[string]interface{}, assignAttrs 
 	var item T
 	db := GetDb().Model(new(T))
 
-	// 构造查询条件
-	if len(whereCond) > 0 {
-		db = db.Where(whereCond)
+	// 检查是否提供了更新条件
+	if len(whereCond) == 0 {
+		return nil, errors.New("cannot get or create record without conditions, please provide where conditions")
 	}
 
-	result := db.FirstOrCreate(&item, assignAttrs)
+	// 构造查询条件
+	db = db.Where(whereCond)
+
+	result := db.Attrs(assignAttrs).FirstOrCreate(&item)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -453,6 +456,9 @@ func (r *BaseRepo[T]) UpdateOrCreate(whereCond map[string]interface{}, assignAtt
 
 // Delete 删除单条记录
 func (r *BaseRepo[T]) Delete(item *T) error {
+	if item == nil {
+		return errors.New("item cannot be nil")
+	}
 	return globalDb.Delete(item).Error
 }
 
