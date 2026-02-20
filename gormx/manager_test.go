@@ -10,6 +10,7 @@ import (
 func TestGenericAssociationManager_Add(t *testing.T) {
 	// 准备测试数据
 	setupTestData(t)
+	setupPreloadTestData(t)
 
 	userRepo := &gormx.BaseRepo[User]{}
 	uq, u := gormx.NewQuery[User]()
@@ -50,6 +51,7 @@ func TestGenericAssociationManager_Add(t *testing.T) {
 func TestGenericAssociationManager_Remove(t *testing.T) {
 	// 准备测试数据
 	setupTestData(t)
+	setupPreloadTestData(t)
 
 	userRepo := &gormx.BaseRepo[User]{}
 	uq, u := gormx.NewQuery[User]()
@@ -91,6 +93,7 @@ func TestGenericAssociationManager_Remove(t *testing.T) {
 func TestGenericAssociationManager_Clear(t *testing.T) {
 	// 准备测试数据
 	setupTestData(t)
+	setupPreloadTestData(t)
 
 	//user := User{Name: "testuser"}
 	userRepo := &gormx.BaseRepo[User]{}
@@ -130,6 +133,7 @@ func TestGenericAssociationManager_Clear(t *testing.T) {
 func TestGenericAssociationManager_Set(t *testing.T) {
 	// 准备测试数据
 	setupTestData(t)
+	setupPreloadTestData(t)
 
 	userRepo := &gormx.BaseRepo[User]{}
 	uq, u := gormx.NewQuery[User]()
