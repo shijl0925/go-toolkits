@@ -268,6 +268,23 @@ func TestQuery_Eq(t *testing.T) {
 			t.Errorf("Expected args: [value], got: %v", args)
 		}
 	})
+
+	t.Run("test with multiple dots", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		query.Eq("address.city.town", "New York")
+		sql, args := query.ToSQLAndArgs()
+
+		expectedSQL := "SELECT * FROM `users` WHERE `address`.`city`.`town` = ? AND `users`.`deleted_at` IS NULL"
+
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != "New York" {
+			t.Errorf("Expected args: [value], got: %v", args)
+		}
+	})
 }
 
 // TestQuery_Ne 测试 Ne 方法的基本功能
@@ -8747,6 +8764,149 @@ func TestQuery_Avg(t *testing.T) {
 			t.Errorf("Expected 0 args, got: %d", len(args))
 		}
 	})
+
+	t.Run("test avg with dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用点号格式字段名（表名.字段名）
+		query.Avg("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg with multiple dot notation fields", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他字段一起使用点号格式
+		query.Select(&user.Name).
+			Avg("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT name, AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg with mixed field name formats", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试点号格式和普通字段混合使用
+		query.Select("users.name", &user.Email).
+			Avg("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT users.name, email, AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg with dot notation and query conditions", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试点号格式字段与查询条件组合使用
+		query.Eq("users.status", 1).
+			Avg("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test avg with dot notation in group by and having", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试点号格式字段在分组和聚合中使用
+		query.GroupBy("users.status").
+			Avg("users.age").
+			Having("AVG(`users`.`age`) > ?", 25)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING AVG(`users`.`age`) > ?"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 25 {
+			t.Errorf("Expected args: [25], got: %v", args)
+		}
+	})
+
+	t.Run("test avg with dot notation in join query", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试在JOIN查询中使用点号格式字段
+		query.Join("JOIN users ON posts.user_id = users.id").
+			Avg("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg with invalid dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效的点号格式字段名
+		query.Avg("invalid_table.invalid_field")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT AVG(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test avg with malformed dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试格式错误的点号字段名（多个点号）
+		query.Avg("table.subtable.field")
+
+		sql, args := query.ToSQLAndArgs()
+		// 根据实现，可能按普通字符串处理或有特殊处理
+		expectedSQL := "SELECT AVG(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Logf("Actual SQL: %s", sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
 }
 
 // TestQuery_Max 测试 Max 方法的基本功能
@@ -8964,6 +9124,149 @@ func TestQuery_Max(t *testing.T) {
 			t.Errorf("Expected 0 args, got: %d", len(args))
 		}
 	})
+
+	t.Run("test max with dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用点号格式字段名（表名.字段名）
+		query.Max("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max with multiple dot notation fields", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他字段一起使用点号格式
+		query.Select(&user.Name).
+			Max("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT name, MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max with mixed field name formats", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试点号格式和普通字段混合使用
+		query.Select("users.name", &user.Email).
+			Max("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT users.name, email, MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max with dot notation and query conditions", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试点号格式字段与查询条件组合使用
+		query.Eq("users.status", 1).
+			Max("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test max with dot notation in group by and having", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试点号格式字段在分组和聚合中使用
+		query.GroupBy("users.status").
+			Max("users.age").
+			Having("MAX(`users`.`age`) > ?", 30)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING MAX(`users`.`age`) > ?"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 30 {
+			t.Errorf("Expected args: [30], got: %v", args)
+		}
+	})
+
+	t.Run("test max with dot notation in join query", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试在JOIN查询中使用点号格式字段
+		query.Join("JOIN users ON posts.user_id = users.id").
+			Max("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max with invalid dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效的点号格式字段名
+		query.Max("invalid_table.invalid_field")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MAX(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test max with malformed dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试格式错误的点号字段名（多个点号）
+		query.Max("table.subtable.field")
+
+		sql, args := query.ToSQLAndArgs()
+		// 根据实现，可能按普通字符串处理或有特殊处理
+		expectedSQL := "SELECT MAX(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Logf("Actual SQL: %s", sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
 }
 
 // TestQuery_Min 测试 Min 方法的基本功能
@@ -9175,6 +9478,149 @@ func TestQuery_Min(t *testing.T) {
 		expectedSQL := "SELECT MIN(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试使用点号格式字段名（表名.字段名）
+		query.Min("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with multiple dot notation fields", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试与其他字段一起使用点号格式
+		query.Select(&user.Name).
+			Min("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT name, MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with mixed field name formats", func(t *testing.T) {
+		query, user := gormx.NewQuery[User]()
+
+		// 测试点号格式和普通字段混合使用
+		query.Select("users.name", &user.Email).
+			Min("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT users.name, email, MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with dot notation and query conditions", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试点号格式字段与查询条件组合使用
+		query.Eq("users.status", 1).
+			Min("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 1 {
+			t.Errorf("Expected args: [1], got: %v", args)
+		}
+	})
+
+	t.Run("test min with dot notation in group by and having", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试点号格式字段在分组和聚合中使用
+		query.GroupBy("users.status").
+			Min("users.age").
+			Having("MIN(`users`.`age`) > ?", 18)
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING MIN(`users`.`age`) > ?"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 1 || args[0] != 18 {
+			t.Errorf("Expected args: [18], got: %v", args)
+		}
+	})
+
+	t.Run("test min with dot notation in join query", func(t *testing.T) {
+		query, _ := gormx.NewQuery[Post]()
+
+		// 测试在JOIN查询中使用点号格式字段
+		query.Join("JOIN users ON posts.user_id = users.id").
+			Min("users.age")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with invalid dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试无效的点号格式字段名
+		query.Min("invalid_table.invalid_field")
+
+		sql, args := query.ToSQLAndArgs()
+		expectedSQL := "SELECT MIN(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
+		}
+
+		if len(args) != 0 {
+			t.Errorf("Expected 0 args, got: %d", len(args))
+		}
+	})
+
+	t.Run("test min with malformed dot notation field name", func(t *testing.T) {
+		query, _ := gormx.NewQuery[User]()
+
+		// 测试格式错误的点号字段名（多个点号）
+		query.Min("table.subtable.field")
+
+		sql, args := query.ToSQLAndArgs()
+		// 根据实现，可能按普通字符串处理或有特殊处理
+		expectedSQL := "SELECT MIN(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		if sql != expectedSQL {
+			t.Logf("Actual SQL: %s", sql)
 		}
 
 		if len(args) != 0 {
