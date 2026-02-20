@@ -38,6 +38,16 @@ type User struct {
 
 	Posts []Post `gorm:"foreignKey:UserID"`     // 一对多关系
 	Roles []Role `gorm:"many2many:user_roles;"` // 多对多关系
+
+	rolesManager gormx.AssociationManager[User, Role]
+}
+
+// RolesManager 获取角色关联管理器
+func (u *User) RolesManager() gormx.AssociationManager[User, Role] {
+	if u.rolesManager == nil {
+		u.rolesManager = gormx.NewAssociationManager[User, Role](*u, "Roles")
+	}
+	return u.rolesManager
 }
 
 // UserRole 用户角色关联模型，用于建立 User 和 Role 的多对多关系
