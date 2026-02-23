@@ -3,12 +3,13 @@ package gormx_test
 import (
 	"errors"
 	"fmt"
-	"github.com/shijl0925/go-toolkits/gormx"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/shijl0925/go-toolkits/gormx"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 // Post 文章模型，与User是多对一关系
@@ -4259,7 +4260,7 @@ func TestQuery_Scan(t *testing.T) {
 		}
 
 		// 应该返回nil或空切片都是可以接受的
-		if results != nil && len(results) != 0 {
+		if len(results) != 0 {
 			t.Errorf("Expected empty or nil slice, got length: %d", len(results))
 		}
 	})
