@@ -699,7 +699,7 @@ func (q *Query[T]) IsNotNull(field interface{}) *Query[T] {
 // 返回:
 //   - placeholderStr: 占位符字符串，如 "?,?,?"
 //   - args: 参数列表
-func (q *Query[T]) buildInPlaceholders(value interface{}) (string, []interface{}) {
+func buildInPlaceholders(value interface{}) (string, []interface{}) {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() == reflect.Slice {
 		placeholders := make([]string, rv.Len())
@@ -756,7 +756,7 @@ func (q *Query[T]) In(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
 
 	// 生成占位符字符串和参数列表
-	_, args := q.buildInPlaceholders(value)
+	_, args := buildInPlaceholders(value)
 
 	// 使用GORM的clause.IN来安全构建IN查询条件，防止SQL注入
 	column := clause.Column{Name: fieldName}
@@ -810,7 +810,7 @@ func (q *Query[T]) NotIn(field interface{}, value interface{}) *Query[T] {
 	fieldName := q.resolveFieldName(field)
 
 	// 生成占位符字符串和参数列表
-	_, args := q.buildInPlaceholders(value)
+	_, args := buildInPlaceholders(value)
 
 	// 使用GORM的clause.Not来安全构建NOT IN查询条件，防止SQL注入
 	column := clause.Column{Name: fieldName}
@@ -1592,7 +1592,7 @@ func (q *Query[T]) Offset(offset int) *Query[T] {
 }
 
 // buildAggregateSQL 构建聚合函数的SQL表达式
-func (q *Query[T]) buildAggregateSQL(aggFunc string, fieldName string) string {
+func buildAggregateSQL(aggFunc string, fieldName string) string {
 	if fieldName == "" || fieldName == "*" {
 		return fmt.Sprintf("%s(*)", aggFunc)
 	}
@@ -1663,7 +1663,7 @@ func (q *Query[T]) Count(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		countSQL := q.buildAggregateSQL("COUNT", fieldName)
+		countSQL := buildAggregateSQL("COUNT", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加COUNT字段
@@ -1730,7 +1730,7 @@ func (q *Query[T]) Sum(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		sumSQL := q.buildAggregateSQL("SUM", fieldName)
+		sumSQL := buildAggregateSQL("SUM", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加SUM字段
@@ -1795,7 +1795,7 @@ func (q *Query[T]) Avg(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		avgSQL := q.buildAggregateSQL("AVG", fieldName)
+		avgSQL := buildAggregateSQL("AVG", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加AVG字段
@@ -1860,7 +1860,7 @@ func (q *Query[T]) Max(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		maxSQL := q.buildAggregateSQL("MAX", fieldName)
+		maxSQL := buildAggregateSQL("MAX", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加MAX字段
@@ -1925,7 +1925,7 @@ func (q *Query[T]) Min(field interface{}) *Query[T] {
 		// 构建select语句
 		var selectClause string
 
-		minSQL := q.buildAggregateSQL("MIN", fieldName)
+		minSQL := buildAggregateSQL("MIN", fieldName)
 
 		if len(db.Statement.Selects) > 0 {
 			// 如果已有select字段，则追加MIN字段
