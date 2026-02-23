@@ -3,11 +3,12 @@ package gormx
 import (
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/shijl0925/go-toolkits/stringx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"reflect"
-	"strings"
 )
 
 // 使用说明
@@ -69,7 +70,7 @@ type IBaseRepo[T any] interface {
 type BaseRepo[T any] struct{}
 
 // SelectOneByOpts 根据条件查询单条记录
-func (r *BaseRepo[T]) SelectOneByOpts(opts ...DBOption) (T, error) {
+func (*BaseRepo[T]) SelectOneByOpts(opts ...DBOption) (T, error) {
 	var items []T
 	db := GetDb(opts...).Model(new(T))
 
@@ -96,14 +97,14 @@ func (r *BaseRepo[T]) SelectOneByOpts(opts ...DBOption) (T, error) {
 }
 
 // SelectOneById 根据ID查询单条记录
-func (r *BaseRepo[T]) SelectOneById(id int) (T, error) {
+func (*BaseRepo[T]) SelectOneById(id int) (T, error) {
 	var item T
 	err := globalDb.Model(new(T)).Where("id = ?", id).First(&item).Error
 
 	return item, err
 }
 
-func (r *BaseRepo[T]) SelectOneByMap(columnMap map[string]interface{}) (T, error) {
+func (*BaseRepo[T]) SelectOneByMap(columnMap map[string]interface{}) (T, error) {
 	var items []T
 	db := GetDb().Model(new(T))
 
@@ -134,7 +135,7 @@ func (r *BaseRepo[T]) SelectOneByMap(columnMap map[string]interface{}) (T, error
 }
 
 // SelectListByIds 根据ID批量查询
-func (r *BaseRepo[T]) SelectListByIds(ids []int) ([]T, error) {
+func (*BaseRepo[T]) SelectListByIds(ids []int) ([]T, error) {
 	var items []T
 	err := globalDb.Model(new(T)).Where("id in ?", ids).Find(&items).Error
 	if err != nil {
@@ -144,7 +145,7 @@ func (r *BaseRepo[T]) SelectListByIds(ids []int) ([]T, error) {
 }
 
 // SelectListByOpts 根据条件查询所有记录
-func (r *BaseRepo[T]) SelectListByOpts(opts ...DBOption) ([]T, error) {
+func (*BaseRepo[T]) SelectListByOpts(opts ...DBOption) ([]T, error) {
 	var items []T
 
 	db := GetDb(opts...).Model(new(T))
@@ -158,7 +159,7 @@ func (r *BaseRepo[T]) SelectListByOpts(opts ...DBOption) ([]T, error) {
 }
 
 // SelectPage 分页查询
-func (r *BaseRepo[T]) SelectPage(page, pageSize int, opts ...DBOption) ([]T, int64, error) {
+func (*BaseRepo[T]) SelectPage(page, pageSize int, opts ...DBOption) ([]T, int64, error) {
 	var items []T
 
 	db := GetDb(opts...).Model(new(T))
@@ -180,7 +181,7 @@ func (r *BaseRepo[T]) SelectPage(page, pageSize int, opts ...DBOption) ([]T, int
 }
 
 // SelectListByMap 根据条件查询
-func (r *BaseRepo[T]) SelectListByMap(columnMap map[string]interface{}) ([]T, error) {
+func (*BaseRepo[T]) SelectListByMap(columnMap map[string]interface{}) ([]T, error) {
 	var items []T
 	db := GetDb().Model(new(T))
 
@@ -206,14 +207,14 @@ func (r *BaseRepo[T]) SelectListByMap(columnMap map[string]interface{}) ([]T, er
 }
 
 // SelectCount 统计数量
-func (r *BaseRepo[T]) SelectCount(opts ...DBOption) (int64, error) {
+func (*BaseRepo[T]) SelectCount(opts ...DBOption) (int64, error) {
 	var count int64
 	db := GetDb(opts...).Model(new(T))
 	return count, db.Count(&count).Error
 }
 
 // Exists 判断记录是否存在
-func (r *BaseRepo[T]) Exists(opts ...DBOption) bool {
+func (*BaseRepo[T]) Exists(opts ...DBOption) bool {
 	var item T
 	db := GetDb(opts...).Model(new(T))
 	err := db.Limit(1).First(&item).Error
@@ -221,7 +222,7 @@ func (r *BaseRepo[T]) Exists(opts ...DBOption) bool {
 }
 
 // Insert 创建单条记录
-func (r *BaseRepo[T]) Insert(item *T) error {
+func (*BaseRepo[T]) Insert(item *T) error {
 	if item == nil {
 		return errors.New("item cannot be nil")
 	}
@@ -230,7 +231,7 @@ func (r *BaseRepo[T]) Insert(item *T) error {
 }
 
 // InsertBatch 批量插入
-func (r *BaseRepo[T]) InsertBatch(items []*T) error {
+func (*BaseRepo[T]) InsertBatch(items []*T) error {
 	if len(items) == 0 {
 		return errors.New("items cannot be empty")
 	}
@@ -239,7 +240,7 @@ func (r *BaseRepo[T]) InsertBatch(items []*T) error {
 }
 
 // InsertInBatches 批量插入, 按批次插入
-func (r *BaseRepo[T]) InsertInBatches(items []*T, batchSize int) error {
+func (*BaseRepo[T]) InsertInBatches(items []*T, batchSize int) error {
 	if len(items) == 0 {
 		return errors.New("items cannot be empty")
 	}
@@ -252,7 +253,7 @@ func (r *BaseRepo[T]) InsertInBatches(items []*T, batchSize int) error {
 }
 
 // InsertOrUpdate 创建或更新, 若主键有值, 则更新, 否则创建
-func (r *BaseRepo[T]) InsertOrUpdate(item *T) error {
+func (*BaseRepo[T]) InsertOrUpdate(item *T) error {
 	return globalDb.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(item).Error
@@ -304,7 +305,7 @@ func (r *BaseRepo[T]) processFields(structType reflect.Type, restrictedFields ma
 }
 
 // isAssociationField 判断是否为关联字段
-func (r *BaseRepo[T]) isAssociationField(field reflect.StructField) bool {
+func (*BaseRepo[T]) isAssociationField(field reflect.StructField) bool {
 	// 检查字段类型是否为切片或结构体（通常是关联）
 	fieldType := field.Type
 	if fieldType.Kind() == reflect.Ptr {
@@ -335,7 +336,7 @@ func (r *BaseRepo[T]) isAssociationField(field reflect.StructField) bool {
 }
 
 // getFieldName 获取字段名（优先使用 JSON 标签，其次使用字段名）
-func (r *BaseRepo[T]) getFieldName(field reflect.StructField) string {
+func (*BaseRepo[T]) getFieldName(field reflect.StructField) string {
 	// 优先使用 JSON 标签中的名称
 	if jsonTag := field.Tag.Get("json"); jsonTag != "" {
 		// 如果是忽略标签，则使用数据库列名或蛇形命名
@@ -381,7 +382,7 @@ func (r *BaseRepo[T]) filterUpdateFields(vars map[string]interface{}) map[string
 }
 
 // Update 更新单条记录
-func (r *BaseRepo[T]) Update(item *T) error {
+func (*BaseRepo[T]) Update(item *T) error {
 	if item == nil {
 		return errors.New("item cannot be nil")
 	}
@@ -410,7 +411,7 @@ func (r *BaseRepo[T]) UpdateByOpts(vars map[string]interface{}, opts ...DBOption
 }
 
 // Upsert 插入或更新（根据唯一约束）
-func (r *BaseRepo[T]) Upsert(item *T, vars map[string]interface{}) error {
+func (*BaseRepo[T]) Upsert(item *T, vars map[string]interface{}) error {
 	return globalDb.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.Assignments(vars),
@@ -418,7 +419,7 @@ func (r *BaseRepo[T]) Upsert(item *T, vars map[string]interface{}) error {
 }
 
 // GetOrCreate 查找第一条匹配的记录，否则根据条件创建新记录
-func (r *BaseRepo[T]) GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error) {
+func (*BaseRepo[T]) GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error) {
 	var item T
 	db := GetDb().Model(new(T))
 
@@ -439,7 +440,7 @@ func (r *BaseRepo[T]) GetOrCreate(whereCond map[string]interface{}, assignAttrs 
 }
 
 // UpdateOrCreate 不存在则创建，存在则更新
-func (r *BaseRepo[T]) UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error) {
+func (*BaseRepo[T]) UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error) {
 	var item T
 	db := GetDb().Model(new(T))
 
@@ -455,7 +456,7 @@ func (r *BaseRepo[T]) UpdateOrCreate(whereCond map[string]interface{}, assignAtt
 }
 
 // Delete 删除单条记录
-func (r *BaseRepo[T]) Delete(item *T) error {
+func (*BaseRepo[T]) Delete(item *T) error {
 	if item == nil {
 		return errors.New("item cannot be nil")
 	}
@@ -463,17 +464,17 @@ func (r *BaseRepo[T]) Delete(item *T) error {
 }
 
 // DeleteById 根据ID删除记录
-func (r *BaseRepo[T]) DeleteById(id int) error {
+func (*BaseRepo[T]) DeleteById(id int) error {
 	return globalDb.Where("id = ?", id).Delete(new(T)).Error
 }
 
 // DeleteBatchIds 根据ID批量删除记录
-func (r *BaseRepo[T]) DeleteBatchIds(ids []int) error {
+func (*BaseRepo[T]) DeleteBatchIds(ids []int) error {
 	return globalDb.Where("id in ?", ids).Delete(new(T)).Error
 }
 
 // DeleteByOpts 根据条件删除记录
-func (r *BaseRepo[T]) DeleteByOpts(opts ...DBOption) error {
+func (*BaseRepo[T]) DeleteByOpts(opts ...DBOption) error {
 	db := GetDb(opts...)
 
 	// 如果opts为空，不执行删除操作
@@ -485,7 +486,7 @@ func (r *BaseRepo[T]) DeleteByOpts(opts ...DBOption) error {
 }
 
 // DeleteByMap 根据条件删除记录
-func (r *BaseRepo[T]) DeleteByMap(columnMap map[string]interface{}) error {
+func (*BaseRepo[T]) DeleteByMap(columnMap map[string]interface{}) error {
 	db := GetDb().Model(new(T))
 
 	// 如果columnMap为空，不执行删除操作
@@ -497,7 +498,7 @@ func (r *BaseRepo[T]) DeleteByMap(columnMap map[string]interface{}) error {
 }
 
 // Sum 求和特定字段
-func (r *BaseRepo[T]) Sum(field string, opts ...DBOption) (float64, error) {
+func (*BaseRepo[T]) Sum(field string, opts ...DBOption) (float64, error) {
 	// 验证字段名合法性
 	if field == "" {
 		return 0, errors.New("field name cannot be empty")
@@ -510,7 +511,7 @@ func (r *BaseRepo[T]) Sum(field string, opts ...DBOption) (float64, error) {
 }
 
 // Max 获取字段最大值
-func (r *BaseRepo[T]) Max(field string, opts ...DBOption) (interface{}, error) {
+func (*BaseRepo[T]) Max(field string, opts ...DBOption) (interface{}, error) {
 	// 验证字段名合法性
 	if field == "" {
 		return nil, errors.New("field name cannot be empty")
@@ -531,7 +532,7 @@ func (r *BaseRepo[T]) Max(field string, opts ...DBOption) (interface{}, error) {
 }
 
 // Min 获取字段最小值
-func (r *BaseRepo[T]) Min(field string, opts ...DBOption) (interface{}, error) {
+func (*BaseRepo[T]) Min(field string, opts ...DBOption) (interface{}, error) {
 	// 验证字段名合法性
 	if field == "" {
 		return nil, errors.New("field name cannot be empty")
@@ -552,7 +553,7 @@ func (r *BaseRepo[T]) Min(field string, opts ...DBOption) (interface{}, error) {
 }
 
 // Avg 获取字段平均值
-func (r *BaseRepo[T]) Avg(field string, opts ...DBOption) (float64, error) {
+func (*BaseRepo[T]) Avg(field string, opts ...DBOption) (float64, error) {
 	// 验证字段名合法性
 	if field == "" {
 		return 0, errors.New("field name cannot be empty")
@@ -565,11 +566,11 @@ func (r *BaseRepo[T]) Avg(field string, opts ...DBOption) (float64, error) {
 }
 
 // Increment 字段自增
-func (r *BaseRepo[T]) Increment(id int, field string, value interface{}) error {
+func (*BaseRepo[T]) Increment(id int, field string, value interface{}) error {
 	return globalDb.Model(new(T)).Where("id = ?", id).UpdateColumn(field, gorm.Expr(field+" + ?", value)).Error
 }
 
 // Decrement 字段自减
-func (r *BaseRepo[T]) Decrement(id int, field string, value interface{}) error {
+func (*BaseRepo[T]) Decrement(id int, field string, value interface{}) error {
 	return globalDb.Model(new(T)).Where("id = ?", id).UpdateColumn(field, gorm.Expr(field+" - ?", value)).Error
 }

@@ -699,7 +699,7 @@ func (q *Query[T]) IsNotNull(field interface{}) *Query[T] {
 // 返回:
 //   - placeholderStr: 占位符字符串，如 "?,?,?"
 //   - args: 参数列表
-func (q *Query[T]) buildInPlaceholders(value interface{}) (string, []interface{}) {
+func (*Query[T]) buildInPlaceholders(value interface{}) (string, []interface{}) {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() == reflect.Slice {
 		placeholders := make([]string, rv.Len())
@@ -1592,7 +1592,7 @@ func (q *Query[T]) Offset(offset int) *Query[T] {
 }
 
 // buildAggregateSQL 构建聚合函数的SQL表达式
-func (q *Query[T]) buildAggregateSQL(aggFunc string, fieldName string) string {
+func (*Query[T]) buildAggregateSQL(aggFunc string, fieldName string) string {
 	if fieldName == "" || fieldName == "*" {
 		return fmt.Sprintf("%s(*)", aggFunc)
 	}
