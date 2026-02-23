@@ -3808,7 +3808,8 @@ func TestQuery_Distinct(t *testing.T) {
 		query, _ := gormx.NewQuery[User]()
 
 		// 测试使用空切片参数
-		fields := []interface{}{}
+		var fields []interface{}
+
 		query.Distinct(fields...)
 
 		sql, args := query.ToSQLAndArgs()
@@ -4082,7 +4083,8 @@ func TestQuery_Select(t *testing.T) {
 		query, _ := gormx.NewQuery[User]()
 
 		// 测试使用空切片参数
-		fields := []interface{}{}
+		var fields []interface{}
+
 		result := query.Select(fields...)
 		if result != query {
 			t.Error("Select should return the same query instance for chaining")
