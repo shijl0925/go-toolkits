@@ -2,7 +2,6 @@ package gormx
 
 import (
 	"errors"
-	"fmt"
 	"github.com/shijl0925/go-toolkits/stringx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -88,7 +87,7 @@ func (r *BaseRepo[T]) SelectOneByOpts(opts ...DBOption) (T, error) {
 	} else if size > 1 {
 		var zero T
 
-		errMessage := fmt.Sprintf("expected one result (or null) to be returned by SelectOneByOpts(), but multiple matches")
+		errMessage := "expected one result (or null) to be returned by SelectOneByOpts(), but multiple matches"
 		return zero, errors.New(errMessage)
 	}
 
@@ -126,7 +125,7 @@ func (r *BaseRepo[T]) SelectOneByMap(columnMap map[string]interface{}) (T, error
 	} else if size > 1 {
 		var zero T
 
-		errMessage := fmt.Sprintf("expected one result (or null) to be returned by SelectOneByMap(), but multiple matches")
+		errMessage := "expected one result (or null) to be returned by SelectOneByMap(), but multiple matches"
 		return zero, errors.New(errMessage)
 	}
 
