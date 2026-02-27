@@ -6,7 +6,7 @@ go-toolkits 是一个基于 Go 泛型的工具库, 它涵盖了在开发过程�
 
 
 ## 安装
-ekit 目前要求 Go >= 1.23。
+go-toolkits 目前要求 Go >= 1.23。
 
 使用 go get 命令安装：
 ```shell
