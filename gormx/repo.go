@@ -167,7 +167,7 @@ func (r *BaseRepo[T]) SelectPage(page, pageSize int, opts ...DBOption) ([]T, int
 		page = 1
 	}
 	if pageSize <= 0 {
-		return nil, 0, errors.New("pageSize must be positive")
+		return nil, 0, nil
 	}
 
 	var items []T
