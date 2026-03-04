@@ -528,9 +528,12 @@ func (q *Query[T]) Le(field interface{}, value interface{}) *Query[T] {
 //   - 可以与其他查询条件组合使用
 //   - 自动在匹配值前后添加%通配符，实现包含匹配
 func (q *Query[T]) Like(field interface{}, value interface{}) *Query[T] {
-	strVal, ok := value.(string)
-	if !ok {
-		panic("like value must be a string")
+	var strVal string
+	switch v := value.(type) {
+	case string:
+		strVal = v
+	default:
+		strVal = fmt.Sprintf("%v", v)
 	}
 
 	fieldName := q.resolveFieldName(field)
