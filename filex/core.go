@@ -209,7 +209,7 @@ func CopyFile(srcPath string, dstPath string) error {
 
 	srcInfo, err := os.Lstat(cleanedSrcPath)
 	if err != nil {
-		return fmt.Errorf("failed to get source directory info: %w", err)
+		return fmt.Errorf("failed to get source file info: %w", err)
 	}
 
 	// Prevent copying symlinks: check if srcPath is a symbolic link
@@ -245,21 +245,26 @@ func CopyFile(srcPath string, dstPath string) error {
 	if err != nil {
 		return err
 	}
-	defer distFile.Close()
 
 	// 使用缓冲拷贝
 	buf := make([]byte, 64*1024) // 64KB buffer
 	_, err = io.CopyBuffer(distFile, srcFile, buf)
 	if err != nil {
+		_ = distFile.Close()
 		return fmt.Errorf("error copying file content: %w", err)
 	}
 
 	if err := distFile.Sync(); err != nil {
+		_ = distFile.Close()
 		return fmt.Errorf("failed to sync copied file: %w", err)
 	}
 
+	if err := distFile.Close(); err != nil {
+		return fmt.Errorf("failed to close copied file: %w", err)
+	}
+
 	// 设置目标文件权限与源文件一致
-	if err := distFile.Chmod(srcInfo.Mode()); err != nil {
+	if err := os.Chmod(cleanedDstPath, srcInfo.Mode()); err != nil {
 		return fmt.Errorf("failed to set destination file permissions: %w", err)
 	}
 
