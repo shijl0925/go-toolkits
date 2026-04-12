@@ -17,7 +17,7 @@ const (
 )
 
 func init() {
-	gormx.Init(mustOpenTestDB(testDialectMySQL))
+	gormx.Init(mustOpenTestDB(defaultTestDialect()))
 }
 
 func withTestDatabase(t *testing.T, dialect string, fn func(t *testing.T)) {
@@ -101,4 +101,8 @@ func getenvDefault(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func defaultTestDialect() string {
+	return getenvDefault("GORMX_TEST_DEFAULT_DIALECT", testDialectMySQL)
 }
