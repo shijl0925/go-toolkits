@@ -26,6 +26,8 @@ type Query[T any] struct {
 	fieldsOnce  sync.Once       // 确保字段列表只计算一次
 }
 
+const postgresDialectName = "postgres"
+
 func NewQuery[T any]() (*Query[T], *T) {
 	var instance T
 	return &Query[T]{
@@ -585,7 +587,7 @@ func (q *Query[T]) Regexp(field interface{}, pattern string) *Query[T] {
 	// 默认使用 REGEXP (适用于 MySQL)
 	operator := "REGEXP"
 
-	if db := GetDb(); db != nil && db.Dialector.Name() == "postgres" {
+	if db := GetDb(); db != nil && db.Dialector.Name() == postgresDialectName {
 		operator = "~"
 	}
 
