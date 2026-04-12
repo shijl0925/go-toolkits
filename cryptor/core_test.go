@@ -1,7 +1,6 @@
 package cryptor_test
 
 import (
-	"crypto/md5"
 	"crypto/sha256"
 	"fmt"
 	"github.com/shijl0925/go-toolkits/cryptor"
@@ -99,58 +98,36 @@ func TestBase64StdDecode(t *testing.T) {
 	}
 }
 
-func TestMd5String(t *testing.T) {
+func TestSha256Stream(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected string
 	}{
 		{
 			input:    "hello",
-			expected: "5d41402abc4b2a76b9719d911017c592",
+			expected: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
 		},
 		{
 			input:    "",
-			expected: "d41d8cd98f00b204e9800998ecf8427e",
+			expected: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 		},
 		{
 			input:    "你好",
-			expected: "7eca689f0d3389d9dea66ae112e5cfd7",
+			expected: "670d9743542cae3e8a9f56d0751d1b8b7637a68b7ad3bebdff8f6ff0e8572585",
 		},
 		{
 			input:    "123456",
-			expected: "e10adc3949ba59abbe56e057f20f883e",
+			expected: "8d969eef6ecad3c29a3a629280e686cff8fabcb3ef6e3c0c7b8d7a2e51a2d2f3",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			result := cryptor.Md5String(tt.input)
+			result := cryptor.Sha256Stream(tt.input)
 			if result != tt.expected {
-				t.Errorf("Md5String(%q) = %q; want %q", tt.input, result, tt.expected)
+				t.Errorf("Sha256Stream(%q) = %q; want %q", tt.input, result, tt.expected)
 			}
 		})
-	}
-}
-
-// TestFileMD5_ValidFile tests valid file with known content.
-func TestMd5File(t *testing.T) {
-	content := []byte("hello world")
-	tmpDir := t.TempDir()
-	filePath := tmpDir + "/testfile.txt"
-
-	err := os.WriteFile(filePath, content, 0600)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	expected := fmt.Sprintf("%x", md5.Sum(content))
-	md5Str, err := cryptor.Md5File(filePath)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	if md5Str != expected {
-		t.Errorf("expected MD5 %q, got %q", expected, md5Str)
 	}
 }
 
