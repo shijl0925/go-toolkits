@@ -585,8 +585,9 @@ func (q *Query[T]) Regexp(field interface{}, pattern string) *Query[T] {
 	// 默认使用 REGEXP (适用于 MySQL)
 	operator := "REGEXP"
 
-	// 如果需要支持其他数据库，可以根据需要添加判断逻辑
-	// 例如对于 PostgreSQL 可以使用 ~ 操作符
+	if db := GetDb(); db != nil && db.Dialector.Name() == "postgres" {
+		operator = "~"
+	}
 
 	column := clause.Column{Name: fieldName}
 	q.opts = append(q.opts, Where(clause.Expr{
