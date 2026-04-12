@@ -204,7 +204,10 @@ func CopyFile(srcPath string, dstPath string) error {
 		return fmt.Errorf("srcPath or dstPath is empty")
 	}
 
-	srcInfo, err := os.Lstat(srcPath)
+	cleanedSrcPath := filepath.Clean(srcPath)
+	cleanedDstPath := filepath.Clean(dstPath)
+
+	srcInfo, err := os.Lstat(cleanedSrcPath)
 	if err != nil {
 		return fmt.Errorf("failed to get source directory info: %w", err)
 	}
@@ -214,35 +217,50 @@ func CopyFile(srcPath string, dstPath string) error {
 		return fmt.Errorf("source file %q is a symbolic link and will not be copied", srcPath)
 	}
 
-	srcFile, err := os.Open(filepath.Clean(srcPath))
+	if dstInfo, err := os.Lstat(cleanedDstPath); err == nil {
+		if dstInfo.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("destination file %q is a symbolic link and will not be overwritten", dstPath)
+		}
+		if os.SameFile(srcInfo, dstInfo) {
+			return fmt.Errorf("source and destination refer to the same file")
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to get destination file info: %w", err)
+	}
+
+	srcFile, err := os.Open(cleanedSrcPath)
 	if err != nil {
 		return err
 	}
 	defer srcFile.Close()
 
 	// 确保目标目录存在
-	dstDir := filepath.Dir(dstPath)
+	dstDir := filepath.Dir(cleanedDstPath)
 	err = CreateDir(dstDir)
 	if err != nil {
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
-	distFile, err := os.OpenFile(filepath.Clean(dstPath), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	distFile, err := os.OpenFile(cleanedDstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
 	defer distFile.Close()
-
-	// 设置目标目录权限与源目录一致
-	if err := os.Chmod(dstPath, srcInfo.Mode()); err != nil {
-		return fmt.Errorf("failed to set destination directory permissions: %w", err)
-	}
 
 	// 使用缓冲拷贝
 	buf := make([]byte, 64*1024) // 64KB buffer
 	_, err = io.CopyBuffer(distFile, srcFile, buf)
 	if err != nil {
 		return fmt.Errorf("error copying file content: %w", err)
+	}
+
+	if err := distFile.Sync(); err != nil {
+		return fmt.Errorf("failed to sync copied file: %w", err)
+	}
+
+	// 设置目标文件权限与源文件一致
+	if err := distFile.Chmod(srcInfo.Mode()); err != nil {
+		return fmt.Errorf("failed to set destination file permissions: %w", err)
 	}
 
 	return nil

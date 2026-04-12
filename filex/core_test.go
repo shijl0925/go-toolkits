@@ -634,6 +634,96 @@ func Test_CopyFile(t *testing.T) {
 	}
 }
 
+func Test_CopyFile_PreservesMode(t *testing.T) {
+	tempDir := t.TempDir()
+	srcPath := filepath.Join(tempDir, "source.txt")
+	dstPath := filepath.Join(tempDir, "nested", "dest.txt")
+
+	if err := os.WriteFile(srcPath, []byte("copy me"), 0600); err != nil {
+		t.Fatalf("os.WriteFile() failed: %v", err)
+	}
+
+	if err := os.Chmod(srcPath, 0640); err != nil {
+		t.Fatalf("os.Chmod() failed: %v", err)
+	}
+
+	if err := filex.CopyFile(srcPath, dstPath); err != nil {
+		t.Fatalf("CopyFile() error = %v", err)
+	}
+
+	srcInfo, err := os.Lstat(srcPath)
+	if err != nil {
+		t.Fatalf("os.Lstat(src) failed: %v", err)
+	}
+
+	dstInfo, err := os.Lstat(dstPath)
+	if err != nil {
+		t.Fatalf("os.Lstat(dst) failed: %v", err)
+	}
+
+	if dstInfo.Mode() != srcInfo.Mode() {
+		t.Errorf("CopyFile() mode = %v; want %v", dstInfo.Mode(), srcInfo.Mode())
+	}
+}
+
+func Test_CopyFile_RejectsSameFile(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "same.txt")
+	originalContent := []byte("original content")
+
+	if err := os.WriteFile(filePath, originalContent, 0600); err != nil {
+		t.Fatalf("os.WriteFile() failed: %v", err)
+	}
+
+	err := filex.CopyFile(filePath, filePath)
+	if err == nil {
+		t.Fatal("CopyFile() expected error when source and destination are the same file")
+	}
+
+	content, readErr := os.ReadFile(filePath)
+	if readErr != nil {
+		t.Fatalf("os.ReadFile() failed: %v", readErr)
+	}
+
+	if string(content) != string(originalContent) {
+		t.Errorf("CopyFile() modified source content: got %q; want %q", content, originalContent)
+	}
+}
+
+func Test_CopyFile_RejectsDestinationSymlink(t *testing.T) {
+	tempDir := t.TempDir()
+	srcPath := filepath.Join(tempDir, "source.txt")
+	targetPath := filepath.Join(tempDir, "target.txt")
+	linkPath := filepath.Join(tempDir, "dest-link.txt")
+
+	if err := os.WriteFile(srcPath, []byte("source content"), 0600); err != nil {
+		t.Fatalf("os.WriteFile(src) failed: %v", err)
+	}
+
+	originalTarget := []byte("target content")
+	if err := os.WriteFile(targetPath, originalTarget, 0600); err != nil {
+		t.Fatalf("os.WriteFile(target) failed: %v", err)
+	}
+
+	if err := os.Symlink(targetPath, linkPath); err != nil {
+		t.Fatalf("os.Symlink() failed: %v", err)
+	}
+
+	err := filex.CopyFile(srcPath, linkPath)
+	if err == nil {
+		t.Fatal("CopyFile() expected error when destination is a symbolic link")
+	}
+
+	content, readErr := os.ReadFile(targetPath)
+	if readErr != nil {
+		t.Fatalf("os.ReadFile(target) failed: %v", readErr)
+	}
+
+	if string(content) != string(originalTarget) {
+		t.Errorf("CopyFile() unexpectedly modified symlink target: got %q; want %q", content, originalTarget)
+	}
+}
+
 func Test_CopyDir(t *testing.T) {
 	tests := []struct {
 		name     string
