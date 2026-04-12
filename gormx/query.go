@@ -26,6 +26,8 @@ type Query[T any] struct {
 	fieldsOnce  sync.Once       // 确保字段列表只计算一次
 }
 
+const postgresDialectName = "postgres"
+
 func NewQuery[T any]() (*Query[T], *T) {
 	var instance T
 	return &Query[T]{
@@ -585,8 +587,9 @@ func (q *Query[T]) Regexp(field interface{}, pattern string) *Query[T] {
 	// 默认使用 REGEXP (适用于 MySQL)
 	operator := "REGEXP"
 
-	// 如果需要支持其他数据库，可以根据需要添加判断逻辑
-	// 例如对于 PostgreSQL 可以使用 ~ 操作符
+	if db := GetDb(); db != nil && db.Dialector.Name() == postgresDialectName {
+		operator = "~"
+	}
 
 	column := clause.Column{Name: fieldName}
 	q.opts = append(q.opts, Where(clause.Expr{
@@ -1600,11 +1603,18 @@ func buildAggregateSQL(aggFunc string, fieldName string) string {
 		parts := strings.Split(fieldName, ".")
 		quotedParts := make([]string, len(parts))
 		for i, part := range parts {
-			quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
+			quotedParts[i] = quoteAggregateIdentifier(strings.TrimSpace(part))
 		}
 		return fmt.Sprintf("%s(%s)", aggFunc, strings.Join(quotedParts, "."))
 	}
-	return fmt.Sprintf("%s(`%s`)", aggFunc, fieldName)
+	return fmt.Sprintf("%s(%s)", aggFunc, quoteAggregateIdentifier(fieldName))
+}
+
+func quoteAggregateIdentifier(fieldName string) string {
+	if db := GetDb(); db != nil && db.Dialector.Name() == postgresDialectName {
+		return fmt.Sprintf(`"%s"`, fieldName)
+	}
+	return fmt.Sprintf("`%s`", fieldName)
 }
 
 // Count 添加count聚合函数
