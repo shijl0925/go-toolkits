@@ -78,12 +78,7 @@ func requireTestDB(t *testing.T) *gorm.DB {
 		t.Skip("skipping database-backed gormx tests: test database is unavailable")
 	}
 
-	db := gormx.GetDb()
-	if db == nil {
-		t.Skip("skipping database-backed gormx tests: test database is unavailable")
-	}
-
-	return db
+	return gormx.GetDb()
 }
 
 func migrateTestDB(db *gorm.DB) error {
