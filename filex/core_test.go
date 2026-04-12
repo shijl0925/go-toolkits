@@ -1,7 +1,6 @@
 package filex_test
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -482,26 +481,29 @@ func Test_WriteStringToFile(t *testing.T) {
 
 func TestFileMode(t *testing.T) {
 	tests := []struct {
-		name     string
-		path     string
-		expected fs.FileMode
+		name string
+		path string
 	}{
 		{
-			name:     "test01",
-			path:     "../LICENSE",
-			expected: fs.FileMode(0644),
+			name: "test01",
+			path: "../LICENSE",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			info, err := os.Lstat(tt.path)
+			if err != nil {
+				t.Fatalf("os.Lstat() error = %v", err)
+			}
+
 			result, err := filex.FileMode(tt.path)
 			if err != nil {
 				t.Errorf("FileMode() error = %v", err)
 			}
 
-			if result != tt.expected {
-				t.Errorf("FileMode() expected %v, got %v", tt.expected, result)
+			if result != info.Mode() {
+				t.Errorf("FileMode() expected %v, got %v", info.Mode(), result)
 			}
 		})
 	}

@@ -17,14 +17,30 @@ const (
 )
 
 func init() {
-	gormx.Init(mustOpenTestDB(defaultTestDialect()))
+	db, err := openTestDB(defaultTestDialect())
+	if err != nil {
+		return
+	}
+
+	if err := migrateTestDB(db); err != nil {
+		panic(fmt.Sprintf("failed to migrate %s database: %v", defaultTestDialect(), err))
+	}
+
+	gormx.Init(db)
 }
 
 func withTestDatabase(t *testing.T, dialect string, fn func(t *testing.T)) {
 	t.Helper()
 
 	previous := gormx.GetDb()
-	db := mustOpenTestDB(dialect)
+	db, err := openTestDB(dialect)
+	if err != nil {
+		t.Skipf("skipping %s database tests: %v", dialect, err)
+	}
+
+	if err := migrateTestDB(db); err != nil {
+		t.Fatalf("failed to migrate %s database: %v", dialect, err)
+	}
 
 	gormx.Init(db)
 	t.Cleanup(func() {
@@ -40,17 +56,19 @@ func withTestDatabase(t *testing.T, dialect string, fn func(t *testing.T)) {
 	fn(t)
 }
 
-func mustOpenTestDB(dialect string) *gorm.DB {
-	db, err := openTestDB(dialect)
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect %s database: %v", dialect, err))
-	}
+func requireTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
 
-	if err := db.AutoMigrate(&User{}, &Post{}, &Role{}, &UserRole{}, &Profile{}); err != nil {
-		panic(fmt.Sprintf("failed to migrate %s database: %v", dialect, err))
+	db := gormx.GetDb()
+	if db == nil {
+		t.Skip("skipping database-backed gormx tests: test database is unavailable")
 	}
 
 	return db
+}
+
+func migrateTestDB(db *gorm.DB) error {
+	return db.AutoMigrate(&User{}, &Post{}, &Role{}, &UserRole{}, &Profile{})
 }
 
 func openTestDB(dialect string) (*gorm.DB, error) {
