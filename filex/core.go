@@ -222,7 +222,7 @@ func CopyFile(srcPath string, dstPath string) error {
 			return fmt.Errorf("destination file %q is a symbolic link and will not be overwritten", dstPath)
 		}
 		if os.SameFile(srcInfo, dstInfo) {
-			return fmt.Errorf("source and destination refer to the same file")
+			return fmt.Errorf("source %q and destination %q refer to the same file", srcPath, dstPath)
 		}
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("failed to get destination file info: %w", err)

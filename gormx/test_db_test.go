@@ -26,7 +26,7 @@ func init() {
 		err = pingTestDB(db)
 	}
 	if err != nil {
-		fallbackDB, fallbackErr := openFallbackTestDB(dialect)
+		fallbackDB, fallbackErr := openDryRunTestDB(dialect)
 		if fallbackErr == nil {
 			gormx.Init(fallbackDB)
 		}
@@ -105,7 +105,7 @@ func openTestDB(dialect string) (*gorm.DB, error) {
 	}
 }
 
-func openFallbackTestDB(dialect string) (*gorm.DB, error) {
+func openDryRunTestDB(dialect string) (*gorm.DB, error) {
 	cfg := &gorm.Config{
 		DryRun:               true,
 		DisableAutomaticPing: true,

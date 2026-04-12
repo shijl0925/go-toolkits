@@ -690,6 +690,35 @@ func Test_CopyFile_RejectsSameFile(t *testing.T) {
 	}
 }
 
+func Test_CopyFile_RejectsHardLinkDestination(t *testing.T) {
+	tempDir := t.TempDir()
+	srcPath := filepath.Join(tempDir, "source.txt")
+	hardLinkPath := filepath.Join(tempDir, "source-hardlink.txt")
+	originalContent := []byte("hard link content")
+
+	if err := os.WriteFile(srcPath, originalContent, 0600); err != nil {
+		t.Fatalf("os.WriteFile(src) failed: %v", err)
+	}
+
+	if err := os.Link(srcPath, hardLinkPath); err != nil {
+		t.Fatalf("os.Link() failed: %v", err)
+	}
+
+	err := filex.CopyFile(srcPath, hardLinkPath)
+	if err == nil {
+		t.Fatal("CopyFile() expected error when destination is a hard link to the source")
+	}
+
+	content, readErr := os.ReadFile(srcPath)
+	if readErr != nil {
+		t.Fatalf("os.ReadFile(src) failed: %v", readErr)
+	}
+
+	if string(content) != string(originalContent) {
+		t.Errorf("CopyFile() modified source content through hard link destination: got %q; want %q", content, originalContent)
+	}
+}
+
 func Test_CopyFile_RejectsDestinationSymlink(t *testing.T) {
 	tempDir := t.TempDir()
 	srcPath := filepath.Join(tempDir, "source.txt")
