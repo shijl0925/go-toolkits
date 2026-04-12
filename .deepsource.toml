@@ -1,6 +1,10 @@
 version = 1
 
-exclude_patterns = []
+exclude_patterns = [
+  "**/*_test.go",
+  "**/test/**",
+  "**/tests/**"
+]
 
 [[analyzers]]
 name = "go"
