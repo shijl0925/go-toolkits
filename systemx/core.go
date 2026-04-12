@@ -135,7 +135,7 @@ func resolveExecutable(command string) (string, error) {
 	}
 
 	if strings.ContainsRune(command, 0) {
-		return "", fmt.Errorf("invalid command provided")
+		return "", fmt.Errorf("command contains null byte")
 	}
 
 	if filepath.IsAbs(command) {

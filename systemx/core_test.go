@@ -4,6 +4,7 @@ import (
 	"github.com/shijl0925/go-toolkits/systemx"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -67,5 +68,7 @@ func TestStartProcessRejectsRelativePath(t *testing.T) {
 	relativeCommand := "." + string(os.PathSeparator) + "sleep"
 	if _, err := systemx.StartProcess(relativeCommand, "1"); err == nil {
 		t.Fatal("expected error for relative command path")
+	} else if !strings.Contains(err.Error(), "relative command paths are not allowed") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
