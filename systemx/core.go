@@ -182,6 +182,10 @@ func splitCommandLine(command string) ([]string, error) {
 		case r == '\\':
 			escaped = true
 		case quote != 0:
+			if quote == '"' && r == '\\' {
+				escaped = true
+				continue
+			}
 			if r == quote {
 				quote = 0
 				continue

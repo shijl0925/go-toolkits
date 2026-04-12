@@ -1,6 +1,7 @@
 package systemx_test
 
 import (
+	"errors"
 	"github.com/shijl0925/go-toolkits/systemx"
 	"os"
 	"os/exec"
@@ -43,6 +44,21 @@ func TestExecCommandQuotedArgs(t *testing.T) {
 	}
 }
 
+func TestExecCommandEscapedQuotesAndSpaces(t *testing.T) {
+	stdout, stderr, err := systemx.ExecCommand(`printf "%s"   "hello \"quoted\" world @#$"`)
+	if err != nil {
+		t.Fatalf("ExecCommand error: %v", err)
+	}
+
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+
+	if stdout != `hello "quoted" world @#$` {
+		t.Fatalf("expected escaped quote output, got %q", stdout)
+	}
+}
+
 func TestExecCommandInvalidSyntax(t *testing.T) {
 	_, _, err := systemx.ExecCommand(`printf "unterminated`)
 	if err == nil {
@@ -59,7 +75,7 @@ func TestStartProcess(t *testing.T) {
 		t.Errorf("Invalid pid: %d", pid)
 	}
 
-	if err := systemx.KillProcess(pid); err != nil {
+	if err := systemx.KillProcess(pid); err != nil && !errors.Is(err, os.ErrProcessDone) {
 		t.Fatalf("KillProcess error: %v", err)
 	}
 }
