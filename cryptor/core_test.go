@@ -99,33 +99,14 @@ func TestBase64StdDecode(t *testing.T) {
 }
 
 func TestSha256Stream(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{
-			input:    "hello",
-			expected: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
-		},
-		{
-			input:    "",
-			expected: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-		},
-		{
-			input:    "你好",
-			expected: "670d9743542cae3e8a9f56d0751d1b8b7637a68b7ad3bebdff8f6ff0e8572585",
-		},
-		{
-			input:    "123456",
-			expected: "8d969eef6ecad3c29a3a629280e686cff8fabcb3ef6e3c0c7b8d7a2e51a2d2f3",
-		},
-	}
+	tests := []string{"hello", "", "你好", "123456"}
 
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := cryptor.Sha256Stream(tt.input)
-			if result != tt.expected {
-				t.Errorf("Sha256Stream(%q) = %q; want %q", tt.input, result, tt.expected)
+	for _, input := range tests {
+		t.Run(input, func(t *testing.T) {
+			expected := fmt.Sprintf("%x", sha256.Sum256([]byte(input)))
+			result := cryptor.Sha256Stream(input)
+			if result != expected {
+				t.Errorf("Sha256Stream(%q) = %q; want %q", input, result, expected)
 			}
 		})
 	}
