@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 type (
@@ -47,17 +49,15 @@ func RemoveOsEnv(key string) error {
 // in linux,  use /bin/bash -c to execute command
 // in windows, use powershell.exe to execute command
 func ExecCommand(command string, opts ...Option) (stdout, stderr string, err error) {
-	if command == "" {
-		return "", "", fmt.Errorf("empty command provided")
+	cmdPath, args, err := resolveCommand(command)
+	if err != nil {
+		return "", "", err
 	}
 
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 
-	cmd := exec.Command("/bin/bash", "-c", command)
-	if IsWindows() {
-		cmd = exec.Command("powershell.exe", "-Command", command)
-	}
+	cmd := exec.Command(cmdPath, args...) // #nosec G204 -- executable path is validated and resolved before execution
 
 	for _, opt := range opts {
 		if opt != nil {
@@ -80,7 +80,12 @@ func ExecCommand(command string, opts ...Option) (stdout, stderr string, err err
 }
 
 func StartProcess(command string, args ...string) (int, error) {
-	cmd := exec.Command(command, args...)
+	cmdPath, err := resolveExecutable(command)
+	if err != nil {
+		return 0, err
+	}
+
+	cmd := exec.Command(cmdPath, args...) // #nosec G204 -- executable path is validated and resolved before execution
 
 	if err := cmd.Start(); err != nil {
 		return 0, err
@@ -107,4 +112,106 @@ func KillProcess(pid int) error {
 	}
 
 	return process.Kill()
+}
+
+func resolveCommand(command string) (string, []string, error) {
+	parts, err := splitCommandLine(command)
+	if err != nil {
+		return "", nil, err
+	}
+
+	cmdPath, err := resolveExecutable(parts[0])
+	if err != nil {
+		return "", nil, err
+	}
+
+	return cmdPath, parts[1:], nil
+}
+
+func resolveExecutable(command string) (string, error) {
+	command = strings.TrimSpace(command)
+	if command == "" {
+		return "", fmt.Errorf("empty command provided")
+	}
+
+	if strings.ContainsRune(command, 0) {
+		return "", fmt.Errorf("command contains null byte")
+	}
+
+	if filepath.IsAbs(command) {
+		return filepath.Clean(command), nil
+	}
+
+	if strings.ContainsRune(command, filepath.Separator) {
+		return "", fmt.Errorf("relative command paths are not allowed")
+	}
+
+	path, err := exec.LookPath(command)
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
+}
+
+func splitCommandLine(command string) ([]string, error) {
+	command = strings.TrimSpace(command)
+	if command == "" {
+		return nil, fmt.Errorf("empty command provided")
+	}
+
+	var (
+		args     []string
+		current  strings.Builder
+		quote    rune
+		escaped  bool
+		flushArg = func() {
+			if current.Len() == 0 {
+				return
+			}
+			args = append(args, current.String())
+			current.Reset()
+		}
+	)
+
+	for _, r := range command {
+		switch {
+		case escaped:
+			current.WriteRune(r)
+			escaped = false
+		case r == '\\':
+			escaped = true
+		case quote != 0:
+			if quote == '"' && r == '\\' {
+				escaped = true
+				continue
+			}
+			if r == quote {
+				quote = 0
+				continue
+			}
+			current.WriteRune(r)
+		case r == '\'' || r == '"':
+			quote = r
+		case r == ' ' || r == '\t' || r == '\n' || r == '\r':
+			flushArg()
+		default:
+			current.WriteRune(r)
+		}
+	}
+
+	if escaped {
+		return nil, fmt.Errorf("invalid command: trailing escape")
+	}
+
+	if quote != 0 {
+		return nil, fmt.Errorf("invalid command: unterminated quote")
+	}
+
+	flushArg()
+	if len(args) == 0 {
+		return nil, fmt.Errorf("empty command provided")
+	}
+
+	return args, nil
 }
