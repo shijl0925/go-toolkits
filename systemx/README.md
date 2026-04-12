@@ -15,7 +15,7 @@
 * [RemoveOsEnv(key string) error](https://github.com/shijl0925/go-toolkits/blob/main/systemx/core.go#L40-L42) - 删除指定环境变量
 
 ### 命令执行
-* `ExecCommand(command string, opts ...Option) (stdout, stderr string, err error)` - 执行系统命令并返回输出结果
+* `ExecCommand(command string, opts ...Option) (stdout, stderr string, err error)` - 执行系统命令并返回输出结果（直接执行可执行文件，不通过 shell）
 
 ### 进程管理
 * `StartProcess(command string, args ...string) (int, error)` - 启动一个新进程并返回进程ID
@@ -89,12 +89,13 @@ func main() {
 
 ### 跨平台支持
 - 自动检测操作系统类型并适配相应的命令执行方式
-- 在 Linux/macOS 上使用 `/bin/bash -c` 执行命令
-- 在 Windows 上使用 `powershell.exe` 执行命令
+- 直接执行目标可执行文件，不通过 shell
+- 支持带引号的命令参数解析
 
 ### 命令执行选项
 - 支持通过 `Option` 函数自定义 `exec.Cmd` 的配置
 - 返回标准输出、错误输出和错误信息，便于调试
+- 为降低命令注入风险，不支持相对路径形式的可执行文件（如 `./tool`）
 
 ### 进程管理
 - 提供启动、停止和强制终止进程的功能
