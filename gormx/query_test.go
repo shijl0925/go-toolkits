@@ -5784,7 +5784,7 @@ func TestQuery_GroupBy(t *testing.T) {
 // setupGroupByTestData 准备GroupBy测试数据
 func setupGroupByTestData(t *testing.T) {
 	// 清理现有数据
-	db := gormx.GetDb()
+	db := requireTestDB(t)
 	db.Where("1 = 1").Delete(&User{})
 	db.Where("1 = 1").Delete(&Post{})
 	// 插入测试用户数据

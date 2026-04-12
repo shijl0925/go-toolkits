@@ -16,16 +16,28 @@ const (
 	testDialectPostgres = "postgres"
 )
 
+var liveTestDBAvailable bool
+
 func init() {
-	db, err := openTestDB(defaultTestDialect())
+	dialect := defaultTestDialect()
+
+	db, err := openTestDB(dialect)
+	if err == nil {
+		err = pingTestDB(db)
+	}
 	if err != nil {
+		fallbackDB, fallbackErr := openFallbackTestDB(dialect)
+		if fallbackErr == nil {
+			gormx.Init(fallbackDB)
+		}
 		return
 	}
 
 	if err := migrateTestDB(db); err != nil {
-		panic(fmt.Sprintf("failed to migrate %s database: %v", defaultTestDialect(), err))
+		panic(fmt.Sprintf("failed to migrate %s database: %v", dialect, err))
 	}
 
+	liveTestDBAvailable = true
 	gormx.Init(db)
 }
 
@@ -34,6 +46,9 @@ func withTestDatabase(t *testing.T, dialect string, fn func(t *testing.T)) {
 
 	previous := gormx.GetDb()
 	db, err := openTestDB(dialect)
+	if err == nil {
+		err = pingTestDB(db)
+	}
 	if err != nil {
 		t.Skipf("skipping %s database tests: %v", dialect, err)
 	}
@@ -59,6 +74,10 @@ func withTestDatabase(t *testing.T, dialect string, fn func(t *testing.T)) {
 func requireTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
+	if !liveTestDBAvailable {
+		t.Skip("skipping database-backed gormx tests: test database is unavailable")
+	}
+
 	db := gormx.GetDb()
 	if db == nil {
 		t.Skip("skipping database-backed gormx tests: test database is unavailable")
@@ -71,12 +90,42 @@ func migrateTestDB(db *gorm.DB) error {
 	return db.AutoMigrate(&User{}, &Post{}, &Role{}, &UserRole{}, &Profile{})
 }
 
+func pingTestDB(db *gorm.DB) error {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+
+	return sqlDB.Ping()
+}
+
 func openTestDB(dialect string) (*gorm.DB, error) {
 	switch dialect {
 	case testDialectMySQL:
 		return gorm.Open(mysql.Open(mysqlTestDSN()), &gorm.Config{})
 	case testDialectPostgres:
 		return gorm.Open(postgres.Open(postgresTestDSN()), &gorm.Config{})
+	default:
+		return nil, fmt.Errorf("unsupported test dialect: %s", dialect)
+	}
+}
+
+func openFallbackTestDB(dialect string) (*gorm.DB, error) {
+	cfg := &gorm.Config{
+		DryRun:               true,
+		DisableAutomaticPing: true,
+	}
+
+	switch dialect {
+	case testDialectMySQL:
+		return gorm.Open(mysql.New(mysql.Config{
+			DSN:                       mysqlTestDSN(),
+			SkipInitializeWithVersion: true,
+		}), cfg)
+	case testDialectPostgres:
+		return gorm.Open(postgres.New(postgres.Config{
+			DSN: postgresTestDSN(),
+		}), cfg)
 	default:
 		return nil, fmt.Errorf("unsupported test dialect: %s", dialect)
 	}
