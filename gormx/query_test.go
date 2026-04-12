@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/shijl0925/go-toolkits/gormx"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -79,32 +78,6 @@ type Profile struct {
 
 	// 一对一关系
 	User User `gorm:"foreignKey:UserID"`
-}
-
-func init() {
-	// 初始化数据库连接
-	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		"root",
-		"root@123",
-		"127.0.0.1",
-		"3306",
-		"vben",
-	)
-
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	// 迁移 schema
-	if err := db.AutoMigrate(
-		&User{}, &Post{}, &Role{}, &UserRole{}, &Profile{}); err != nil {
-		panic("failed to migrate database")
-	}
-
-	// 初始化 gormx
-	gormx.Init(db)
 }
 
 // ValidateQuery 验证给定的模型查询是否能正确执行
