@@ -130,6 +130,43 @@ func AssertQueryValid[T any](t *testing.T, query *gormx.Query[T]) {
 	}
 }
 
+func expectedSQLForCurrentDialect(expected string) string {
+	if db := gormx.GetDb(); db != nil && db.Dialector.Name() == testDialectPostgres {
+		expected = currentDialectSQLFragment(expected)
+		expected = postgresPlaceholderSQL(expected)
+	}
+
+	return expected
+}
+
+func currentDialectSQLFragment(fragment string) string {
+	if db := gormx.GetDb(); db != nil && db.Dialector.Name() == testDialectPostgres {
+		return strings.NewReplacer(
+			"`", `"`,
+			" REGEXP ", " ~ ",
+		).Replace(fragment)
+	}
+
+	return fragment
+}
+
+func postgresPlaceholderSQL(sql string) string {
+	var builder strings.Builder
+	builder.Grow(len(sql) + 8)
+
+	argIndex := 1
+	for _, char := range sql {
+		if char == '?' {
+			builder.WriteString(fmt.Sprintf("$%d", argIndex))
+			argIndex++
+			continue
+		}
+		builder.WriteRune(char)
+	}
+
+	return builder.String()
+}
+
 // TestQuery_Eq 测试 Eq 方法的基本功能
 func TestQuery_Eq(t *testing.T) {
 	t.Run("test with field pointer", func(t *testing.T) {
@@ -150,7 +187,7 @@ func TestQuery_Eq(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -167,7 +204,7 @@ func TestQuery_Eq(t *testing.T) {
 		query.Eq("name", "testuser")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -218,7 +255,7 @@ func TestQuery_Eq(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` = ? AND `age` = ? AND `status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` = ? AND `age` = ? AND `status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -243,7 +280,7 @@ func TestQuery_Eq(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -259,7 +296,7 @@ func TestQuery_Eq(t *testing.T) {
 		query.Eq("address.city.town", "New York")
 		sql, args := query.ToSQLAndArgs()
 
-		expectedSQL := "SELECT * FROM `users` WHERE `address`.`city`.`town` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `address`.`city`.`town` = ? AND `users`.`deleted_at` IS NULL")
 
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
@@ -291,7 +328,7 @@ func TestQuery_Ne(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` <> ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` <> ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -308,7 +345,7 @@ func TestQuery_Ne(t *testing.T) {
 		query.Ne("name", "testuser")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` <> ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` <> ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -359,7 +396,7 @@ func TestQuery_Ne(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` <> ? AND `age` <> ? AND `status` <> ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` <> ? AND `age` <> ? AND `status` <> ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -384,7 +421,7 @@ func TestQuery_Ne(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` <> ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` <> ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -415,7 +452,7 @@ func TestQuery_Gt(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` > ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` > ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -432,7 +469,7 @@ func TestQuery_Gt(t *testing.T) {
 		query.Gt("salary", 5000.0)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `salary` > ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `salary` > ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -482,7 +519,7 @@ func TestQuery_Gt(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` > ? AND `salary` > ? AND `status` > ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` > ? AND `salary` > ? AND `status` > ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -507,7 +544,7 @@ func TestQuery_Gt(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` > ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` > ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -538,7 +575,7 @@ func TestQuery_Ge(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` >= ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` >= ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -555,7 +592,7 @@ func TestQuery_Ge(t *testing.T) {
 		query.Ge("salary", 5000.0)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `salary` >= ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `salary` >= ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -605,7 +642,7 @@ func TestQuery_Ge(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` >= ? AND `salary` >= ? AND `status` >= ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` >= ? AND `salary` >= ? AND `status` >= ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -630,7 +667,7 @@ func TestQuery_Ge(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` >= ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` >= ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -661,7 +698,7 @@ func TestQuery_Lt(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` < ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` < ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -678,7 +715,7 @@ func TestQuery_Lt(t *testing.T) {
 		query.Lt("salary", 10000.0)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `salary` < ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `salary` < ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -728,7 +765,7 @@ func TestQuery_Lt(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` < ? AND `salary` < ? AND `status` < ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` < ? AND `salary` < ? AND `status` < ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -753,7 +790,7 @@ func TestQuery_Lt(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` < ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` < ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -784,7 +821,7 @@ func TestQuery_Le(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` <= ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` <= ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -801,7 +838,7 @@ func TestQuery_Le(t *testing.T) {
 		query.Le("salary", 10000.0)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `salary` <= ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `salary` <= ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -851,7 +888,7 @@ func TestQuery_Le(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` <= ? AND `salary` <= ? AND `status` <= ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` <= ? AND `salary` <= ? AND `status` <= ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -876,7 +913,7 @@ func TestQuery_Le(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` <= ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` <= ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -907,7 +944,7 @@ func TestQuery_Like(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` LIKE ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` LIKE ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -924,7 +961,7 @@ func TestQuery_Like(t *testing.T) {
 		query.Like("name", "testuser")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` LIKE ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` LIKE ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -976,7 +1013,7 @@ func TestQuery_Like(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` LIKE ? AND `name` LIKE ? AND `name` LIKE ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` LIKE ? AND `name` LIKE ? AND `name` LIKE ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1001,7 +1038,7 @@ func TestQuery_Like(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` LIKE ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` LIKE ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1045,7 +1082,7 @@ func TestQuery_Regexp(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` REGEXP ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` REGEXP ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1062,7 +1099,7 @@ func TestQuery_Regexp(t *testing.T) {
 		query.Regexp("name", ".*admin.*")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` REGEXP ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` REGEXP ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1114,7 +1151,7 @@ func TestQuery_Regexp(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` REGEXP ? AND `name` REGEXP ? AND `name` REGEXP ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` REGEXP ? AND `name` REGEXP ? AND `name` REGEXP ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1139,7 +1176,7 @@ func TestQuery_Regexp(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` REGEXP ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` REGEXP ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1183,7 +1220,7 @@ func TestQuery_IsNull(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `email` IS NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `email` IS NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1200,7 +1237,7 @@ func TestQuery_IsNull(t *testing.T) {
 		query.IsNull("phone")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `phone` IS NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `phone` IS NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1223,7 +1260,7 @@ func TestQuery_IsNull(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `email` IS NULL AND `phone` IS NULL AND `address` IS NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `email` IS NULL AND `phone` IS NULL AND `address` IS NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1241,7 +1278,7 @@ func TestQuery_IsNull(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` IS NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` IS NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1259,7 +1296,7 @@ func TestQuery_IsNull(t *testing.T) {
 			IsNull(&user.Email)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` = ? AND `email` IS NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` = ? AND `email` IS NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1290,7 +1327,7 @@ func TestQuery_IsNotNull(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `email` IS NOT NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `email` IS NOT NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1307,7 +1344,7 @@ func TestQuery_IsNotNull(t *testing.T) {
 		query.IsNotNull("phone")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `phone` IS NOT NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `phone` IS NOT NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1330,7 +1367,7 @@ func TestQuery_IsNotNull(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `email` IS NOT NULL AND `phone` IS NOT NULL AND `address` IS NOT NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `email` IS NOT NULL AND `phone` IS NOT NULL AND `address` IS NOT NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1348,7 +1385,7 @@ func TestQuery_IsNotNull(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` IS NOT NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` IS NOT NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1366,7 +1403,7 @@ func TestQuery_IsNotNull(t *testing.T) {
 			IsNotNull(&user.Email)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` = ? AND `email` IS NOT NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` = ? AND `email` IS NOT NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1397,7 +1434,7 @@ func TestQuery_In(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IN (?,?,?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IN (?,?,?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1422,7 +1459,7 @@ func TestQuery_In(t *testing.T) {
 		query.In("name", []string{"admin", "user", "guest"})
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` IN (?,?,?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` IN (?,?,?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1453,7 +1490,7 @@ func TestQuery_In(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IN (?,?) AND `id` IN (?,?,?) AND `name` IN (?,?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IN (?,?) AND `id` IN (?,?,?) AND `name` IN (?,?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1512,7 +1549,7 @@ func TestQuery_In(t *testing.T) {
 		query.In(&user.Status, []int{})
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IN (NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IN (NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1530,7 +1567,7 @@ func TestQuery_In(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` IN (?,?,?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` IN (?,?,?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1549,7 +1586,7 @@ func TestQuery_In(t *testing.T) {
 		query.In(&post.UserID, userIDs)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` IN (?,?,?,?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` IN (?,?,?,?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1576,7 +1613,7 @@ func TestQuery_In(t *testing.T) {
 			Eq(&post.Status, 1) // 1表示已发布
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` IN (?,?,?) AND `status` = ? AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` IN (?,?,?) AND `status` = ? AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1620,7 +1657,7 @@ func TestQuery_NotIn(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` NOT IN (?,?,?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` NOT IN (?,?,?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1645,7 +1682,7 @@ func TestQuery_NotIn(t *testing.T) {
 		query.NotIn("name", []string{"admin", "user", "guest"})
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` NOT IN (?,?,?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` NOT IN (?,?,?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1676,7 +1713,7 @@ func TestQuery_NotIn(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` NOT IN (?,?) AND `id` NOT IN (?,?,?) AND `name` NOT IN (?,?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` NOT IN (?,?) AND `id` NOT IN (?,?,?) AND `name` NOT IN (?,?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1735,7 +1772,7 @@ func TestQuery_NotIn(t *testing.T) {
 		query.NotIn(&user.Status, []int{})
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IS NOT NULL AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IS NOT NULL AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1753,7 +1790,7 @@ func TestQuery_NotIn(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` NOT IN (?,?,?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` NOT IN (?,?,?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1772,7 +1809,7 @@ func TestQuery_NotIn(t *testing.T) {
 		query.NotIn(&post.UserID, userIDs)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` NOT IN (?,?,?,?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` NOT IN (?,?,?,?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1799,7 +1836,7 @@ func TestQuery_NotIn(t *testing.T) {
 			NotIn(&post.Status, []int{0}) // 0表示已删除
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` NOT IN (?,?,?) AND `status` <> ? AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` NOT IN (?,?,?) AND `status` <> ? AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1831,7 +1868,7 @@ func TestQuery_NotIn(t *testing.T) {
 			Like(&user.Name, "test")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `status` NOT IN (?,?) AND `name` LIKE ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `status` NOT IN (?,?) AND `name` LIKE ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1871,7 +1908,7 @@ func TestQuery_Between(t *testing.T) {
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
 		// 注意：GORM 会自动为 BETWEEN 条件添加括号
-		expectedSQL := "SELECT * FROM `users` WHERE (`age` BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`age` BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1896,7 +1933,7 @@ func TestQuery_Between(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：GORM 会自动为 BETWEEN 条件添加括号
-		expectedSQL := "SELECT * FROM `users` WHERE (`salary` BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`salary` BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1927,7 +1964,7 @@ func TestQuery_Between(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：GORM 会自动为每个 BETWEEN 条件添加括号
-		expectedSQL := "SELECT * FROM `users` WHERE (`age` BETWEEN ? AND ?) AND (`salary` BETWEEN ? AND ?) AND (`status` BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`age` BETWEEN ? AND ?) AND (`salary` BETWEEN ? AND ?) AND (`status` BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -1984,7 +2021,7 @@ func TestQuery_Between(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：GORM 会自动为 BETWEEN 条件添加括号，无效字段名会生成空字段名
-		expectedSQL := "SELECT * FROM `users` WHERE (`invalid_field` BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`invalid_field` BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2010,7 +2047,7 @@ func TestQuery_Between(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：GORM 会自动为 BETWEEN 条件添加括号
-		expectedSQL := "SELECT * FROM `posts` WHERE (`user_id` BETWEEN ? AND ?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE (`user_id` BETWEEN ? AND ?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2036,7 +2073,7 @@ func TestQuery_Between(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：GORM 会自动为每个 BETWEEN 条件添加括号
-		expectedSQL := "SELECT * FROM `posts` WHERE (`user_id` BETWEEN ? AND ?) AND (`status` BETWEEN ? AND ?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE (`user_id` BETWEEN ? AND ?) AND (`status` BETWEEN ? AND ?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2063,7 +2100,7 @@ func TestQuery_Between(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：GORM 会自动为 BETWEEN 条件添加括号
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND (`age` BETWEEN ? AND ?) AND `name` LIKE ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND (`age` BETWEEN ? AND ?) AND `name` LIKE ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2133,7 +2170,7 @@ func TestQuery_NotBetween(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`age` NOT BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`age` NOT BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2157,7 +2194,7 @@ func TestQuery_NotBetween(t *testing.T) {
 		query.NotBetween("salary", 3000.50, 15000.75)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`salary` NOT BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`salary` NOT BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2187,7 +2224,7 @@ func TestQuery_NotBetween(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`age` NOT BETWEEN ? AND ?) AND (`salary` NOT BETWEEN ? AND ?) AND (`status` NOT BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`age` NOT BETWEEN ? AND ?) AND (`salary` NOT BETWEEN ? AND ?) AND (`status` NOT BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2244,7 +2281,7 @@ func TestQuery_NotBetween(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE (`invalid_field` NOT BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`invalid_field` NOT BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2269,7 +2306,7 @@ func TestQuery_NotBetween(t *testing.T) {
 		query.NotBetween(&post.UserID, 1, 100)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE (`user_id` NOT BETWEEN ? AND ?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE (`user_id` NOT BETWEEN ? AND ?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2294,7 +2331,7 @@ func TestQuery_NotBetween(t *testing.T) {
 			NotBetween(&post.Status, 0, 1) // 0表示草稿，1表示已发布
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE (`user_id` NOT BETWEEN ? AND ?) AND (`status` NOT BETWEEN ? AND ?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE (`user_id` NOT BETWEEN ? AND ?) AND (`status` NOT BETWEEN ? AND ?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2320,7 +2357,7 @@ func TestQuery_NotBetween(t *testing.T) {
 			Like(&user.Name, "test")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND (`age` NOT BETWEEN ? AND ?) AND `name` LIKE ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND (`age` NOT BETWEEN ? AND ?) AND `name` LIKE ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2390,7 +2427,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 
 		// 验证生成的SQL
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2407,7 +2444,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2424,7 +2461,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc(&user.CreatedAt, &user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2441,7 +2478,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc("created_at", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2458,7 +2495,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc(&user.CreatedAt, "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2476,7 +2513,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 			OrderDesc(&user.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2498,7 +2535,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 			OrderDesc(&user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`name` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2516,7 +2553,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `invalid_field` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `invalid_field` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2533,7 +2570,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc(&user.CreatedAt, "invalid_field", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`invalid_field` DESC,`name` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at` DESC,`invalid_field` DESC,`name` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2551,7 +2588,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 		query.OrderDesc(&post.UserID, &post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL ORDER BY `user_id` DESC,`created_at` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL ORDER BY `user_id` DESC,`created_at` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2569,7 +2606,7 @@ func TestQuery_OrderDesc(t *testing.T) {
 			OrderDesc(&post.UserID, &post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL ORDER BY `user_id` DESC,`created_at` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL ORDER BY `user_id` DESC,`created_at` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2604,7 +2641,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 
 		// 验证生成的SQL
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2621,7 +2658,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2638,7 +2675,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc(&user.CreatedAt, &user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2655,7 +2692,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc("created_at", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2672,7 +2709,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc(&user.CreatedAt, "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2690,7 +2727,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 			OrderAsc(&user.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL ORDER BY `created_at`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL ORDER BY `created_at`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2712,7 +2749,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 			OrderAsc(&user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2730,7 +2767,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `invalid_field`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `invalid_field`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2747,7 +2784,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc(&user.CreatedAt, "invalid_field", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`invalid_field`,`name`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`invalid_field`,`name`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2765,7 +2802,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 		query.OrderAsc(&post.UserID, &post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL ORDER BY `user_id`,`created_at`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL ORDER BY `user_id`,`created_at`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2783,7 +2820,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 			OrderAsc(&post.UserID, &post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL ORDER BY `user_id`,`created_at`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL ORDER BY `user_id`,`created_at`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -2806,7 +2843,7 @@ func TestQuery_OrderAsc(t *testing.T) {
 			OrderDesc(&user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL ORDER BY `created_at`,`name` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3538,7 +3575,7 @@ func TestQuery_Distinct(t *testing.T) {
 
 		// 验证生成的SQL
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3566,7 +3603,7 @@ func TestQuery_Distinct(t *testing.T) {
 
 		// 验证生成的SQL
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `status` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `status` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3583,7 +3620,7 @@ func TestQuery_Distinct(t *testing.T) {
 		query.Distinct("status")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `status` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `status` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3600,7 +3637,7 @@ func TestQuery_Distinct(t *testing.T) {
 		query.Distinct(&user.Status, &user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `status`,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `status`,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3617,7 +3654,7 @@ func TestQuery_Distinct(t *testing.T) {
 		query.Distinct("status", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `status`,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `status`,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3634,7 +3671,7 @@ func TestQuery_Distinct(t *testing.T) {
 		query.Distinct(&user.Status, "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `status`,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `status`,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3652,7 +3689,7 @@ func TestQuery_Distinct(t *testing.T) {
 			Distinct(&user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `name` FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `name` FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3674,7 +3711,7 @@ func TestQuery_Distinct(t *testing.T) {
 			Distinct(&user.Name)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `name` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `name` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3692,7 +3729,7 @@ func TestQuery_Distinct(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段会被忽略，所以不会出现在SQL中
-		expectedSQL := "SELECT DISTINCT invalid_field FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT invalid_field FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3709,7 +3746,7 @@ func TestQuery_Distinct(t *testing.T) {
 		query.Distinct(&user.Status, "invalid_field", "name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `status`,invalid_field,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `status`,invalid_field,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3727,7 +3764,7 @@ func TestQuery_Distinct(t *testing.T) {
 		query.Distinct(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `user_id` FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `user_id` FROM `posts` WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3745,7 +3782,7 @@ func TestQuery_Distinct(t *testing.T) {
 			Distinct(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `user_id` FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `user_id` FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3767,7 +3804,7 @@ func TestQuery_Distinct(t *testing.T) {
 		query.Distinct(fields)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT `status`,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT `status`,`name` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3786,7 +3823,7 @@ func TestQuery_Distinct(t *testing.T) {
 		query.Distinct(fields...)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT DISTINCT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT DISTINCT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3815,7 +3852,7 @@ func TestQuery_Select(t *testing.T) {
 
 		// 验证生成的SQL
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `name` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `name` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3832,7 +3869,7 @@ func TestQuery_Select(t *testing.T) {
 		query.Select("email")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `email` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `email` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3849,7 +3886,7 @@ func TestQuery_Select(t *testing.T) {
 		query.Select(&user.Name, &user.Email, &user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `name`,`email`,`age` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `name`,`email`,`age` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3866,7 +3903,7 @@ func TestQuery_Select(t *testing.T) {
 		query.Select("name", "email", "age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `name`,`email`,`age` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `name`,`email`,`age` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3883,7 +3920,7 @@ func TestQuery_Select(t *testing.T) {
 		query.Select(&user.Name, "email", &user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `name`,`email`,`age` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `name`,`email`,`age` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3901,7 +3938,7 @@ func TestQuery_Select(t *testing.T) {
 			Eq(&user.Status, 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `name`,`email` FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `name`,`email` FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3923,7 +3960,7 @@ func TestQuery_Select(t *testing.T) {
 			Select(&user.Email)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `email` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `email` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3940,7 +3977,7 @@ func TestQuery_Select(t *testing.T) {
 		query.Select("invalid_field")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT invalid_field FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT invalid_field FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3957,7 +3994,7 @@ func TestQuery_Select(t *testing.T) {
 		query.Select(&user.Name, "invalid_field", "email")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `name`,invalid_field,`email` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `name`,invalid_field,`email` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -3983,7 +4020,7 @@ func TestQuery_Select(t *testing.T) {
 
 		// 验证生成的SQL仍然是默认查询
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -4001,7 +4038,7 @@ func TestQuery_Select(t *testing.T) {
 		query.Select(&post.Title, &post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `title`,`user_id` FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `title`,`user_id` FROM `posts` WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -4020,7 +4057,7 @@ func TestQuery_Select(t *testing.T) {
 			OrderDesc(&post.CreatedAt)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `title`,`user_id`,`status` FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL ORDER BY `created_at` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `title`,`user_id`,`status` FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL ORDER BY `created_at` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -4042,7 +4079,7 @@ func TestQuery_Select(t *testing.T) {
 		query.Select(fields...)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `name`,`email`,`age` FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `name`,`email`,`age` FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -4070,7 +4107,7 @@ func TestQuery_Select(t *testing.T) {
 
 		// 验证生成的SQL仍然是默认查询
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5460,7 +5497,7 @@ func TestQuery_GroupBy(t *testing.T) {
 
 		// 验证生成的SQL
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5477,7 +5514,7 @@ func TestQuery_GroupBy(t *testing.T) {
 		query.GroupBy("status")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5495,7 +5532,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			GroupBy(&user.IsActive)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`,`is_active`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`,`is_active`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5513,7 +5550,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			GroupBy("is_active")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`,`is_active`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`,`is_active`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5531,7 +5568,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			GroupBy(&user.IsActive)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL GROUP BY `is_active`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL GROUP BY `is_active`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5553,7 +5590,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			GroupBy(&user.Status)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `status` FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `status` FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5572,7 +5609,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			Count(&user.ID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT status, COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5591,7 +5628,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			Sum(&user.Salary)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, SUM(`salary`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT status, SUM(`salary`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5610,7 +5647,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			Avg(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT status, AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5630,7 +5667,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			Having("COUNT(id) > ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(id) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT status, COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(id) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5652,7 +5689,7 @@ func TestQuery_GroupBy(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `invalid_field`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `invalid_field`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5669,7 +5706,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			OrderAsc(&user.Status)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` ORDER BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` ORDER BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5687,7 +5724,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			GroupBy(&user.Status)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5709,7 +5746,7 @@ func TestQuery_GroupBy(t *testing.T) {
 		query.GroupBy(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL GROUP BY `user_id`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `posts`.`deleted_at` IS NULL GROUP BY `user_id`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5730,7 +5767,7 @@ func TestQuery_GroupBy(t *testing.T) {
 			OrderDesc(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT user_id, COUNT(`id`) as count FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL GROUP BY `user_id` ORDER BY `user_id` DESC"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT user_id, COUNT(`id`) as count FROM `posts` WHERE `status` = ? AND `posts`.`deleted_at` IS NULL GROUP BY `user_id` ORDER BY `user_id` DESC")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5804,7 +5841,7 @@ func TestQuery_InSql(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IN (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5821,7 +5858,7 @@ func TestQuery_InSql(t *testing.T) {
 		query.InSql("status", "SELECT 1")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IN (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5838,7 +5875,7 @@ func TestQuery_InSql(t *testing.T) {
 		query.InSql(&user.Status, "SELECT ? FROM dual", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IN (SELECT ? FROM dual) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IN (SELECT ? FROM dual) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5861,7 +5898,7 @@ func TestQuery_InSql(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IN (SELECT 1) AND `age` IN (SELECT 2) AND `name` IN (SELECT 'test') AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IN (SELECT 1) AND `age` IN (SELECT 2) AND `name` IN (SELECT 'test') AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5879,7 +5916,7 @@ func TestQuery_InSql(t *testing.T) {
 			InSql(&user.Status, "SELECT 1 UNION SELECT 2")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `status` IN (SELECT 1 UNION SELECT 2) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `status` IN (SELECT 1 UNION SELECT 2) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5897,7 +5934,7 @@ func TestQuery_InSql(t *testing.T) {
 		query.InSql(&user.Status, subQuery, 18, "2023-01-01")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IN (SELECT u.status FROM users u WHERE u.age > ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IN (SELECT u.status FROM users u WHERE u.age > ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5915,7 +5952,7 @@ func TestQuery_InSql(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` IN (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5932,7 +5969,7 @@ func TestQuery_InSql(t *testing.T) {
 		query.InSql(&user.Status, "")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5950,7 +5987,7 @@ func TestQuery_InSql(t *testing.T) {
 		query.InSql(&user.ID, "SELECT DISTINCT user_id FROM posts WHERE status = ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` IN (SELECT DISTINCT user_id FROM posts WHERE status = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` IN (SELECT DISTINCT user_id FROM posts WHERE status = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5968,7 +6005,7 @@ func TestQuery_InSql(t *testing.T) {
 		query.InSql(&user.ID, "SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)", "admin")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -5986,7 +6023,7 @@ func TestQuery_InSql(t *testing.T) {
 		query.InSql(&user.ID, "SELECT DISTINCT p.user_id FROM posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.status = ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` IN (SELECT DISTINCT p.user_id FROM posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.status = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` IN (SELECT DISTINCT p.user_id FROM posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.status = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6005,7 +6042,7 @@ func TestQuery_InSql(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：换行符会被压缩成空格
-		expectedSQL := "SELECT * FROM `users` WHERE `id` IN (SELECT DISTINCT u.id FROM users u LEFT JOIN user_roles ur ON u.id = ur.user_id LEFT JOIN roles r ON ur.role_id = r.id WHERE r.name IN (?, ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` IN (SELECT DISTINCT u.id FROM users u LEFT JOIN user_roles ur ON u.id = ur.user_id LEFT JOIN roles r ON ur.role_id = r.id WHERE r.name IN (?, ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6039,7 +6076,7 @@ func TestQuery_NotInSql(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` NOT IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` NOT IN (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6056,7 +6093,7 @@ func TestQuery_NotInSql(t *testing.T) {
 		query.NotInSql("status", "SELECT 1")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` NOT IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` NOT IN (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6073,7 +6110,7 @@ func TestQuery_NotInSql(t *testing.T) {
 		query.NotInSql(&user.Status, "SELECT ? FROM dual", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` NOT IN (SELECT ? FROM dual) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` NOT IN (SELECT ? FROM dual) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6096,7 +6133,7 @@ func TestQuery_NotInSql(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` NOT IN (SELECT 1) AND `age` NOT IN (SELECT 2) AND `name` NOT IN (SELECT 'test') AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` NOT IN (SELECT 1) AND `age` NOT IN (SELECT 2) AND `name` NOT IN (SELECT 'test') AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6114,7 +6151,7 @@ func TestQuery_NotInSql(t *testing.T) {
 			NotInSql(&user.Status, "SELECT 1 UNION SELECT 2")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `status` NOT IN (SELECT 1 UNION SELECT 2) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `status` NOT IN (SELECT 1 UNION SELECT 2) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6132,7 +6169,7 @@ func TestQuery_NotInSql(t *testing.T) {
 		query.NotInSql(&user.Status, subQuery, 18, "2023-01-01")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` NOT IN (SELECT u.status FROM users u WHERE u.age > ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` NOT IN (SELECT u.status FROM users u WHERE u.age > ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6150,7 +6187,7 @@ func TestQuery_NotInSql(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` NOT IN (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` NOT IN (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6167,7 +6204,7 @@ func TestQuery_NotInSql(t *testing.T) {
 		query.NotInSql(&user.Status, "")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6185,7 +6222,7 @@ func TestQuery_NotInSql(t *testing.T) {
 		query.NotInSql(&user.ID, "SELECT DISTINCT user_id FROM posts WHERE status = ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` NOT IN (SELECT DISTINCT user_id FROM posts WHERE status = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` NOT IN (SELECT DISTINCT user_id FROM posts WHERE status = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6203,7 +6240,7 @@ func TestQuery_NotInSql(t *testing.T) {
 		query.NotInSql(&user.ID, "SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)", "admin")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` NOT IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` NOT IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6237,7 +6274,7 @@ func TestQuery_GtSql(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` > (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` > (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6254,7 +6291,7 @@ func TestQuery_GtSql(t *testing.T) {
 		query.GtSql("age", "SELECT AVG(age) FROM users")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` > (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` > (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6271,7 +6308,7 @@ func TestQuery_GtSql(t *testing.T) {
 		query.GtSql(&user.Age, "SELECT AVG(age) FROM users WHERE department = ?", "IT")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` > (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` > (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6294,7 +6331,7 @@ func TestQuery_GtSql(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` > (SELECT 18) AND `score` > (SELECT 80) AND `salary` > (SELECT 5000) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` > (SELECT 18) AND `score` > (SELECT 80) AND `salary` > (SELECT 5000) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6312,7 +6349,7 @@ func TestQuery_GtSql(t *testing.T) {
 			GtSql(&user.Age, "SELECT AVG(age) FROM users WHERE is_active = true")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `age` > (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `age` > (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6330,7 +6367,7 @@ func TestQuery_GtSql(t *testing.T) {
 		query.GtSql(&user.Age, subQuery, "IT", "2023-01-01")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` > (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` > (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6348,7 +6385,7 @@ func TestQuery_GtSql(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` > (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` > (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6365,7 +6402,7 @@ func TestQuery_GtSql(t *testing.T) {
 		query.GtSql(&user.Age, "")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6383,7 +6420,7 @@ func TestQuery_GtSql(t *testing.T) {
 		query.GtSql(&post.UserID, "SELECT MIN(user_id) FROM posts WHERE status = ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` > (SELECT MIN(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` > (SELECT MIN(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6401,7 +6438,7 @@ func TestQuery_GtSql(t *testing.T) {
 		query.GtSql(&user.ID, "SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)", "IT")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` > (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` > (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6435,7 +6472,7 @@ func TestQuery_GeSql(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` >= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` >= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6452,7 +6489,7 @@ func TestQuery_GeSql(t *testing.T) {
 		query.GeSql("age", "SELECT AVG(age) FROM users")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` >= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` >= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6469,7 +6506,7 @@ func TestQuery_GeSql(t *testing.T) {
 		query.GeSql(&user.Age, "SELECT AVG(age) FROM users WHERE department = ?", "IT")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` >= (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` >= (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6492,7 +6529,7 @@ func TestQuery_GeSql(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` >= (SELECT 18) AND `score` >= (SELECT 80) AND `salary` >= (SELECT 5000) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` >= (SELECT 18) AND `score` >= (SELECT 80) AND `salary` >= (SELECT 5000) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6510,7 +6547,7 @@ func TestQuery_GeSql(t *testing.T) {
 			GeSql(&user.Age, "SELECT AVG(age) FROM users WHERE is_active = true")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `age` >= (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `age` >= (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6528,7 +6565,7 @@ func TestQuery_GeSql(t *testing.T) {
 		query.GeSql(&user.Age, subQuery, "IT", "2023-01-01")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` >= (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` >= (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6546,7 +6583,7 @@ func TestQuery_GeSql(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` >= (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` >= (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6563,7 +6600,7 @@ func TestQuery_GeSql(t *testing.T) {
 		query.GeSql(&user.Age, "")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6581,7 +6618,7 @@ func TestQuery_GeSql(t *testing.T) {
 		query.GeSql(&post.UserID, "SELECT MIN(user_id) FROM posts WHERE status = ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` >= (SELECT MIN(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` >= (SELECT MIN(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6599,7 +6636,7 @@ func TestQuery_GeSql(t *testing.T) {
 		query.GeSql(&user.ID, "SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)", "IT")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` >= (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` >= (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6633,7 +6670,7 @@ func TestQuery_LtSql(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` < (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` < (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6650,7 +6687,7 @@ func TestQuery_LtSql(t *testing.T) {
 		query.LtSql("age", "SELECT AVG(age) FROM users")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` < (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` < (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6667,7 +6704,7 @@ func TestQuery_LtSql(t *testing.T) {
 		query.LtSql(&user.Age, "SELECT AVG(age) FROM users WHERE department = ?", "IT")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` < (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` < (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6690,7 +6727,7 @@ func TestQuery_LtSql(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` < (SELECT 65) AND `score` < (SELECT 90) AND `salary` < (SELECT 10000) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` < (SELECT 65) AND `score` < (SELECT 90) AND `salary` < (SELECT 10000) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6708,7 +6745,7 @@ func TestQuery_LtSql(t *testing.T) {
 			LtSql(&user.Age, "SELECT AVG(age) FROM users WHERE is_active = true")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `age` < (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `age` < (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6726,7 +6763,7 @@ func TestQuery_LtSql(t *testing.T) {
 		query.LtSql(&user.Age, subQuery, "IT", "2023-01-01")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` < (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` < (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6744,7 +6781,7 @@ func TestQuery_LtSql(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` < (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` < (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6761,7 +6798,7 @@ func TestQuery_LtSql(t *testing.T) {
 		query.LtSql(&user.Age, "")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6779,7 +6816,7 @@ func TestQuery_LtSql(t *testing.T) {
 		query.LtSql(&post.UserID, "SELECT MAX(user_id) FROM posts WHERE status = ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` < (SELECT MAX(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` < (SELECT MAX(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6797,7 +6834,7 @@ func TestQuery_LtSql(t *testing.T) {
 		query.LtSql(&user.ID, "SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)", "IT")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` < (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` < (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6831,7 +6868,7 @@ func TestQuery_LeSql(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` <= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` <= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6848,7 +6885,7 @@ func TestQuery_LeSql(t *testing.T) {
 		query.LeSql("age", "SELECT AVG(age) FROM users")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` <= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` <= (SELECT AVG(age) FROM users) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6865,7 +6902,7 @@ func TestQuery_LeSql(t *testing.T) {
 		query.LeSql(&user.Age, "SELECT AVG(age) FROM users WHERE department = ?", "IT")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` <= (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` <= (SELECT AVG(age) FROM users WHERE department = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6888,7 +6925,7 @@ func TestQuery_LeSql(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` <= (SELECT 65) AND `score` <= (SELECT 90) AND `salary` <= (SELECT 10000) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` <= (SELECT 65) AND `score` <= (SELECT 90) AND `salary` <= (SELECT 10000) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6906,7 +6943,7 @@ func TestQuery_LeSql(t *testing.T) {
 			LeSql(&user.Age, "SELECT AVG(age) FROM users WHERE is_active = true")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `age` <= (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `age` <= (SELECT AVG(age) FROM users WHERE is_active = true) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6924,7 +6961,7 @@ func TestQuery_LeSql(t *testing.T) {
 		query.LeSql(&user.Age, subQuery, "IT", "2023-01-01")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` <= (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` <= (SELECT AVG(u.age) FROM users u WHERE u.department = ? AND u.created_at > ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6942,7 +6979,7 @@ func TestQuery_LeSql(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` <= (SELECT 1) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` <= (SELECT 1) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6959,7 +6996,7 @@ func TestQuery_LeSql(t *testing.T) {
 		query.LeSql(&user.Age, "")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6977,7 +7014,7 @@ func TestQuery_LeSql(t *testing.T) {
 		query.LeSql(&post.UserID, "SELECT MAX(user_id) FROM posts WHERE status = ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` <= (SELECT MAX(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` <= (SELECT MAX(user_id) FROM posts WHERE status = ?) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -6995,7 +7032,7 @@ func TestQuery_LeSql(t *testing.T) {
 		query.LeSql(&user.ID, "SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)", "IT")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` <= (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` <= (SELECT COUNT(role_id) FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE department = ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7029,7 +7066,7 @@ func TestQuery_Not(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE NOT status = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE NOT status = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7063,7 +7100,7 @@ func TestQuery_Not(t *testing.T) {
 		query.Not(map[string]interface{}{"status": 0})
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `users`.`status` <> ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `users`.`status` <> ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7086,7 +7123,7 @@ func TestQuery_Not(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE NOT status = ? AND NOT is_active = ? AND NOT age < ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE NOT status = ? AND NOT is_active = ? AND NOT age < ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7111,7 +7148,7 @@ func TestQuery_Not(t *testing.T) {
 			Not("status = ?", 0)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `name` = ? AND NOT status = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `name` = ? AND NOT status = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7128,7 +7165,7 @@ func TestQuery_Not(t *testing.T) {
 		query.Not("age < ? OR department = ?", 18, "IT")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE NOT (age < ? OR department = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE NOT (age < ? OR department = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7145,7 +7182,7 @@ func TestQuery_Not(t *testing.T) {
 		query.Not("status IN (?) AND age BETWEEN ? AND ?", []int{0, -1}, 18, 65)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE NOT (status IN (?,?) AND age BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE NOT (status IN (?,?) AND age BETWEEN ? AND ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7163,7 +7200,7 @@ func TestQuery_Not(t *testing.T) {
 		query.Not("id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?)", 0)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE NOT id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE NOT id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7181,7 +7218,7 @@ func TestQuery_Not(t *testing.T) {
 		query.Not("id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?))", "banned")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE NOT id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE NOT id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7199,7 +7236,7 @@ func TestQuery_Not(t *testing.T) {
 		query.Not("id IN ("+subQuery+")", "2023-01-01", true)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE NOT (id IN (SELECT id FROM users WHERE created_at < ? AND is_active = ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE NOT (id IN (SELECT id FROM users WHERE created_at < ? AND is_active = ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7216,7 +7253,7 @@ func TestQuery_Not(t *testing.T) {
 		query.Not("name LIKE ?", "%test%")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE NOT name LIKE ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE NOT name LIKE ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7235,7 +7272,7 @@ func TestQuery_Not(t *testing.T) {
 			Not("name LIKE ?", "%inactive%")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE NOT status = ? AND NOT is_active = ? AND NOT name LIKE ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE NOT status = ? AND NOT is_active = ? AND NOT name LIKE ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7270,7 +7307,7 @@ func TestQuery_Or(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR (age > ? AND age < ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR (age > ? AND age < ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7300,7 +7337,7 @@ func TestQuery_Or(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR age > ? OR is_active = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR age > ? OR is_active = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7325,7 +7362,7 @@ func TestQuery_Or(t *testing.T) {
 			Or("department = ? OR salary > ?", "IT", 50000.0)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR (department = ? OR salary > ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR (department = ? OR salary > ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7343,7 +7380,7 @@ func TestQuery_Or(t *testing.T) {
 			Or("name LIKE ?", "%admin%")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR name LIKE ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR name LIKE ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7361,7 +7398,7 @@ func TestQuery_Or(t *testing.T) {
 			Or("id IN (?)", []int{2, 3, 4})
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR id IN (?,?,?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR id IN (?,?,?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7379,7 +7416,7 @@ func TestQuery_Or(t *testing.T) {
 			Or("age BETWEEN ? AND ?", 20, 40)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR (age BETWEEN ? AND ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR (age BETWEEN ? AND ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7398,7 +7435,7 @@ func TestQuery_Or(t *testing.T) {
 			Or("id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?)", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?)) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR id IN (SELECT DISTINCT user_id FROM posts WHERE status = ?)) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7417,7 +7454,7 @@ func TestQuery_Or(t *testing.T) {
 			Or("id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?))", "admin")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?))) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR id IN (SELECT DISTINCT user_id FROM user_roles WHERE role_id IN (SELECT id FROM roles WHERE name = ?))) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7436,7 +7473,7 @@ func TestQuery_Or(t *testing.T) {
 			Or("id IN ("+subQuery+")", "2023-01-01", true)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR (id IN (SELECT id FROM users WHERE created_at < ? AND is_active = ?))) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR (id IN (SELECT id FROM users WHERE created_at < ? AND is_active = ?))) AND `users`.`deleted_at` IS NULL")
 
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
@@ -7457,7 +7494,7 @@ func TestQuery_Or(t *testing.T) {
 			Eq(&user.Age, 25)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR is_active = ? OR name LIKE ? AND `age` = ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR is_active = ? OR name LIKE ? AND `age` = ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7475,7 +7512,7 @@ func TestQuery_Or(t *testing.T) {
 			Or("email IS NULL")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR email IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR email IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7493,7 +7530,7 @@ func TestQuery_Or(t *testing.T) {
 			Or("phone IS NOT NULL")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE (`status` = ? OR phone IS NOT NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE (`status` = ? OR phone IS NOT NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7530,7 +7567,7 @@ func TestQuery_SubQueryEq(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7550,7 +7587,7 @@ func TestQuery_SubQueryEq(t *testing.T) {
 		query.SubQueryEq("id", subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7576,7 +7613,7 @@ func TestQuery_SubQueryEq(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `status` = (SELECT `status` FROM `users` WHERE age = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `status` = (SELECT `status` FROM `users` WHERE age = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7604,7 +7641,7 @@ func TestQuery_SubQueryEq(t *testing.T) {
 			SubQueryEq(&user.ID, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7626,7 +7663,7 @@ func TestQuery_SubQueryEq(t *testing.T) {
 		query.SubQueryEq(&user.Age, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `age` = (SELECT MAX(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL GROUP BY `is_active`) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `age` = (SELECT MAX(age) FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL GROUP BY `is_active`) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7647,7 +7684,7 @@ func TestQuery_SubQueryEq(t *testing.T) {
 		query.SubQueryEq(&post.UserID, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7670,7 +7707,7 @@ func TestQuery_SubQueryEq(t *testing.T) {
 		query.SubQueryEq(&user.ID, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` = (SELECT `user_id` FROM `user_roles` WHERE role_id = (SELECT id FROM roles WHERE name = ?) AND `user_roles`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` = (SELECT `user_id` FROM `user_roles` WHERE role_id = (SELECT id FROM roles WHERE name = ?) AND `user_roles`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7691,7 +7728,7 @@ func TestQuery_SubQueryEq(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` = (SELECT `id` FROM `users` WHERE name = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7711,7 +7748,7 @@ func TestQuery_SubQueryEq(t *testing.T) {
 		query.SubQueryEq(&user.ID, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` = (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` = (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7748,7 +7785,7 @@ func TestQuery_SubQueryIn(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7768,7 +7805,7 @@ func TestQuery_SubQueryIn(t *testing.T) {
 		query.SubQueryIn("id", subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7794,7 +7831,7 @@ func TestQuery_SubQueryIn(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `status` IN (SELECT `id` FROM `users` WHERE age > ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `status` IN (SELECT `id` FROM `users` WHERE age > ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7822,7 +7859,7 @@ func TestQuery_SubQueryIn(t *testing.T) {
 			SubQueryIn(&user.ID, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `is_active` = ? AND `id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `is_active` = ? AND `id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7846,7 +7883,7 @@ func TestQuery_SubQueryIn(t *testing.T) {
 		query.SubQueryIn(&user.ID, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` IN (SELECT `id` FROM `users` WHERE created_at > ? AND `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(*) > ?) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` IN (SELECT `id` FROM `users` WHERE created_at > ? AND `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(*) > ?) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7867,7 +7904,7 @@ func TestQuery_SubQueryIn(t *testing.T) {
 		query.SubQueryIn(&post.UserID, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `posts` WHERE `user_id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `posts` WHERE `user_id` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7890,7 +7927,7 @@ func TestQuery_SubQueryIn(t *testing.T) {
 		query.SubQueryIn(&user.ID, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `id` IN (SELECT `user_id` FROM `user_roles` WHERE role_id IN (SELECT id FROM roles WHERE name = ?) AND `user_roles`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `id` IN (SELECT `user_id` FROM `user_roles` WHERE role_id IN (SELECT id FROM roles WHERE name = ?) AND `user_roles`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7911,7 +7948,7 @@ func TestQuery_SubQueryIn(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT * FROM `users` WHERE `invalid_field` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `invalid_field` IN (SELECT `id` FROM `users` WHERE status = ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7931,7 +7968,7 @@ func TestQuery_SubQueryIn(t *testing.T) {
 		query.SubQueryIn(&user.Status, subDB)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT * FROM `users` WHERE `status` IN (SELECT `status` FROM `users` WHERE age > ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT * FROM `users` WHERE `status` IN (SELECT `status` FROM `users` WHERE age > ? AND `users`.`deleted_at` IS NULL) AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7965,7 +8002,7 @@ func TestQuery_Count(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7982,7 +8019,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count("id")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -7999,7 +8036,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count(nil)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(*) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(*) as count FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8016,7 +8053,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count("invalid_field")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`invalid_field`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`invalid_field`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8038,7 +8075,7 @@ func TestQuery_Count(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count, COUNT(`age`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count, COUNT(`age`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8056,7 +8093,7 @@ func TestQuery_Count(t *testing.T) {
 			Count(&user.ID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8074,7 +8111,7 @@ func TestQuery_Count(t *testing.T) {
 			Count(&user.ID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT status, COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8092,7 +8129,7 @@ func TestQuery_Count(t *testing.T) {
 			Count(&user.ID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8111,7 +8148,7 @@ func TestQuery_Count(t *testing.T) {
 			Having("COUNT(id) > ?", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(id) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING COUNT(id) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8129,7 +8166,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`user_id`) as count FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`user_id`) as count FROM `posts` WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8147,7 +8184,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`role_id`) as count FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`role_id`) as count FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8164,7 +8201,7 @@ func TestQuery_Count(t *testing.T) {
 		query.Count("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`created_at`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`created_at`) as count FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8198,7 +8235,7 @@ func TestQuery_Sum(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8215,7 +8252,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum("age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8237,7 +8274,7 @@ func TestQuery_Sum(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count, SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count, SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8255,7 +8292,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`age`) FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8273,7 +8310,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT status, SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8291,7 +8328,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8310,7 +8347,7 @@ func TestQuery_Sum(t *testing.T) {
 			Having("SUM(age) > ?", 100)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING SUM(age) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING SUM(age) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8328,7 +8365,7 @@ func TestQuery_Sum(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT SUM(`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8346,7 +8383,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8364,7 +8401,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8381,7 +8418,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8398,7 +8435,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8416,7 +8453,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT name, SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT name, SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8434,7 +8471,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT users.name, email, SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT users.name, email, SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8452,7 +8489,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8468,10 +8505,10 @@ func TestQuery_Sum(t *testing.T) {
 		// 测试点号格式字段在分组和聚合中使用
 		query.GroupBy("users.status").
 			Sum("users.age").
-			Having("SUM(`users`.`age`) > ?", 100)
+			Having(currentDialectSQLFragment("SUM(`users`.`age`) > ?"), 100)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING SUM(`users`.`age`) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING SUM(`users`.`age`) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8489,7 +8526,7 @@ func TestQuery_Sum(t *testing.T) {
 			Sum("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8506,7 +8543,7 @@ func TestQuery_Sum(t *testing.T) {
 		query.Sum("invalid_table.invalid_field")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT SUM(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8524,7 +8561,7 @@ func TestQuery_Sum(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 根据实现，可能按普通字符串处理或有特殊处理
-		expectedSQL := "SELECT SUM(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT SUM(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Logf("Actual SQL: %s", sql)
 		}
@@ -8558,7 +8595,7 @@ func TestQuery_Avg(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8575,7 +8612,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg("age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8597,7 +8634,7 @@ func TestQuery_Avg(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count, AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count, AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8615,7 +8652,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`age`) FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8633,7 +8670,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT status, AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8651,7 +8688,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8670,7 +8707,7 @@ func TestQuery_Avg(t *testing.T) {
 			Having("AVG(age) > ?", 18)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING AVG(age) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING AVG(age) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8688,7 +8725,7 @@ func TestQuery_Avg(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT AVG(`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8706,7 +8743,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8724,7 +8761,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8741,7 +8778,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8758,7 +8795,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8776,7 +8813,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT name, AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT name, AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8794,7 +8831,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT users.name, email, AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT users.name, email, AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8812,7 +8849,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8828,10 +8865,10 @@ func TestQuery_Avg(t *testing.T) {
 		// 测试点号格式字段在分组和聚合中使用
 		query.GroupBy("users.status").
 			Avg("users.age").
-			Having("AVG(`users`.`age`) > ?", 25)
+			Having(currentDialectSQLFragment("AVG(`users`.`age`) > ?"), 25)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING AVG(`users`.`age`) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING AVG(`users`.`age`) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8849,7 +8886,7 @@ func TestQuery_Avg(t *testing.T) {
 			Avg("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8866,7 +8903,7 @@ func TestQuery_Avg(t *testing.T) {
 		query.Avg("invalid_table.invalid_field")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT AVG(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8884,7 +8921,7 @@ func TestQuery_Avg(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 根据实现，可能按普通字符串处理或有特殊处理
-		expectedSQL := "SELECT AVG(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT AVG(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Logf("Actual SQL: %s", sql)
 		}
@@ -8918,7 +8955,7 @@ func TestQuery_Max(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8935,7 +8972,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max("age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8957,7 +8994,7 @@ func TestQuery_Max(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count, MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count, MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8975,7 +9012,7 @@ func TestQuery_Max(t *testing.T) {
 			Max(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`age`) FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -8993,7 +9030,7 @@ func TestQuery_Max(t *testing.T) {
 			Max(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT status, MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9011,7 +9048,7 @@ func TestQuery_Max(t *testing.T) {
 			Max(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9030,7 +9067,7 @@ func TestQuery_Max(t *testing.T) {
 			Having("MAX(age) > ?", 18)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MAX(age) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MAX(age) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9048,7 +9085,7 @@ func TestQuery_Max(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT MAX(`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9066,7 +9103,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9084,7 +9121,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9101,7 +9138,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9118,7 +9155,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9136,7 +9173,7 @@ func TestQuery_Max(t *testing.T) {
 			Max("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT name, MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT name, MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9154,7 +9191,7 @@ func TestQuery_Max(t *testing.T) {
 			Max("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT users.name, email, MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT users.name, email, MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9172,7 +9209,7 @@ func TestQuery_Max(t *testing.T) {
 			Max("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9188,10 +9225,10 @@ func TestQuery_Max(t *testing.T) {
 		// 测试点号格式字段在分组和聚合中使用
 		query.GroupBy("users.status").
 			Max("users.age").
-			Having("MAX(`users`.`age`) > ?", 30)
+			Having(currentDialectSQLFragment("MAX(`users`.`age`) > ?"), 30)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING MAX(`users`.`age`) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING MAX(`users`.`age`) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9209,7 +9246,7 @@ func TestQuery_Max(t *testing.T) {
 			Max("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9226,7 +9263,7 @@ func TestQuery_Max(t *testing.T) {
 		query.Max("invalid_table.invalid_field")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MAX(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9244,7 +9281,7 @@ func TestQuery_Max(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 根据实现，可能按普通字符串处理或有特殊处理
-		expectedSQL := "SELECT MAX(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MAX(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Logf("Actual SQL: %s", sql)
 		}
@@ -9278,7 +9315,7 @@ func TestQuery_Min(t *testing.T) {
 
 		// 验证生成的SQL和参数
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9295,7 +9332,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min("age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9317,7 +9354,7 @@ func TestQuery_Min(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`id`) as count, MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`id`) as count, MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9335,7 +9372,7 @@ func TestQuery_Min(t *testing.T) {
 			Min(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`age`) FROM `users` WHERE `status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9353,7 +9390,7 @@ func TestQuery_Min(t *testing.T) {
 			Min(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT status, MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT status, MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9371,7 +9408,7 @@ func TestQuery_Min(t *testing.T) {
 			Min(&user.Age)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9390,7 +9427,7 @@ func TestQuery_Min(t *testing.T) {
 			Having("MIN(age) > ?", 18)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MIN(age) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `status` HAVING MIN(age) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9408,7 +9445,7 @@ func TestQuery_Min(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 注意：无效字段仍然会生成SQL，但在实际使用中可能需要额外验证
-		expectedSQL := "SELECT MIN(`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9426,7 +9463,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min(&post.UserID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`user_id`) FROM `posts` WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9444,7 +9481,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min(&userRole.RoleID)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`role_id`) FROM `user_roles` WHERE `user_roles`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9461,7 +9498,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min("created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`created_at`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9478,7 +9515,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9496,7 +9533,7 @@ func TestQuery_Min(t *testing.T) {
 			Min("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT name, MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT name, MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9514,7 +9551,7 @@ func TestQuery_Min(t *testing.T) {
 			Min("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT users.name, email, MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT users.name, email, MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9532,7 +9569,7 @@ func TestQuery_Min(t *testing.T) {
 			Min("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`users`.`age`) FROM `users` WHERE `users`.`status` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9548,10 +9585,10 @@ func TestQuery_Min(t *testing.T) {
 		// 测试点号格式字段在分组和聚合中使用
 		query.GroupBy("users.status").
 			Min("users.age").
-			Having("MIN(`users`.`age`) > ?", 18)
+			Having(currentDialectSQLFragment("MIN(`users`.`age`) > ?"), 18)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING MIN(`users`.`age`) > ?"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`users`.`age`) FROM `users` WHERE `users`.`deleted_at` IS NULL GROUP BY `users`.`status` HAVING MIN(`users`.`age`) > ?")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9569,7 +9606,7 @@ func TestQuery_Min(t *testing.T) {
 			Min("users.age")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`users`.`age`) FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9586,7 +9623,7 @@ func TestQuery_Min(t *testing.T) {
 		query.Min("invalid_table.invalid_field")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT MIN(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`invalid_table`.`invalid_field`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9604,7 +9641,7 @@ func TestQuery_Min(t *testing.T) {
 
 		sql, args := query.ToSQLAndArgs()
 		// 根据实现，可能按普通字符串处理或有特殊处理
-		expectedSQL := "SELECT MIN(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT MIN(`table`.`subtable`) FROM `users` WHERE `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Logf("Actual SQL: %s", sql)
 		}
@@ -9630,7 +9667,7 @@ func TestQuery_Join(t *testing.T) {
 			Eq("users.name", "testuser1")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`status` = ? AND `users`.`name` = ? AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`status` = ? AND `users`.`name` = ? AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9651,7 +9688,7 @@ func TestQuery_Join(t *testing.T) {
 		//Select("users.id", "users.name")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`deleted_at`,`users`.`name`,`users`.`email`,`users`.`phone`,`users`.`age`,`users`.`score`,`users`.`address`,`users`.`is_active`,`users`.`salary`,`users`.`status` FROM `users` JOIN user_roles ON users.id = user_roles.user_id JOIN roles ON user_roles.role_id = roles.id WHERE `users`.`name` = ? AND `users`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`deleted_at`,`users`.`name`,`users`.`email`,`users`.`phone`,`users`.`age`,`users`.`score`,`users`.`address`,`users`.`is_active`,`users`.`salary`,`users`.`status` FROM `users` JOIN user_roles ON users.id = user_roles.user_id JOIN roles ON user_roles.role_id = roles.id WHERE `users`.`name` = ? AND `users`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9669,7 +9706,7 @@ func TestQuery_Join(t *testing.T) {
 			Eq("posts.status", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id AND users.status = ? WHERE `posts`.`status` = ? AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id AND users.status = ? WHERE `posts`.`status` = ? AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9688,7 +9725,7 @@ func TestQuery_Join(t *testing.T) {
 			Like("users.name", "admin")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`status` = ? AND `users`.`name` LIKE ? AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`status` = ? AND `users`.`name` LIKE ? AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9707,7 +9744,7 @@ func TestQuery_Join(t *testing.T) {
 			Eq("posts.status", 1)
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT posts.title,users.name FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`status` = ? AND `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT posts.title,users.name FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`status` = ? AND `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9726,7 +9763,7 @@ func TestQuery_Join(t *testing.T) {
 			OrderAsc("users.created_at")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`status` = ? AND `posts`.`deleted_at` IS NULL ORDER BY `users`.`created_at`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`status` = ? AND `posts`.`deleted_at` IS NULL ORDER BY `users`.`created_at`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9745,7 +9782,7 @@ func TestQuery_Join(t *testing.T) {
 			Count("posts.id")
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT COUNT(`posts`.`id`) as count FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL GROUP BY `users`.`id`"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT COUNT(`posts`.`id`) as count FROM `posts` JOIN users ON posts.user_id = users.id WHERE `posts`.`deleted_at` IS NULL GROUP BY `users`.`id`")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}
@@ -9769,7 +9806,7 @@ func TestQuery_Join(t *testing.T) {
 		}
 
 		sql, args := query.ToSQLAndArgs()
-		expectedSQL := "SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id JOIN categories ON posts.category_id = categories.id LEFT JOIN tags ON posts.tag_id = tags.id WHERE `posts`.`deleted_at` IS NULL"
+		expectedSQL := expectedSQLForCurrentDialect("SELECT `posts`.`id`,`posts`.`created_at`,`posts`.`updated_at`,`posts`.`deleted_at`,`posts`.`user_id`,`posts`.`title`,`posts`.`content`,`posts`.`status` FROM `posts` JOIN users ON posts.user_id = users.id JOIN categories ON posts.category_id = categories.id LEFT JOIN tags ON posts.tag_id = tags.id WHERE `posts`.`deleted_at` IS NULL")
 		if sql != expectedSQL {
 			t.Errorf("Expected SQL: %s, got: %s", expectedSQL, sql)
 		}

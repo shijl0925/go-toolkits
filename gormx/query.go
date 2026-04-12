@@ -1603,11 +1603,18 @@ func buildAggregateSQL(aggFunc string, fieldName string) string {
 		parts := strings.Split(fieldName, ".")
 		quotedParts := make([]string, len(parts))
 		for i, part := range parts {
-			quotedParts[i] = fmt.Sprintf("`%s`", strings.TrimSpace(part))
+			quotedParts[i] = quoteAggregateIdentifier(strings.TrimSpace(part))
 		}
 		return fmt.Sprintf("%s(%s)", aggFunc, strings.Join(quotedParts, "."))
 	}
-	return fmt.Sprintf("%s(`%s`)", aggFunc, fieldName)
+	return fmt.Sprintf("%s(%s)", aggFunc, quoteAggregateIdentifier(fieldName))
+}
+
+func quoteAggregateIdentifier(fieldName string) string {
+	if db := GetDb(); db != nil && db.Dialector.Name() == postgresDialectName {
+		return fmt.Sprintf(`"%s"`, fieldName)
+	}
+	return fmt.Sprintf("`%s`", fieldName)
 }
 
 // Count 添加count聚合函数
