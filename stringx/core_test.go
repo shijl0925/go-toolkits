@@ -246,6 +246,18 @@ func TestFormatMap(t *testing.T) {
 			inputMap: map[string]any{"escaped": "value"},
 			expected: "{{escaped}}",
 		},
+		{
+			name:     "Non-string values are formatted",
+			format:   "count={count}, active={active}",
+			inputMap: map[string]any{"count": 5, "active": true},
+			expected: "count=5, active=true",
+		},
+		{
+			name:     "Nil value is formatted",
+			format:   "value={value}",
+			inputMap: map[string]any{"value": nil},
+			expected: "value=<nil>",
+		},
 	}
 
 	for _, tt := range tests {

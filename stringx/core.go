@@ -154,10 +154,8 @@ func FormatMap(format string, m map[string]any) string {
 		//}
 
 		if value, ok := m[key]; ok {
-			if strVal, ok := value.(string); ok {
-				strKey := "{" + key + "}"
-				pairs[strKey] = strVal
-			}
+			strKey := "{" + key + "}"
+			pairs[strKey] = fmt.Sprint(value)
 		}
 		pos = end + 1
 	}
