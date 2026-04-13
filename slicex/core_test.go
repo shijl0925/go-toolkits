@@ -1247,6 +1247,22 @@ func Test_Intersect(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("preserves src order when src is shorter", func(t *testing.T) {
+		got := slicex.Intersect([]int{4, 3}, []int{3, 4, 5, 4, 3})
+		want := []int{4, 3}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Intersect() expected %v, got %v", want, got)
+		}
+	})
+
+	t.Run("uses src multiplicity instead of dst multiplicity", func(t *testing.T) {
+		got := slicex.Intersect([]int{1, 2}, []int{1, 1, 2, 2})
+		want := []int{1, 2}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Intersect() expected %v, got %v", want, got)
+		}
+	})
 }
 
 func Test_Union(t *testing.T) {
