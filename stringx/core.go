@@ -74,6 +74,7 @@ func IsTitle(s string) bool {
 	return hasLetter(s) && strings.ToTitle(s) == s
 }
 
+// hasLetter reports whether s contains at least one Unicode letter.
 func hasLetter(s string) bool {
 	for _, r := range s {
 		if unicode.IsLetter(r) {

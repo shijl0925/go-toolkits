@@ -1095,12 +1095,12 @@ func Test_RepeatSlice(t *testing.T) {
 			t.Errorf("Repeat() expected %v, got %v", wanted, got)
 		}
 	})
-	t.Run("test4", func(t *testing.T) {
+	t.Run("returns empty slice for zero count", func(t *testing.T) {
 		if got := slicex.Repeat(1, 0); !reflect.DeepEqual(got, []int{}) {
 			t.Errorf("Repeat() expected empty slice, got %v", got)
 		}
 	})
-	t.Run("test5", func(t *testing.T) {
+	t.Run("returns empty slice for negative count", func(t *testing.T) {
 		if got := slicex.Repeat(1, -1); !reflect.DeepEqual(got, []int{}) {
 			t.Errorf("Repeat() expected empty slice for negative count, got %v", got)
 		}
