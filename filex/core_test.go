@@ -284,7 +284,7 @@ func TestSplitText(t *testing.T) {
 		{"TC06 - 当前目录", ".", [2]string{".", ""}},
 		{"TC07 - 上级目录", "..", [2]string{"..", ""}},
 		{"TC08 - 结尾带斜杠", "/a/b/c/d/", [2]string{"/a/b/c/d", ""}},
-		{"TC09 - 路径含扩展名但结尾是斜杠", "/a/b/c.txt/", [2]string{"/a/b/c", ".txt"}},
+		{"TC09 - Clean后保留文件扩展名", "/a/b/c.txt/", [2]string{"/a/b/c", ".txt"}},
 		{"TC10 - Windows路径", "C:\\Windows\\test.txt", [2]string{"C:\\Windows\\test", ".txt"}},
 	}
 

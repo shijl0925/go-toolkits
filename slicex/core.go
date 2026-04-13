@@ -146,7 +146,7 @@ func Shift[T any](s []T) (T, bool) {
 	return s[0], true
 }
 
-// Drop removes the n elements from the slice and returns the remaining elements.
+// Drop removes the first n elements from the slice and returns the remaining elements.
 // 删除并返回切片的前 n 个元素和剩余元素组成的切片, 原始 slice 不会被改变。
 // 注意: 返回的切片仍与原切片共享底层数组。
 // Example:
