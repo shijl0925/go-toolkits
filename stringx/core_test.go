@@ -178,6 +178,32 @@ func TestSwapCase(t *testing.T) {
 	}
 }
 
+func TestCaseChecksRequireLetters(t *testing.T) {
+	tests := []struct {
+		name  string
+		fn    func(string) bool
+		input string
+		want  bool
+	}{
+		{"IsLower rejects empty", stringx.IsLower, "", false},
+		{"IsLower rejects digits", stringx.IsLower, "123", false},
+		{"IsLower accepts lowercase letters with digits", stringx.IsLower, "abc123", true},
+		{"IsUpper rejects punctuation", stringx.IsUpper, "!!!", false},
+		{"IsUpper accepts uppercase letters with digits", stringx.IsUpper, "ABC123", true},
+		{"IsTitle rejects whitespace only", stringx.IsTitle, "   ", false},
+		{"IsTitle accepts uppercase letters", stringx.IsTitle, "Go", false},
+		{"IsTitle preserves previous title semantics", stringx.IsTitle, "ABC", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.fn(tt.input); got != tt.want {
+				t.Errorf("%s(%q) = %v, want %v", tt.name, tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 // Test cases for FormatMap function
 func TestFormatMap(t *testing.T) {
 	tests := []struct {

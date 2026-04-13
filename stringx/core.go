@@ -59,19 +59,28 @@ func Substring(s string, offset int, length int) string {
 // IsLower returns true if all characters in the string are lower case.
 // 判断字符串是否全部为小写。
 func IsLower(s string) bool {
-	return strings.ToLower(s) == s
+	return hasLetter(s) && strings.ToLower(s) == s
 }
 
 // IsUpper returns true if all characters in the string are upper case.
 // 判断字符串是否全部为大写。
 func IsUpper(s string) bool {
-	return strings.ToUpper(s) == s
+	return hasLetter(s) && strings.ToUpper(s) == s
 }
 
 // IsTitle returns true if all characters in the string are title case.
 // 判断字符串是否全部为标题格式。
 func IsTitle(s string) bool {
-	return strings.ToTitle(s) == s
+	return hasLetter(s) && strings.ToTitle(s) == s
+}
+
+func hasLetter(s string) bool {
+	for _, r := range s {
+		if unicode.IsLetter(r) {
+			return true
+		}
+	}
+	return false
 }
 
 // Partition splits a string into three parts using a separator.
