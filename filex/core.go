@@ -246,6 +246,12 @@ func CopyFile(srcPath string, dstPath string) error {
 		return err
 	}
 
+	// 尽早设置目标文件权限，避免后续步骤失败时留下不正确的默认权限。
+	if err := distFile.Chmod(srcInfo.Mode()); err != nil {
+		_ = distFile.Close()
+		return fmt.Errorf("failed to set destination file permissions: %w", err)
+	}
+
 	// 使用缓冲拷贝
 	buf := make([]byte, 64*1024) // 64KB buffer
 	_, err = io.CopyBuffer(distFile, srcFile, buf)
@@ -261,11 +267,6 @@ func CopyFile(srcPath string, dstPath string) error {
 
 	if err := distFile.Close(); err != nil {
 		return fmt.Errorf("failed to close copied file: %w", err)
-	}
-
-	// 设置目标文件权限与源文件一致
-	if err := os.Chmod(cleanedDstPath, srcInfo.Mode()); err != nil {
-		return fmt.Errorf("failed to set destination file permissions: %w", err)
 	}
 
 	return nil

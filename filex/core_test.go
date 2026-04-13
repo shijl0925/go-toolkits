@@ -666,6 +666,44 @@ func Test_CopyFile_PreservesMode(t *testing.T) {
 	}
 }
 
+func Test_CopyFile_PreservesModeForExistingDestination(t *testing.T) {
+	tempDir := t.TempDir()
+	srcPath := filepath.Join(tempDir, "source.txt")
+	dstPath := filepath.Join(tempDir, "dest.txt")
+
+	if err := os.WriteFile(srcPath, []byte("copy me"), 0600); err != nil {
+		t.Fatalf("os.WriteFile(src) failed: %v", err)
+	}
+	if err := os.Chmod(srcPath, 0750); err != nil {
+		t.Fatalf("os.Chmod(src) failed: %v", err)
+	}
+
+	if err := os.WriteFile(dstPath, []byte("old"), 0600); err != nil {
+		t.Fatalf("os.WriteFile(dst) failed: %v", err)
+	}
+	if err := os.Chmod(dstPath, 0644); err != nil {
+		t.Fatalf("os.Chmod(dst) failed: %v", err)
+	}
+
+	if err := filex.CopyFile(srcPath, dstPath); err != nil {
+		t.Fatalf("CopyFile() error = %v", err)
+	}
+
+	srcInfo, err := os.Lstat(srcPath)
+	if err != nil {
+		t.Fatalf("os.Lstat(src) failed: %v", err)
+	}
+
+	dstInfo, err := os.Lstat(dstPath)
+	if err != nil {
+		t.Fatalf("os.Lstat(dst) failed: %v", err)
+	}
+
+	if dstInfo.Mode() != srcInfo.Mode() {
+		t.Errorf("CopyFile() mode = %v; want %v", dstInfo.Mode(), srcInfo.Mode())
+	}
+}
+
 func Test_CopyFile_RejectsSameFile(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "same.txt")
