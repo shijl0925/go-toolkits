@@ -908,7 +908,7 @@ func IsDescending[T constraints.Ordered](s []T) bool {
 
 // RightPadding adds padding to the right end of a slice.
 func RightPadding[T any](s []T, v T, n int) []T {
-	if n == 0 {
+	if n <= 0 {
 		return s
 	}
 
@@ -923,7 +923,7 @@ func RightPadding[T any](s []T, v T, n int) []T {
 
 // LeftPadding adds padding to the left begin of a slice.
 func LeftPadding[T any](s []T, v T, n int) []T {
-	if n == 0 {
+	if n <= 0 {
 		return s
 	}
 	result := make([]T, len(s)+n)

@@ -1800,6 +1800,16 @@ func Test_RightPaddingZero(t *testing.T) {
 	}
 }
 
+func Test_RightPaddingNegative(t *testing.T) {
+	input := []int{1, 2, 3, 4, 5}
+	expected := []int{1, 2, 3, 4, 5}
+
+	result := slicex.RightPadding(input, 0, -1)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RightPadding() expected %v, got %v", expected, result)
+	}
+}
+
 func Test_LeftPadding(t *testing.T) {
 	input := []int{1, 2, 3, 4, 5}
 	expected := []int{0, 0, 0, 1, 2, 3, 4, 5}
@@ -1815,6 +1825,16 @@ func Test_LeftPaddingZero(t *testing.T) {
 	expected := []int{1, 2, 3, 4, 5}
 
 	result := slicex.LeftPadding(input, 0, 0)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("LeftPadding() expected %v, got %v", expected, result)
+	}
+}
+
+func Test_LeftPaddingNegative(t *testing.T) {
+	input := []int{1, 2, 3, 4, 5}
+	expected := []int{1, 2, 3, 4, 5}
+
+	result := slicex.LeftPadding(input, 0, -1)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("LeftPadding() expected %v, got %v", expected, result)
 	}
