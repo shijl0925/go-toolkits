@@ -757,7 +757,7 @@ func Test_Drop(t *testing.T) {
 		ok       bool
 	}{
 		{"test1", []int{1, 2, 3, 4}, 0, []int{1, 2, 3, 4}, true},
-		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{1, 2, 3}, true},
+		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{3, 4, 5}, true},
 		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, []int{}, true},
 		{"test4", []int{1, 2, 3, 4}, 5, []int{}, true},
 		{"test5", []int{1, 2, 3, 4}, -1, []int{1, 2, 3, 4}, false},

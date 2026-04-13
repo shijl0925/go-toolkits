@@ -152,7 +152,7 @@ func Shift[T any](s []T) (T, bool) {
 // Example:
 //
 //	s := []int{1, 2, 3, 4, 5}
-//	r, _ := Drop(s, 2) //  r == []int{1, 2, 3}
+//	r, _ := Drop(s, 2) //  r == []int{3, 4, 5}
 func Drop[T any](s []T, n int) ([]T, bool) {
 	if n < 0 {
 		return s, false
@@ -160,7 +160,7 @@ func Drop[T any](s []T, n int) ([]T, bool) {
 	if n > len(s) {
 		return []T{}, true
 	}
-	return s[:len(s)-n], true
+	return s[n:], true
 }
 
 // DropLeft removes the n elements from the slice and returns the remaining elements.
