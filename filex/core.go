@@ -77,6 +77,9 @@ func GetExtension(path string) string {
 // 分割路径为文件名（不含扩展）和扩展名
 func SplitText(path string) (string, string) {
 	cleanedPath := filepath.Clean(path)
+	if cleanedPath == "." || cleanedPath == ".." {
+		return cleanedPath, ""
+	}
 	ext := filepath.Ext(cleanedPath)
 	if ext == "" {
 		return cleanedPath, ""
