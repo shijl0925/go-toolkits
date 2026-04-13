@@ -7,7 +7,16 @@ import "github.com/shijl0925/go-toolkits/internal/constraints"
 // If not found return -1.
 // 二分查找
 func BinarySearch[T constraints.Ordered](s []T, target T, l, h int) int {
-	if l > h || len(s) == 0 {
+	if len(s) == 0 {
+		return -1
+	}
+	if l < 0 {
+		l = 0
+	}
+	if h >= len(s) {
+		h = len(s) - 1
+	}
+	if l > h || l >= len(s) || h < 0 {
 		return -1
 	}
 	m := l + (h-l)/2
