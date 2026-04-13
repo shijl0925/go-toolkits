@@ -18,7 +18,9 @@ go get github.com/shijl0925/go-toolkits/gormx
 
 ## 使用前提
 
-在调用 `GetDb`、`BaseRepo`、`Query[T]` 等能力前，需要先初始化全局 `*gorm.DB`：
+在调用 `GetDb`、`BaseRepo`、`Query[T]` 等能力前，需要先初始化全局 `*gorm.DB`。
+
+### MySQL
 
 ```go
 package main
@@ -37,6 +39,43 @@ func main() {
     gormx.Init(db)
 }
 ```
+
+### PostgreSQL
+
+```bash
+go get gorm.io/driver/postgres
+```
+
+```go
+package main
+
+import (
+    "github.com/shijl0925/go-toolkits/gormx"
+    "gorm.io/driver/postgres"
+    "gorm.io/gorm"
+)
+
+func main() {
+    dsn := "host=127.0.0.1 user=postgres password=postgres dbname=demo port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        panic(err)
+    }
+    gormx.Init(db)
+}
+```
+
+DSN 字段说明：
+
+| 字段 | 说明 | 常用值示例 |
+| --- | --- | --- |
+| `host` | 数据库地址 | `127.0.0.1` |
+| `port` | 端口 | `5432` |
+| `user` | 用户名 | `postgres` |
+| `password` | 密码 | `postgres` |
+| `dbname` | 数据库名 | `demo` |
+| `sslmode` | SSL 模式 | `disable`、`require` |
+| `TimeZone` | 时区 | `Asia/Shanghai`、`UTC` |
 
 ## 快速开始
 
@@ -150,4 +189,127 @@ sql, args := query.ToSQLAndArgs()
 - 希望减少字符串列名和样板查询代码
 - 按 repo / service 分层组织业务代码
 - 需要统一处理模型关联关系
+
+## PostgreSQL 使用场景
+
+`gormx` 对 PostgreSQL 提供原生支持。大多数 API 与 MySQL 完全一致，切换时只需替换驱动和 DSN，少量行为存在差异，具体如下。
+
+### 占位符格式
+
+PostgreSQL 使用 `$1`、`$2` 作为参数占位符，而 MySQL 使用 `?`。gormx 的所有查询构建方法（`Eq`、`In`、`Between` 等）已经由底层 GORM 驱动自动转换，**调用方无需做任何改动**。
+
+以下两段代码在 MySQL 和 PostgreSQL 下的写法完全一样：
+
+```go
+query, user := gormx.NewQuery[User]()
+query.Eq(&user.Status, 1).Ge(&user.Age, 18)
+
+// MySQL 实际执行: WHERE `status` = ? AND `age` >= ?
+// PostgreSQL 实际执行: WHERE "status" = $1 AND "age" >= $2
+```
+
+如果你需要通过 `ToSQLAndArgs()` 预览生成的 SQL，在 PostgreSQL 下返回的占位符也会是 `$1`、`$2` 形式。
+
+### 正则匹配（Regexp）
+
+MySQL 使用 `REGEXP` 关键字，PostgreSQL 使用 `~` 操作符。`gormx` 会在运行时自动检测数据库类型，选择正确的操作符，**调用方无需区分**：
+
+```go
+query, user := gormx.NewQuery[User]()
+query.Regexp(&user.Name, `^[A-Z]`)
+
+// MySQL:      WHERE name REGEXP '^[A-Z]'
+// PostgreSQL: WHERE name ~ '^[A-Z]'
+```
+
+### 完整示例
+
+以下示例展示了在 PostgreSQL 下使用 gormx 完成常见业务场景的完整流程：
+
+```go
+package main
+
+import (
+    "fmt"
+
+    "github.com/shijl0925/go-toolkits/gormx"
+    "gorm.io/driver/postgres"
+    "gorm.io/gorm"
+)
+
+type Article struct {
+    ID      uint   `gorm:"primaryKey"`
+    Title   string `gorm:"column:title"`
+    Author  string `gorm:"column:author"`
+    Status  int    `gorm:"column:status"`
+    ViewCnt int    `gorm:"column:view_cnt"`
+}
+
+type ArticleRepo struct {
+    gormx.BaseRepo[Article]
+}
+
+func (r *ArticleRepo) FindPublished() ([]Article, error) {
+    return r.SelectListByOpts(gormx.Where("status = ?", 1))
+}
+
+func main() {
+    dsn := "host=127.0.0.1 user=postgres password=postgres dbname=demo port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        panic(err)
+    }
+    gormx.Init(db)
+
+    _ = db.AutoMigrate(&Article{})
+
+    repo := &ArticleRepo{}
+
+    // 1. 条件查询：标题以大写字母开头、状态为已发布、浏览量超过 100
+    query, a := gormx.NewQuery[Article]()
+    query.
+        Regexp(&a.Title, `^[A-Z]`).
+        Eq(&a.Status, 1).
+        Gt(&a.ViewCnt, 100).
+        OrderDesc(&a.ViewCnt).
+        Limit(10)
+
+    var articles []Article
+    if err := query.Find(&articles); err != nil {
+        panic(err)
+    }
+    fmt.Println("Found articles:", len(articles))
+
+    // 2. 分页查询（第 1 页，每页 20 条）
+    list, total, err := repo.SelectPage(1, 20, gormx.Where("status = ?", 1))
+    if err != nil {
+        panic(err)
+    }
+    fmt.Printf("Total: %d, Page: %v\n", total, list)
+
+    // 3. 预览生成的 PostgreSQL SQL（占位符为 $1、$2 ...）
+    q2, a2 := gormx.NewQuery[Article]()
+    q2.Eq(&a2.Status, 1).In(&a2.Author, []string{"Alice", "Bob"})
+    sql, args := q2.ToSQLAndArgs()
+    fmt.Println("SQL:", sql)
+    fmt.Println("Args:", args)
+
+    // 4. 聚合查询：统计各状态文章数量
+    q3, a3 := gormx.NewQuery[Article]()
+    q3.GroupBy(&a3.Status).Having("COUNT(*) > ?", 5)
+    var result []struct {
+        Status int
+        Count  int
+    }
+    if err := q3.Scan(&result); err != nil {
+        panic(err)
+    }
+}
+```
+
+### 注意事项
+
+- **表名引号**：PostgreSQL 默认区分大小写并使用双引号，GORM 会自动处理；建议 `gorm:"column:xxx"` 使用全小写或 snake_case 命名。
+- **JSONB / 数组等扩展类型**：如需使用 PostgreSQL 特有的字段类型（`jsonb`、`text[]` 等），在模型定义上配合 `gorm.io/datatypes` 等扩展包即可，gormx 的查询构建器仍然适用。
+- **`Regexp` 区分大小写**：PostgreSQL 的 `~` 默认区分大小写；如需忽略大小写，可改用 `~*` 操作符，此时通过 `RawRows` 或 `Scan` 手写 WHERE 子句即可。
 
