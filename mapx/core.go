@@ -163,6 +163,9 @@ func GetOrDefault[K comparable, V any](m map[K]V, key K, defaultValue V) V {
 // SetIfAbsent set the value of the given key with the default value when the key is not present.
 // 设置 map 的 key 的 value，如果 key 不存在，则添加 key 和 value。
 func SetIfAbsent[K comparable, V any](m map[K]V, key K, defaultValue V) {
+	if m == nil {
+		return
+	}
 	if _, ok := m[key]; !ok {
 		m[key] = defaultValue
 	}
