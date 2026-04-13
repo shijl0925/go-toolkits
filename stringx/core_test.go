@@ -191,7 +191,7 @@ func TestCaseChecksRequireLetters(t *testing.T) {
 		{"IsUpper rejects punctuation", stringx.IsUpper, "!!!", false},
 		{"IsUpper accepts uppercase letters with digits", stringx.IsUpper, "ABC123", true},
 		{"IsTitle rejects whitespace only", stringx.IsTitle, "   ", false},
-		{"IsTitle rejects mixed-case word", stringx.IsTitle, "Go", false},
+		{"IsTitle rejects capitalized word", stringx.IsTitle, "Go", false},
 		{"IsTitle accepts all-uppercase letters", stringx.IsTitle, "ABC", true},
 	}
 
