@@ -1,102 +1,87 @@
-# systemx - Go 系统操作工具包
+# systemx
 
-`systemx` 是一个用于处理系统级操作的工具包，提供了跨平台的系统信息获取、环境变量管理、命令执行和进程控制功能。
-
-## 功能列表
-
-### 操作系统检测
-* [IsWindows() bool](https://github.com/shijl0925/go-toolkits/blob/main/systemx/core.go#L15-L17) - 检查当前操作系统是否为 Windows
-* [IsLinux() bool](https://github.com/shijl0925/go-toolkits/blob/main/systemx/core.go#L20-L22) - 检查当前操作系统是否为 Linux
-* [IsMac() bool](https://github.com/shijl0925/go-toolkits/blob/main/systemx/core.go#L25-L27) - 检查当前操作系统是否为 macOS
-
-### 环境变量操作
-* [GetOsEnv(key string) string](https://github.com/shijl0925/go-toolkits/blob/main/systemx/core.go#L30-L32) - 获取指定环境变量的值
-* `SetOsEnv(key, value string) error` - 设置环境变量的值
-* [RemoveOsEnv(key string) error](https://github.com/shijl0925/go-toolkits/blob/main/systemx/core.go#L40-L42) - 删除指定环境变量
-
-### 命令执行
-* `ExecCommand(command string, opts ...Option) (stdout, stderr string, err error)` - 执行系统命令并返回输出结果（直接执行可执行文件，不通过 shell）
-
-### 进程管理
-* `StartProcess(command string, args ...string) (int, error)` - 启动一个新进程并返回进程ID
-* [StopProcess(pid int) error](https://github.com/shijl0925/go-toolkits/blob/main/systemx/core.go#L92-L99) - 通过进程ID停止进程（发送 kill 信号）
-* [KillProcess(pid int) error](https://github.com/shijl0925/go-toolkits/blob/main/systemx/core.go#L102-L109) - 通过进程ID强制终止进程
+`systemx` 面向操作系统层面的常用任务，提供环境变量管理、命令执行、进程启动/终止以及操作系统识别能力。它适合脚本化工具、运维辅助程序和本地自动化任务。
 
 ## 安装
 
-```shell
+```bash
 go get github.com/shijl0925/go-toolkits/systemx
 ```
 
+## 核心能力
 
-## 使用示例
+### 平台识别
+
+- `IsWindows`
+- `IsLinux`
+- `IsMac`
+
+### 环境变量
+
+- `GetOsEnv`
+- `SetOsEnv`
+- `RemoveOsEnv`
+
+### 命令与进程
+
+- `ExecCommand`
+- `StartProcess`
+- `StopProcess`
+- `KillProcess`
+- `Option`
+
+## 快速示例
 
 ```go
-package main
+stdout, stderr, err := systemx.ExecCommand("echo hello")
+_ = stdout
+_ = stderr
+_ = err
 
-import (
-    "fmt"
-    "github.com/shijl0925/go-toolkits/systemx"
-)
-
-func main() {
-    // 检查操作系统类型
-    if systemx.IsWindows() {
-        fmt.Println("Running on Windows")
-    } else if systemx.IsLinux() {
-        fmt.Println("Running on Linux")
-    } else if systemx.IsMac() {
-        fmt.Println("Running on macOS")
-    }
-    
-    // 环境变量操作
-    err := systemx.SetOsEnv("MY_VAR", "test_value")
-    if err != nil {
-        fmt.Printf("Error setting environment variable: %v\n", err)
-    }
-    
-    value := systemx.GetOsEnv("MY_VAR")
-    fmt.Printf("MY_VAR = %s\n", value)
-    
-    // 执行系统命令
-    stdout, stderr, err := systemx.ExecCommand("echo Hello World")
-    if err != nil {
-        fmt.Printf("Error executing command: %v\n", err)
-    }
-    if stderr != "" {
-        fmt.Printf("Command stderr: %s\n", stderr)
-    }
-    fmt.Printf("Command stdout: %s\n", stdout)
-    
-    // 进程管理
-    pid, err := systemx.StartProcess("sleep", "10")
-    if err != nil {
-        fmt.Printf("Error starting process: %v\n", err)
-    } else {
-        fmt.Printf("Started process with PID: %d\n", pid)
-        
-        // 终止进程
-        err = systemx.KillProcess(pid)
-        if err != nil {
-            fmt.Printf("Error killing process: %v\n", err)
-        }
-    }
+pid, err := systemx.StartProcess("sleep", "5")
+if err == nil {
+    _ = systemx.KillProcess(pid)
 }
 ```
 
+## 使用说明
 
-## 特性说明
+### ExecCommand
 
-### 跨平台支持
-- 自动检测操作系统类型并适配相应的命令执行方式
-- 直接执行目标可执行文件，不通过 shell
-- 支持带引号的命令参数解析
+`ExecCommand` 接收的是**完整命令字符串**，内部会先解析参数，再直接调用目标可执行文件，而不是把命令交给 shell。
 
-### 命令执行选项
-- 支持通过 `Option` 函数自定义 `exec.Cmd` 的配置
-- 返回标准输出、错误输出和错误信息，便于调试
-- 为降低命令注入风险，不支持相对路径形式的可执行文件（如 `./tool`）
+这带来两个好处：
 
-### 进程管理
-- 提供启动、停止和强制终止进程的功能
-- 通过进程ID进行进程控制，操作精确
+- 降低命令注入风险
+- 更容易拿到明确的 stdout / stderr 结果
+
+### 相对路径限制
+
+为了安全起见，`ExecCommand` / `StartProcess` 不允许使用带路径分隔符的相对命令路径，例如：
+
+- `./tool`
+- `bin/tool`
+
+如果你要执行本地程序，请传入：
+
+- 系统 PATH 中可解析的命令名，或
+- 绝对路径
+
+### Option 的用途
+
+`Option` 本质上是 `func(*exec.Cmd)`，适合在执行前自定义 `Dir`、`Env`、标准输入输出等设置。
+
+### StopProcess 与 KillProcess
+
+- `StopProcess`：通过 `Signal(os.Kill)` 终止进程
+- `KillProcess`：直接调用 `Process.Kill()`
+
+在实际使用上，两者都属于强终止能力，建议谨慎调用。
+
+## 注意事项
+
+- 命令字符串如果包含未闭合引号或非法转义，会返回解析错误。
+- `ExecCommand` 失败时会返回 `stderr` 和 `error`，便于排查问题。
+- 不同平台上可执行文件解析、信号处理行为可能存在细微差异，跨平台脚本请补充验证。
+- 如果进程需要优雅退出，建议业务侧实现更细粒度的控制协议。
+
