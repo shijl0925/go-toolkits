@@ -419,6 +419,10 @@ func Reverse[T any](s []T) []T {
 // r2 := Repeat([]int{1, 2, 3}, 3)  // r2 == [][]int{{1, 2, 3}, {1, 2, 3}, {1, 2, 3}}
 // r3 := Repeat("one", 3)  // r3 == []string{"one", "one", "one"}
 func Repeat[T any](s T, n int) []T {
+	if n <= 0 {
+		return []T{}
+	}
+
 	result := make([]T, 0, n)
 	for i := 0; i < n; i++ {
 		result = append(result, s)
