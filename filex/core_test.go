@@ -1,7 +1,6 @@
 package filex_test
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -282,10 +281,10 @@ func TestSplitText(t *testing.T) {
 		{"TC03 - 简单扩展名", "image.png", [2]string{"image", ".png"}},
 		{"TC04 - 无扩展名", "/tmp/no_extension", [2]string{"/tmp/no_extension", ""}},
 		{"TC05 - 只有文件名", "README", [2]string{"README", ""}},
-		//{"TC06 - 当前目录", ".", [2]string{"", "."}},
-		//{"TC07 - 上级目录", "..", [2]string{".", "."}},
+		{"TC06 - 当前目录", ".", [2]string{".", ""}},
+		{"TC07 - 上级目录", "..", [2]string{"..", ""}},
 		{"TC08 - 结尾带斜杠", "/a/b/c/d/", [2]string{"/a/b/c/d", ""}},
-		{"TC09 - 路径含扩展名但结尾是斜杠", "/a/b/c.txt/", [2]string{"/a/b/c", ".txt"}},
+		{"TC09 - Clean后保留文件扩展名", "/a/b/c.txt/", [2]string{"/a/b/c", ".txt"}},
 		{"TC10 - Windows路径", "C:\\Windows\\test.txt", [2]string{"C:\\Windows\\test", ".txt"}},
 	}
 
@@ -482,26 +481,29 @@ func Test_WriteStringToFile(t *testing.T) {
 
 func TestFileMode(t *testing.T) {
 	tests := []struct {
-		name     string
-		path     string
-		expected fs.FileMode
+		name string
+		path string
 	}{
 		{
-			name:     "test01",
-			path:     "../LICENSE",
-			expected: fs.FileMode(0644),
+			name: "test01",
+			path: "../LICENSE",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			info, err := os.Lstat(tt.path)
+			if err != nil {
+				t.Fatalf("os.Lstat() error = %v", err)
+			}
+
 			result, err := filex.FileMode(tt.path)
 			if err != nil {
 				t.Errorf("FileMode() error = %v", err)
 			}
 
-			if result != tt.expected {
-				t.Errorf("FileMode() expected %v, got %v", tt.expected, result)
+			if result != info.Mode() {
+				t.Errorf("FileMode() expected %v, got %v", info.Mode(), result)
 			}
 		})
 	}
@@ -629,6 +631,163 @@ func Test_CopyFile(t *testing.T) {
 				t.Errorf("CopyFile() error = %v", err)
 			}
 		})
+	}
+}
+
+func Test_CopyFile_PreservesMode(t *testing.T) {
+	tempDir := t.TempDir()
+	srcPath := filepath.Join(tempDir, "source.txt")
+	dstPath := filepath.Join(tempDir, "nested", "dest.txt")
+
+	if err := os.WriteFile(srcPath, []byte("copy me"), 0600); err != nil {
+		t.Fatalf("os.WriteFile() failed: %v", err)
+	}
+
+	if err := os.Chmod(srcPath, 0640); err != nil {
+		t.Fatalf("os.Chmod() failed: %v", err)
+	}
+
+	if err := filex.CopyFile(srcPath, dstPath); err != nil {
+		t.Fatalf("CopyFile() error = %v", err)
+	}
+
+	srcInfo, err := os.Lstat(srcPath)
+	if err != nil {
+		t.Fatalf("os.Lstat(src) failed: %v", err)
+	}
+
+	dstInfo, err := os.Lstat(dstPath)
+	if err != nil {
+		t.Fatalf("os.Lstat(dst) failed: %v", err)
+	}
+
+	if dstInfo.Mode() != srcInfo.Mode() {
+		t.Errorf("CopyFile() mode = %v; want %v", dstInfo.Mode(), srcInfo.Mode())
+	}
+}
+
+func Test_CopyFile_PreservesModeForExistingDestination(t *testing.T) {
+	tempDir := t.TempDir()
+	srcPath := filepath.Join(tempDir, "source.txt")
+	dstPath := filepath.Join(tempDir, "dest.txt")
+
+	if err := os.WriteFile(srcPath, []byte("copy me"), 0600); err != nil {
+		t.Fatalf("os.WriteFile(src) failed: %v", err)
+	}
+	if err := os.Chmod(srcPath, 0750); err != nil {
+		t.Fatalf("os.Chmod(src) failed: %v", err)
+	}
+
+	if err := os.WriteFile(dstPath, []byte("old"), 0600); err != nil {
+		t.Fatalf("os.WriteFile(dst) failed: %v", err)
+	}
+	if err := os.Chmod(dstPath, 0644); err != nil {
+		t.Fatalf("os.Chmod(dst) failed: %v", err)
+	}
+
+	if err := filex.CopyFile(srcPath, dstPath); err != nil {
+		t.Fatalf("CopyFile() error = %v", err)
+	}
+
+	srcInfo, err := os.Lstat(srcPath)
+	if err != nil {
+		t.Fatalf("os.Lstat(src) failed: %v", err)
+	}
+
+	dstInfo, err := os.Lstat(dstPath)
+	if err != nil {
+		t.Fatalf("os.Lstat(dst) failed: %v", err)
+	}
+
+	if dstInfo.Mode() != srcInfo.Mode() {
+		t.Errorf("CopyFile() mode = %v; want %v", dstInfo.Mode(), srcInfo.Mode())
+	}
+}
+
+func Test_CopyFile_RejectsSameFile(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "same.txt")
+	originalContent := []byte("original content")
+
+	if err := os.WriteFile(filePath, originalContent, 0600); err != nil {
+		t.Fatalf("os.WriteFile() failed: %v", err)
+	}
+
+	err := filex.CopyFile(filePath, filePath)
+	if err == nil {
+		t.Fatal("CopyFile() expected error when source and destination are the same file")
+	}
+
+	content, readErr := os.ReadFile(filePath)
+	if readErr != nil {
+		t.Fatalf("os.ReadFile() failed: %v", readErr)
+	}
+
+	if string(content) != string(originalContent) {
+		t.Errorf("CopyFile() modified source content: got %q; want %q", content, originalContent)
+	}
+}
+
+func Test_CopyFile_RejectsHardLinkDestination(t *testing.T) {
+	tempDir := t.TempDir()
+	srcPath := filepath.Join(tempDir, "source.txt")
+	hardLinkPath := filepath.Join(tempDir, "source-hardlink.txt")
+	originalContent := []byte("hard link content")
+
+	if err := os.WriteFile(srcPath, originalContent, 0600); err != nil {
+		t.Fatalf("os.WriteFile(src) failed: %v", err)
+	}
+
+	if err := os.Link(srcPath, hardLinkPath); err != nil {
+		t.Fatalf("os.Link() failed: %v", err)
+	}
+
+	err := filex.CopyFile(srcPath, hardLinkPath)
+	if err == nil {
+		t.Fatal("CopyFile() expected error when destination is a hard link to the source")
+	}
+
+	content, readErr := os.ReadFile(srcPath)
+	if readErr != nil {
+		t.Fatalf("os.ReadFile(src) failed: %v", readErr)
+	}
+
+	if string(content) != string(originalContent) {
+		t.Errorf("CopyFile() modified source content through hard link destination: got %q; want %q", content, originalContent)
+	}
+}
+
+func Test_CopyFile_RejectsDestinationSymlink(t *testing.T) {
+	tempDir := t.TempDir()
+	srcPath := filepath.Join(tempDir, "source.txt")
+	targetPath := filepath.Join(tempDir, "target.txt")
+	linkPath := filepath.Join(tempDir, "dest-link.txt")
+
+	if err := os.WriteFile(srcPath, []byte("source content"), 0600); err != nil {
+		t.Fatalf("os.WriteFile(src) failed: %v", err)
+	}
+
+	originalTarget := []byte("target content")
+	if err := os.WriteFile(targetPath, originalTarget, 0600); err != nil {
+		t.Fatalf("os.WriteFile(target) failed: %v", err)
+	}
+
+	if err := os.Symlink(targetPath, linkPath); err != nil {
+		t.Fatalf("os.Symlink() failed: %v", err)
+	}
+
+	err := filex.CopyFile(srcPath, linkPath)
+	if err == nil {
+		t.Fatal("CopyFile() expected error when destination is a symbolic link")
+	}
+
+	content, readErr := os.ReadFile(targetPath)
+	if readErr != nil {
+		t.Fatalf("os.ReadFile(target) failed: %v", readErr)
+	}
+
+	if string(content) != string(originalTarget) {
+		t.Errorf("CopyFile() unexpectedly modified symlink target: got %q; want %q", content, originalTarget)
 	}
 }
 

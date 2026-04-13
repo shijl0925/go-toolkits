@@ -148,7 +148,15 @@ func AddMonth(t time.Time, months int) (time.Time, error) {
 	if t.IsZero() {
 		return time.Time{}, ErrTimeIsZero
 	}
-	return t.AddDate(0, months, 0), nil
+
+	target := time.Date(t.Year(), t.Month()+time.Month(months), 1, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
+	lastDay := time.Date(target.Year(), target.Month()+1, 0, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location()).Day()
+	day := t.Day()
+	if day > lastDay {
+		day = lastDay
+	}
+
+	return time.Date(target.Year(), target.Month(), day, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location()), nil
 }
 
 // AddYear add or sub year to the time.

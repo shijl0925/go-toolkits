@@ -77,6 +77,9 @@ func GetExtension(path string) string {
 // 分割路径为文件名（不含扩展）和扩展名
 func SplitText(path string) (string, string) {
 	cleanedPath := filepath.Clean(path)
+	if cleanedPath == "." || cleanedPath == ".." {
+		return cleanedPath, ""
+	}
 	ext := filepath.Ext(cleanedPath)
 	if ext == "" {
 		return cleanedPath, ""
@@ -204,9 +207,12 @@ func CopyFile(srcPath string, dstPath string) error {
 		return fmt.Errorf("srcPath or dstPath is empty")
 	}
 
-	srcInfo, err := os.Lstat(srcPath)
+	cleanedSrcPath := filepath.Clean(srcPath)
+	cleanedDstPath := filepath.Clean(dstPath)
+
+	srcInfo, err := os.Lstat(cleanedSrcPath)
 	if err != nil {
-		return fmt.Errorf("failed to get source directory info: %w", err)
+		return fmt.Errorf("failed to get source file info: %w", err)
 	}
 
 	// Prevent copying symlinks: check if srcPath is a symbolic link
@@ -214,35 +220,56 @@ func CopyFile(srcPath string, dstPath string) error {
 		return fmt.Errorf("source file %q is a symbolic link and will not be copied", srcPath)
 	}
 
-	srcFile, err := os.Open(filepath.Clean(srcPath))
+	if dstInfo, err := os.Lstat(cleanedDstPath); err == nil {
+		if dstInfo.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("destination file %q is a symbolic link and will not be overwritten", dstPath)
+		}
+		if os.SameFile(srcInfo, dstInfo) {
+			return fmt.Errorf("source %q and destination %q refer to the same file", srcPath, dstPath)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to get destination file info: %w", err)
+	}
+
+	srcFile, err := os.Open(cleanedSrcPath)
 	if err != nil {
 		return err
 	}
 	defer srcFile.Close()
 
 	// 确保目标目录存在
-	dstDir := filepath.Dir(dstPath)
+	dstDir := filepath.Dir(cleanedDstPath)
 	err = CreateDir(dstDir)
 	if err != nil {
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
-	distFile, err := os.OpenFile(filepath.Clean(dstPath), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	distFile, err := os.OpenFile(cleanedDstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
-	defer distFile.Close()
 
-	// 设置目标目录权限与源目录一致
-	if err := os.Chmod(dstPath, srcInfo.Mode()); err != nil {
-		return fmt.Errorf("failed to set destination directory permissions: %w", err)
+	// 尽早设置目标文件权限，避免后续步骤失败时留下不正确的默认权限。
+	if err := distFile.Chmod(srcInfo.Mode()); err != nil {
+		_ = distFile.Close()
+		return fmt.Errorf("failed to set destination file permissions: %w", err)
 	}
 
 	// 使用缓冲拷贝
 	buf := make([]byte, 64*1024) // 64KB buffer
 	_, err = io.CopyBuffer(distFile, srcFile, buf)
 	if err != nil {
+		_ = distFile.Close()
 		return fmt.Errorf("error copying file content: %w", err)
+	}
+
+	if err := distFile.Sync(); err != nil {
+		_ = distFile.Close()
+		return fmt.Errorf("failed to sync copied file: %w", err)
+	}
+
+	if err := distFile.Close(); err != nil {
+		return fmt.Errorf("failed to close copied file: %w", err)
 	}
 
 	return nil

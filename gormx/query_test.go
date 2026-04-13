@@ -82,12 +82,11 @@ type Profile struct {
 
 // ValidateQuery 验证给定的模型查询是否能正确执行
 func ValidateQuery[T any](t *testing.T, query *gormx.Query[T]) error {
+	t.Helper()
+
 	sql, args := query.ToSQLAndArgs()
 
-	db := gormx.GetDb()
-	if db == nil {
-		return errors.New("database is nil")
-	}
+	db := requireTestDB(t)
 
 	if strings.TrimSpace(sql) == "" {
 		return errors.New("SQL statement is empty")
@@ -3133,7 +3132,7 @@ func TestQuery_First(t *testing.T) {
 // setupTestData 准备测试数据
 func setupTestData(t *testing.T) {
 	// 清理现有数据
-	db := gormx.GetDb()
+	db := requireTestDB(t)
 	db.Where("1 = 1").Delete(&User{})
 	db.Where("1 = 1").Delete(&Post{})
 
@@ -5383,7 +5382,7 @@ func TestQuery_Preload(t *testing.T) {
 // setupPreloadTestData 准备预加载测试数据
 func setupPreloadTestData(t *testing.T) {
 	// 清理现有数据
-	db := gormx.GetDb()
+	db := requireTestDB(t)
 	db.Where("1 = 1").Delete(&User{})
 	db.Where("1 = 1").Delete(&Post{})
 	db.Where("1 = 1").Delete(&Role{})
@@ -5785,7 +5784,7 @@ func TestQuery_GroupBy(t *testing.T) {
 // setupGroupByTestData 准备GroupBy测试数据
 func setupGroupByTestData(t *testing.T) {
 	// 清理现有数据
-	db := gormx.GetDb()
+	db := requireTestDB(t)
 	db.Where("1 = 1").Delete(&User{})
 	db.Where("1 = 1").Delete(&Post{})
 	// 插入测试用户数据

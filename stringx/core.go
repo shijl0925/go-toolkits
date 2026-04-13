@@ -24,7 +24,8 @@ func Capitalize(s string) string {
 	if s == "" {
 		return s
 	}
-	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
+	r := []rune(s)
+	return strings.ToUpper(string(r[:1])) + strings.ToLower(string(r[1:]))
 }
 
 // Reverse reverses a string.
@@ -59,19 +60,29 @@ func Substring(s string, offset int, length int) string {
 // IsLower returns true if all characters in the string are lower case.
 // 判断字符串是否全部为小写。
 func IsLower(s string) bool {
-	return strings.ToLower(s) == s
+	return hasLetter(s) && strings.ToLower(s) == s
 }
 
 // IsUpper returns true if all characters in the string are upper case.
 // 判断字符串是否全部为大写。
 func IsUpper(s string) bool {
-	return strings.ToUpper(s) == s
+	return hasLetter(s) && strings.ToUpper(s) == s
 }
 
 // IsTitle returns true if all characters in the string are title case.
 // 判断字符串是否全部为标题格式。
 func IsTitle(s string) bool {
-	return strings.ToTitle(s) == s
+	return hasLetter(s) && strings.ToTitle(s) == s
+}
+
+// hasLetter reports whether s contains at least one Unicode letter.
+func hasLetter(s string) bool {
+	for _, r := range s {
+		if unicode.IsLetter(r) {
+			return true
+		}
+	}
+	return false
 }
 
 // Partition splits a string into three parts using a separator.
@@ -154,10 +165,8 @@ func FormatMap(format string, m map[string]any) string {
 		//}
 
 		if value, ok := m[key]; ok {
-			if strVal, ok := value.(string); ok {
-				strKey := "{" + key + "}"
-				pairs[strKey] = strVal
-			}
+			strKey := "{" + key + "}"
+			pairs[strKey] = fmt.Sprint(value)
 		}
 		pos = end + 1
 	}

@@ -16,6 +16,8 @@ func TestCapitalize_NormalCases(t *testing.T) {
 		{"HELLO", "Hello"},
 		{"hELLo", "Hello"},
 		{"a", "A"},
+		{"éCOLE", "École"},
+		{"世界", "世界"},
 		{"123abc", "123abc"},
 		{"", ""},
 	}
@@ -178,6 +180,32 @@ func TestSwapCase(t *testing.T) {
 	}
 }
 
+func TestCaseChecksRequireLetters(t *testing.T) {
+	tests := []struct {
+		name  string
+		fn    func(string) bool
+		input string
+		want  bool
+	}{
+		{"IsLower rejects empty", stringx.IsLower, "", false},
+		{"IsLower rejects digits", stringx.IsLower, "123", false},
+		{"IsLower accepts lowercase letters with digits", stringx.IsLower, "abc123", true},
+		{"IsUpper rejects punctuation", stringx.IsUpper, "!!!", false},
+		{"IsUpper accepts uppercase letters with digits", stringx.IsUpper, "ABC123", true},
+		{"IsTitle rejects whitespace only", stringx.IsTitle, "   ", false},
+		{"IsTitle rejects capitalized word", stringx.IsTitle, "Go", false},
+		{"IsTitle accepts all-uppercase letters", stringx.IsTitle, "ABC", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.fn(tt.input); got != tt.want {
+				t.Errorf("%s(%q) = %v, want %v", tt.name, tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 // Test cases for FormatMap function
 func TestFormatMap(t *testing.T) {
 	tests := []struct {
@@ -245,6 +273,18 @@ func TestFormatMap(t *testing.T) {
 			format:   "{{escaped}}",
 			inputMap: map[string]any{"escaped": "value"},
 			expected: "{{escaped}}",
+		},
+		{
+			name:     "Non-string values are formatted",
+			format:   "count={count}, active={active}",
+			inputMap: map[string]any{"count": 5, "active": true},
+			expected: "count=5, active=true",
+		},
+		{
+			name:     "Nil value is formatted",
+			format:   "value={value}",
+			inputMap: map[string]any{"value": nil},
+			expected: "value=<nil>",
 		},
 	}
 

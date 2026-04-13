@@ -757,7 +757,7 @@ func Test_Drop(t *testing.T) {
 		ok       bool
 	}{
 		{"test1", []int{1, 2, 3, 4}, 0, []int{1, 2, 3, 4}, true},
-		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{1, 2, 3}, true},
+		{"test2", []int{1, 2, 3, 4, 5}, 2, []int{3, 4, 5}, true},
 		{"test3", []int{1, 2, 3, 4, 5, 6}, 6, []int{}, true},
 		{"test4", []int{1, 2, 3, 4}, 5, []int{}, true},
 		{"test5", []int{1, 2, 3, 4}, -1, []int{1, 2, 3, 4}, false},
@@ -1095,6 +1095,16 @@ func Test_RepeatSlice(t *testing.T) {
 			t.Errorf("Repeat() expected %v, got %v", wanted, got)
 		}
 	})
+	t.Run("returns empty slice for zero count", func(t *testing.T) {
+		if got := slicex.Repeat(1, 0); !reflect.DeepEqual(got, []int{}) {
+			t.Errorf("Repeat() expected empty slice, got %v", got)
+		}
+	})
+	t.Run("returns empty slice for negative count", func(t *testing.T) {
+		if got := slicex.Repeat(1, -1); !reflect.DeepEqual(got, []int{}) {
+			t.Errorf("Repeat() expected empty slice for negative count, got %v", got)
+		}
+	})
 }
 
 func Test_Product(t *testing.T) {
@@ -1237,6 +1247,22 @@ func Test_Intersect(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("preserves src order when src is shorter", func(t *testing.T) {
+		got := slicex.Intersect([]int{4, 3}, []int{3, 4, 5, 4, 3})
+		want := []int{4, 3}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Intersect() expected %v, got %v", want, got)
+		}
+	})
+
+	t.Run("uses src multiplicity instead of dst multiplicity", func(t *testing.T) {
+		got := slicex.Intersect([]int{1, 2}, []int{1, 1, 2, 2})
+		want := []int{1, 2}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Intersect() expected %v, got %v", want, got)
+		}
+	})
 }
 
 func Test_Union(t *testing.T) {
@@ -1774,6 +1800,16 @@ func Test_RightPaddingZero(t *testing.T) {
 	}
 }
 
+func Test_RightPaddingNegative(t *testing.T) {
+	input := []int{1, 2, 3, 4, 5}
+	expected := []int{1, 2, 3, 4, 5}
+
+	result := slicex.RightPadding(input, 0, -1)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("RightPadding() expected %v, got %v", expected, result)
+	}
+}
+
 func Test_LeftPadding(t *testing.T) {
 	input := []int{1, 2, 3, 4, 5}
 	expected := []int{0, 0, 0, 1, 2, 3, 4, 5}
@@ -1789,6 +1825,16 @@ func Test_LeftPaddingZero(t *testing.T) {
 	expected := []int{1, 2, 3, 4, 5}
 
 	result := slicex.LeftPadding(input, 0, 0)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("LeftPadding() expected %v, got %v", expected, result)
+	}
+}
+
+func Test_LeftPaddingNegative(t *testing.T) {
+	input := []int{1, 2, 3, 4, 5}
+	expected := []int{1, 2, 3, 4, 5}
+
+	result := slicex.LeftPadding(input, 0, -1)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("LeftPadding() expected %v, got %v", expected, result)
 	}

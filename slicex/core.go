@@ -146,13 +146,13 @@ func Shift[T any](s []T) (T, bool) {
 	return s[0], true
 }
 
-// Drop removes the n elements from the slice and returns the remaining elements.
+// Drop removes the first n elements from the slice and returns the remaining elements.
 // 删除并返回切片的前 n 个元素和剩余元素组成的切片, 原始 slice 不会被改变。
 // 注意: 返回的切片仍与原切片共享底层数组。
 // Example:
 //
 //	s := []int{1, 2, 3, 4, 5}
-//	r, _ := Drop(s, 2) //  r == []int{1, 2, 3}
+//	r, _ := Drop(s, 2) //  r == []int{3, 4, 5}
 func Drop[T any](s []T, n int) ([]T, bool) {
 	if n < 0 {
 		return s, false
@@ -160,7 +160,7 @@ func Drop[T any](s []T, n int) ([]T, bool) {
 	if n > len(s) {
 		return []T{}, true
 	}
-	return s[:len(s)-n], true
+	return s[n:], true
 }
 
 // DropLeft removes the n elements from the slice and returns the remaining elements.
@@ -419,6 +419,10 @@ func Reverse[T any](s []T) []T {
 // r2 := Repeat([]int{1, 2, 3}, 3)  // r2 == [][]int{{1, 2, 3}, {1, 2, 3}, {1, 2, 3}}
 // r3 := Repeat("one", 3)  // r3 == []string{"one", "one", "one"}
 func Repeat[T any](s T, n int) []T {
+	if n <= 0 {
+		return []T{}
+	}
+
 	result := make([]T, 0, n)
 	for i := 0; i < n; i++ {
 		result = append(result, s)
@@ -620,34 +624,18 @@ func Difference[T comparable](src, dst []T) []T {
 //	dst := []int{4, 5, 6, 7, 8}
 //	r := Intersect(src, dst) // r == []int{4, 5}
 func Intersect[T comparable](src, dst []T) []T {
-	var (
-		iterSlice []T
-		mapSlice  []T
-	)
-
-	// 将较短的切片转换为 map，遍历较长的切片
-	if len(src) < len(dst) {
-		mapSlice = src
-		iterSlice = dst
-	} else {
-		mapSlice = dst
-		iterSlice = src
-	}
-
-	// 如果任何一个切片为空，或转换后的 map 为空，交集也为空
-	if len(mapSlice) == 0 {
+	if len(src) == 0 || len(dst) == 0 {
 		return []T{}
 	}
 
-	set := toMap(mapSlice)
+	set := toMap(dst)
 	if len(set) == 0 {
 		return []T{}
 	}
 
-	// 预估结果切片的容量，基于 mapSlice 中唯一元素的数量
-	result := make([]T, 0, len(set))
+	result := make([]T, 0, len(src))
 
-	for _, value := range iterSlice {
+	for _, value := range src {
 		if _, ok := set[value]; ok {
 			result = append(result, value)
 		}
@@ -920,7 +908,7 @@ func IsDescending[T constraints.Ordered](s []T) bool {
 
 // RightPadding adds padding to the right end of a slice.
 func RightPadding[T any](s []T, v T, n int) []T {
-	if n == 0 {
+	if n <= 0 {
 		return s
 	}
 
@@ -935,7 +923,7 @@ func RightPadding[T any](s []T, v T, n int) []T {
 
 // LeftPadding adds padding to the left begin of a slice.
 func LeftPadding[T any](s []T, v T, n int) []T {
-	if n == 0 {
+	if n <= 0 {
 		return s
 	}
 	result := make([]T, len(s)+n)

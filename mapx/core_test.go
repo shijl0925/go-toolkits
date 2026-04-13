@@ -672,6 +672,21 @@ func TestSetIfAbsent(t *testing.T) {
 	}
 }
 
+func TestSetIfAbsent_NilMapDoesNotPanic(t *testing.T) {
+	var inputMap map[string]int
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("SetIfAbsent should not panic for nil map, got %v", r)
+		}
+		if inputMap != nil {
+			t.Fatalf("SetIfAbsent should keep nil map unchanged, got %v", inputMap)
+		}
+	}()
+
+	mapx.SetIfAbsent(inputMap, "a", 1)
+}
+
 func TestSortByKey_EmptyMap(t *testing.T) {
 	m := map[int]string{}
 	result := mapx.SortByKey(m, func(a, b int) bool { return a < b })
