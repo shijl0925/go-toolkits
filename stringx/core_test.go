@@ -191,8 +191,8 @@ func TestCaseChecksRequireLetters(t *testing.T) {
 		{"IsUpper rejects punctuation", stringx.IsUpper, "!!!", false},
 		{"IsUpper accepts uppercase letters with digits", stringx.IsUpper, "ABC123", true},
 		{"IsTitle rejects whitespace only", stringx.IsTitle, "   ", false},
-		{"IsTitle accepts uppercase letters", stringx.IsTitle, "Go", false},
-		{"IsTitle preserves previous title semantics", stringx.IsTitle, "ABC", true},
+		{"IsTitle rejects mixed-case word", stringx.IsTitle, "Go", false},
+		{"IsTitle accepts all-uppercase letters", stringx.IsTitle, "ABC", true},
 	}
 
 	for _, tt := range tests {
