@@ -24,7 +24,8 @@ func Capitalize(s string) string {
 	if s == "" {
 		return s
 	}
-	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
+	r := []rune(s)
+	return strings.ToUpper(string(r[:1])) + strings.ToLower(string(r[1:]))
 }
 
 // Reverse reverses a string.

@@ -16,6 +16,8 @@ func TestCapitalize_NormalCases(t *testing.T) {
 		{"HELLO", "Hello"},
 		{"hELLo", "Hello"},
 		{"a", "A"},
+		{"éCOLE", "École"},
+		{"世界", "世界"},
 		{"123abc", "123abc"},
 		{"", ""},
 	}
