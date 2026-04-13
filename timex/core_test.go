@@ -399,6 +399,68 @@ func TestAddHour(t *testing.T) {
 	}
 }
 
+func TestAddMonth(t *testing.T) {
+	baseTime := time.Date(2024, 1, 15, 12, 30, 45, 123, time.UTC)
+
+	tests := []struct {
+		name      string
+		inputTime time.Time
+		months    int
+		wantTime  time.Time
+		wantErr   bool
+	}{
+		{
+			name:      "Zero Time Input",
+			inputTime: time.Time{},
+			months:    1,
+			wantErr:   true,
+		},
+		{
+			name:      "Add Regular Month",
+			inputTime: baseTime,
+			months:    2,
+			wantTime:  time.Date(2024, 3, 15, 12, 30, 45, 123, time.UTC),
+		},
+		{
+			name:      "Clamp End Of Month Forward",
+			inputTime: time.Date(2023, 1, 31, 8, 0, 0, 0, time.UTC),
+			months:    1,
+			wantTime:  time.Date(2023, 2, 28, 8, 0, 0, 0, time.UTC),
+		},
+		{
+			name:      "Clamp End Of Month Backward",
+			inputTime: time.Date(2023, 3, 31, 8, 0, 0, 0, time.UTC),
+			months:    -1,
+			wantTime:  time.Date(2023, 2, 28, 8, 0, 0, 0, time.UTC),
+		},
+		{
+			name:      "Clamp Into Leap Year February",
+			inputTime: time.Date(2023, 12, 31, 8, 0, 0, 0, time.UTC),
+			months:    2,
+			wantTime:  time.Date(2024, 2, 29, 8, 0, 0, 0, time.UTC),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotTime, err := timex.AddMonth(tt.inputTime, tt.months)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+			if !gotTime.Equal(tt.wantTime) {
+				t.Errorf("Expected %v, got %v", tt.wantTime, gotTime)
+			}
+		})
+	}
+}
+
 func TestAddTimeDelta(t *testing.T) {
 	baseTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
