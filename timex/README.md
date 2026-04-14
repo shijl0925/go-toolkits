@@ -1,103 +1,108 @@
-# timex - Go 时间处理工具包
+# timex
 
-`timex` 是一个用于处理时间和日期操作的工具包，提供了时间格式化、时区设置、时间计算、时间差计算等丰富的功能。
-
-## 功能列表
-
-### 时间格式化
-* `FormatStrToTime(s string, format ...string) (time.Time, error)` - 将字符串转换为时间
-* `FormatTimeToStr(t time.Time, format ...string) string` - 将时间转换为字符串
-
-### 时区设置
-* `SetTimeZoneV1(t time.Time, timeZone string) (time.Time, error)` - 通过时区名称设置时区
-* `SetTimeZoneV2(t time.Time, name string, hour int) (time.Time, error)` - 通过时区偏移量设置时区
-
-### 时间计算
-* `AddMinute(t time.Time, minutes int) (time.Time, error)` - 添加或减去分钟数
-* `AddHour(t time.Time, hours int) (time.Time, error)` - 添加或减去小时数
-* `AddDay(t time.Time, days int) (time.Time, error)` - 添加或减去天数
-* `AddWeek(t time.Time, weeks int) (time.Time, error)` - 添加或减去周数
-* `AddMonth(t time.Time, months int) (time.Time, error)` - 添加或减去月数
-* `AddYear(t time.Time, years int) (time.Time, error)` - 添加或减去年数
-* `AddTimeDelta(t time.Time, delta *TimeDelta) (time.Time, error)` - 添加时间差
-
-### 当前时间获取
-* [GetNowDate() string](https://github.com/shijl0925/go-toolkits/blob/main/timex/core.go#L177-L180) - 获取当前日期 (yyyy-mm-dd)
-* [GetNowTime() string](https://github.com/shijl0925/go-toolkits/blob/main/timex/core.go#L183-L186) - 获取当前时间 (hh-mm-ss)
-* [GetNowDateTime() string](https://github.com/shijl0925/go-toolkits/blob/main/timex/core.go#L189-L192) - 获取当前日期时间 (yyyy-mm-dd hh-mm-ss)
-
-### 时间差计算
-* `GetDaysBetween(start, end time.Time) int` - 计算两个时间之间的天数差
-* `GetMonthsBetween(start, end time.Time) int` - 计算两个时间之间的月数差
-* `GetYearsBetween(start, end time.Time) int` - 计算两个时间之间的年数差
-* `GetHoursBetween(start, end time.Time) float64` - 计算两个时间之间的小时数差
-* `GetMinutesBetween(start, end time.Time) float64` - 计算两个时间之间的分钟数差
-* `GetSecondsBetween(start, end time.Time) float64` - 计算两个时间之间的秒数差
-* `GetDurationBetween(start, end time.Time) time.Duration` - 计算两个时间之间的持续时间
-* `GetDurationPretty(start, end time.Time) (day, hour, minute, second int)` - 以可读格式返回时间差
-
-### 时间比较
-* `Min(t1 time.Time, times ...time.Time) time.Time` - 返回给定时间中的最早时间
-* `Max(t1 time.Time, times ...time.Time) time.Time` - 返回给定时间中的最晚时间
-
-### 时间差类型 (TimeDelta)
-* [TimeDelta](https://github.com/shijl0925/go-toolkits/blob/main/timex/delta.go#L8-L16) - 表示时间差的结构体，包含周、天、小时、分钟、秒、毫秒、微秒等字段
-* `Duration() (time.Duration, error)` - 返回可添加到时间的 `time.Duration`
-* [Add(td2 *TimeDelta) TimeDelta](https://github.com/shijl0925/go-toolkits/blob/main/timex/delta.go#L83-L93) - 返回两个时间差的和
-* `Subtract(td2 *TimeDelta) TimeDelta` - 返回两个时间差的差
-* [Abs() TimeDelta](https://github.com/shijl0925/go-toolkits/blob/main/timex/delta.go#L109-L119) - 返回时间差的绝对值
-* [String() string](https://github.com/shijl0925/go-toolkits/blob/main/utils_test.go#L20-L22) - 返回时间差的字符串表示
+`timex` 提供一套更贴近日常业务的时间工具，涵盖时间格式化、时区转换、时间增减、差值计算和 `TimeDelta` 表达。适合接口层、报表层和调度类逻辑使用。
 
 ## 安装
 
-```shell
+```bash
 go get github.com/shijl0925/go-toolkits/timex
 ```
 
+## 核心能力
 
-## 使用示例
+### 时间格式化
+
+- `FormatStrToTime`
+- `FormatTimeToStr`
+
+### 时区处理
+
+- `SetTimeZoneV1`
+- `SetTimeZoneV2`
+
+### 时间增减
+
+- `AddMinute`
+- `AddHour`
+- `AddDay`
+- `AddWeek`
+- `AddMonth`
+- `AddYear`
+- `AddTimeDelta`
+
+### 当前时间
+
+- `GetNowDate`
+- `GetNowTime`
+- `GetNowDateTime`
+
+### 差值与比较
+
+- `GetDaysBetween`
+- `GetMonthsBetween`
+- `GetYearsBetween`
+- `GetHoursBetween`
+- `GetMinutesBetween`
+- `GetSecondsBetween`
+- `GetDurationBetween`
+- `GetDurationPretty`
+- `Min`
+- `Max`
+
+### TimeDelta
+
+- `TimeDelta.Duration()`
+- `TimeDelta.Add()`
+- `TimeDelta.Subtract()`
+- `TimeDelta.Abs()`
+- `TimeDelta.String()`
+
+## 快速示例
 
 ```go
-package main
+t, _ := timex.FormatStrToTime("2024-01-01 08:00:00")
+nextWeek, _ := timex.AddWeek(t, 1)
+prettyDay, prettyHour, prettyMinute, prettySecond := timex.GetDurationPretty(t, nextWeek)
 
-import (
-    "fmt"
-    "time"
-    "github.com/shijl0925/go-toolkits/timex"
-)
-
-func main() {
-    // 时间格式化
-    t, err := timex.FormatStrToTime("2023-12-25 15:30:45")
-    if err != nil {
-        panic(err)
-    }
-    fmt.Println("Parsed time:", t)
-    
-    // 时间转字符串
-    timeStr := timex.FormatTimeToStr(t)
-    fmt.Println("Formatted time:", timeStr)
-    
-    // 时间计算
-    newTime, _ := timex.AddDay(t, 7)
-    fmt.Println("7 days later:", newTime)
-    
-    // 使用 TimeDelta
-    delta := &timex.TimeDelta{
-        Days:  1,
-        Hours: 2,
-    }
-    resultTime, _ := timex.AddTimeDelta(t, delta)
-    fmt.Println("After adding delta:", resultTime)
-    
-    // 时间差计算
-    now := time.Now()
-    days := timex.GetDaysBetween(t, now)
-    fmt.Printf("Days between: %d\n", days)
-    
-    // 获取当前时间
-    fmt.Println("Current date:", timex.GetNowDate())
-    fmt.Println("Current time:", timex.GetNowTime())
-    fmt.Println("Current datetime:", timex.GetNowDateTime())
-}
+_ = prettyDay
+_ = prettyHour
+_ = prettyMinute
+_ = prettySecond
 ```
+
+## 默认行为
+
+### 默认格式
+
+`FormatStrToTime` 和 `FormatTimeToStr` 在未传入自定义 layout 时，默认使用：
+
+```go
+2006-01-02 15:04:05
+```
+
+### TimeDelta
+
+`TimeDelta` 适合表示“周 / 天 / 小时 / 分钟 / 秒 / 毫秒 / 微秒”的组合偏移，例如：
+
+```go
+delta := &timex.TimeDelta{Days: 1, Hours: 2, Minutes: 30}
+result, err := timex.AddTimeDelta(t, delta)
+```
+
+### 溢出保护
+
+`TimeDelta.Duration()` 会检查 `time.Duration` 溢出；当偏移量过大时会返回错误，而不是产生不可预期结果。
+
+## 使用建议
+
+- **业务日期计算**：优先使用 `AddDay`、`AddMonth`、`AddYear` 等语义化函数，代码更易懂。
+- **展示友好时长**：使用 `GetDurationPretty` 获取“天/时/分/秒”四元结果。
+- **时区转换**：如果你已有标准时区名（如 `Asia/Shanghai`），优先使用 `SetTimeZoneV1`。
+- **比较多个时间点**：使用 `Min` / `Max` 简化最早、最晚时间判断。
+
+## 注意事项
+
+- 月份和年份计算受日历规则影响，建议在关键业务场景补充测试。
+- `GetHoursBetween`、`GetMinutesBetween`、`GetSecondsBetween` 返回浮点数，适合统计展示。
+- `TimeDelta.String()` 内部依赖 `Duration()`；如果发生溢出，会返回 `TimeDelta(overflow)`。
+

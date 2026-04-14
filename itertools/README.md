@@ -1,28 +1,89 @@
-# itertools - Go 迭代工具包
-itertools 是一个用于处理 Go 语言切片的函数式编程工具包，提供了丰富的迭代操作函数，支持泛型类型，能够处理各种数据类型。
-功能列表
+# itertools
 
-## 映射和过滤
-* `Map[T any, U any](s []T, fn func(T) U) []U` - 对切片中每个元素应用函数并返回结果切片
-* `Filter[T any](s []T, fn func(T) bool) []T` - 过滤切片中满足条件的元素
-* `DropWhile[T any](s []T, fn func(T) bool) []T` - 从左侧丢弃满足条件的元素直到遇到不满足条件的元素
-
-## 聚合操作
-* `Reduce[T any, U any](s []T, fn func(U, T) U, initial U) U` - 对切片进行归约操作，将二元操作函数依次应用于初始值和切片中的每个元素
-* `All[T any](s []T, fn func(T) bool) bool` - 检查切片中所有元素是否满足条件
-* `Any[T any](s []T, fn func(T) bool) bool` - 检查切片中是否有元素满足条件
-
-## 组合操作
-* `Zip[T any, U any](a []T, b []U) []Tuple[T, U]` - 将两个切片组合成元组切片，长度为两个切片中较短的那个
-* `CombineToMap[K comparable, V any](keys []K, values []V) map[K]V` - 将两个切片组合成map，若keys中存在重复键则后面的值覆盖前面的值
-
-## 分组操作
-* `GroupBy[T any, U comparable](slice []T, fn func(T) U) map[U][]T` - 根据键函数对切片元素进行分组，返回以键函数结果为键、元素切片为值的map
-
-## 范围生成
-* `Range[T constraints.Integer | constraints.Float](start, end, step T) []T` - 生成指定范围内的数字序列，支持整数和浮点数类型
+`itertools` 提供一组偏函数式风格的迭代工具，适合在 Go 中表达“映射、过滤、归约、分组、组合”等数据处理逻辑。它的设计目标不是替代原生 `for`，而是让常见的数据流操作更清晰。
 
 ## 安装
-```shell
+
+```bash
 go get github.com/shijl0925/go-toolkits/itertools
 ```
+
+## 核心能力
+
+### 映射与过滤
+
+- `Map[T, U]`：把 `[]T` 映射成 `[]U`
+- `Filter[T]`：保留满足条件的元素
+- `DropWhile[T]`：从左向右跳过满足条件的前缀元素
+
+### 聚合
+
+- `Reduce[T, U]`：基于初始值归约
+- `All[T]`：所有元素都满足条件时返回 `true`
+- `Any[T]`：任一元素满足条件时返回 `true`
+
+### 组合与分组
+
+- `Zip[T, U]`：按位置把两个切片组合为 `[]Tuple[T, U]`
+- `CombineToMap[K, V]`：将 keys 和 values 组装为 map
+- `GroupBy[T, U]`：按指定规则分组
+
+### 序列生成
+
+- `Range[T]`：生成整数或浮点数序列
+
+## 快速示例
+
+```go
+nums := []int{1, 2, 3, 4, 5}
+
+evens := itertools.Filter(nums, func(v int) bool {
+    return v%2 == 0
+})
+
+squares := itertools.Map(evens, func(v int) int {
+    return v * v
+})
+
+sum := itertools.Reduce(squares, func(acc, v int) int {
+    return acc + v
+}, 0)
+```
+
+## API 说明
+
+### Zip
+
+`Zip(a, b)` 的结果长度取决于**较短的那个切片**。它不会补零，也不会报错。
+
+```go
+pairs := itertools.Zip([]string{"A", "B"}, []int{1, 2, 3})
+// 结果只包含 2 组元素
+```
+
+### CombineToMap
+
+- 当 `keys` 和 `values` 长度不一致时，超出的部分不会进入结果。
+- 如果 `keys` 有重复项，后写入的值会覆盖前面的值。
+
+### Range
+
+- 支持整数和浮点数。
+- `step` 需要与范围方向匹配，否则结果可能为空。
+- 适合构造简单数值序列，不建议用于高精度金融计算。
+
+### GroupBy
+
+返回结果为 `map[U][]T`，常见于：
+
+- 按状态分组
+- 按日期分组
+- 按首字母或类别归类
+
+## 适用场景
+
+- 数据清洗与转换
+- 统计前的预处理
+- 需要让“处理流程”比“循环细节”更突出时
+- 与 `slicex` 组合完成复杂切片分析
+
