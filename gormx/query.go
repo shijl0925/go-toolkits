@@ -532,7 +532,7 @@ func (q *Query[T]) Le(field interface{}, value interface{}) *Query[T] {
 func (q *Query[T]) Like(field interface{}, value interface{}) *Query[T] {
 	strVal, ok := value.(string)
 	if !ok {
-		panic("like value must be a string")
+		panic(fmt.Sprintf("like value must be a string, got %T", value))
 	}
 
 	fieldName := q.resolveFieldName(field)

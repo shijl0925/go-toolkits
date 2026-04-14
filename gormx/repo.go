@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm/clause"
 	"reflect"
 	"strings"
+	"sync"
 )
 
 // 使用说明
@@ -66,6 +67,10 @@ type IBaseRepo[T any] interface {
 }
 
 type BaseRepo[T any] struct{}
+
+// assocFieldsCache stores computed association fields per model type to avoid
+// repeated reflection calls on every filterUpdateFields invocation.
+var assocFieldsCache sync.Map // key: reflect.Type, value: map[string]bool
 
 // SelectOneByOpts 根据条件查询单条记录
 func (r *BaseRepo[T]) SelectOneByOpts(opts ...DBOption) (T, error) {
@@ -158,6 +163,13 @@ func (r *BaseRepo[T]) SelectListByOpts(opts ...DBOption) ([]T, error) {
 
 // SelectPage 分页查询
 func (r *BaseRepo[T]) SelectPage(page, pageSize int, opts ...DBOption) ([]T, int64, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		return nil, 0, nil
+	}
+
 	var items []T
 
 	db := GetDb(opts...).Model(new(T))
@@ -257,23 +269,24 @@ func (r *BaseRepo[T]) InsertOrUpdate(item *T) error {
 	}).Create(item).Error
 }
 
-// getAssociationFields 通过反射获取模型中的关联字段
+// getAssociationFields 通过反射获取模型中的关联字段（结果按类型缓存）
 func (r *BaseRepo[T]) getAssociationFields() map[string]bool {
-	restrictedFields := make(map[string]bool)
-
-	// 创建模型实例
 	var instance T
 	modelType := reflect.TypeOf(instance)
-
-	// 处理指针类型
 	if modelType.Kind() == reflect.Ptr {
 		modelType = modelType.Elem()
 	}
 
-	// 递归处理所有字段（包括嵌套结构体）
-	r.processFields(modelType, restrictedFields)
+	if cached, ok := assocFieldsCache.Load(modelType); ok {
+		if fields, ok := cached.(map[string]bool); ok {
+			return fields
+		}
+	}
 
-	return restrictedFields
+	result := make(map[string]bool)
+	r.processFields(modelType, result)
+	assocFieldsCache.Store(modelType, result)
+	return result
 }
 
 // processFields 递归处理字段（包括嵌套结构体）
@@ -501,10 +514,13 @@ func (r *BaseRepo[T]) Sum(field string, opts ...DBOption) (float64, error) {
 	if field == "" {
 		return 0, errors.New("field name cannot be empty")
 	}
+	if !isValidFieldName(field) {
+		return 0, errors.New("invalid field name")
+	}
 
 	var result float64
 	db := GetDb(opts...).Model(new(T))
-	err := db.Select("SUM(" + field + ")").Scan(&result).Error
+	err := db.Select(buildAggregateSQL("SUM", field)).Scan(&result).Error
 	return result, err
 }
 
@@ -514,16 +530,15 @@ func (r *BaseRepo[T]) Max(field string, opts ...DBOption) (interface{}, error) {
 	if field == "" {
 		return nil, errors.New("field name cannot be empty")
 	}
+	if !isValidFieldName(field) {
+		return nil, errors.New("invalid field name")
+	}
 
 	var result interface{}
 	db := GetDb(opts...).Model(new(T))
 
 	// 使用原生 SQL 方式处理聚合查询
-	row := db.Select("MAX(" + field + ")").Row()
-	if row == nil {
-		return nil, errors.New("failed to execute query")
-	}
-
+	row := db.Select(buildAggregateSQL("MAX", field)).Row()
 	err := row.Scan(&result)
 
 	return result, err
@@ -535,16 +550,15 @@ func (r *BaseRepo[T]) Min(field string, opts ...DBOption) (interface{}, error) {
 	if field == "" {
 		return nil, errors.New("field name cannot be empty")
 	}
+	if !isValidFieldName(field) {
+		return nil, errors.New("invalid field name")
+	}
 
 	var result interface{}
 	db := GetDb(opts...).Model(new(T))
 
 	// 使用原生 SQL 方式处理聚合查询
-	row := db.Select("MIN(" + field + ")").Row()
-	if row == nil {
-		return nil, errors.New("failed to execute query")
-	}
-
+	row := db.Select(buildAggregateSQL("MIN", field)).Row()
 	err := row.Scan(&result)
 
 	return result, err
@@ -556,19 +570,28 @@ func (r *BaseRepo[T]) Avg(field string, opts ...DBOption) (float64, error) {
 	if field == "" {
 		return 0, errors.New("field name cannot be empty")
 	}
+	if !isValidFieldName(field) {
+		return 0, errors.New("invalid field name")
+	}
 
 	var result float64
 	db := GetDb(opts...).Model(new(T))
-	err := db.Select("AVG(" + field + ")").Scan(&result).Error
+	err := db.Select(buildAggregateSQL("AVG", field)).Scan(&result).Error
 	return result, err
 }
 
 // Increment 字段自增
 func (r *BaseRepo[T]) Increment(id int, field string, value interface{}) error {
+	if !isValidFieldName(field) {
+		return errors.New("invalid field name")
+	}
 	return globalDb.Model(new(T)).Where("id = ?", id).UpdateColumn(field, gorm.Expr(field+" + ?", value)).Error
 }
 
 // Decrement 字段自减
 func (r *BaseRepo[T]) Decrement(id int, field string, value interface{}) error {
+	if !isValidFieldName(field) {
+		return errors.New("invalid field name")
+	}
 	return globalDb.Model(new(T)).Where("id = ?", id).UpdateColumn(field, gorm.Expr(field+" - ?", value)).Error
 }
