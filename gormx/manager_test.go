@@ -296,7 +296,7 @@ func TestAssociationManager_Add_WithTransaction_Rollback(t *testing.T) {
 	setupPreloadTestData(t)
 
 	user := getTestUser(t)
-	role := getTestRole(t, "Admin")
+	role := getTestRole(t, "Viewer")
 
 	tx := gormx.GetDb().Begin()
 	if tx.Error != nil {
@@ -318,14 +318,14 @@ func TestAssociationManager_Add_WithTransaction_Rollback(t *testing.T) {
 	}
 	found := false
 	for _, r := range inTxRoles {
-		if r.Name == "Admin" {
+		if r.Name == "Viewer" {
 			found = true
 			break
 		}
 	}
 	if !found {
 		tx.Rollback()
-		t.Fatal("expected role 'Admin' to be visible inside tx")
+		t.Fatal("expected role 'Viewer' to be visible inside tx")
 	}
 
 	// 回滚
@@ -340,8 +340,8 @@ func TestAssociationManager_Add_WithTransaction_Rollback(t *testing.T) {
 		t.Fatalf("All after rollback failed: %v", err)
 	}
 	for _, r := range afterRoles {
-		if r.Name == "Admin" {
-			t.Error("expected role 'Admin' to be absent after rollback, but it was found")
+		if r.Name == "Viewer" {
+			t.Error("expected role 'Viewer' to be absent after rollback, but it was found")
 		}
 	}
 }
@@ -353,7 +353,7 @@ func TestAssociationManager_Add_WithTransaction_Commit(t *testing.T) {
 	setupPreloadTestData(t)
 
 	user := getTestUser(t)
-	role := getTestRole(t, "Editor")
+	role := getTestRole(t, "Viewer")
 
 	tx := gormx.GetDb().Begin()
 	if tx.Error != nil {
@@ -379,17 +379,17 @@ func TestAssociationManager_Add_WithTransaction_Commit(t *testing.T) {
 
 	found := false
 	for _, r := range afterRoles {
-		if r.Name == "Editor" {
+		if r.Name == "Viewer" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("expected role 'Editor' to be visible after commit, but not found")
+		t.Error("expected role 'Viewer' to be visible after commit, but not found")
 	}
 
-	// 清理：移除刚添加的关联，不影响其它测试
-	_ = globalManager.Clear()
+	// 清理：只移除本测试新增的角色，不影响预置关联
+	_ = globalManager.Remove(role)
 }
 
 // TestAssociationManager_Set_WithTransaction_Rollback 验证在事务中通过 UseDB 注入的
