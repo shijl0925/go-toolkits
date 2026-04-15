@@ -1,6 +1,8 @@
 package gormx
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 // 说明:
 // 1. 创建适用于一对一、一对多、多对多关系管理器接口
