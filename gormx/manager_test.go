@@ -259,7 +259,8 @@ func TestGenericAssociationManager_All(t *testing.T) {
 
 // --- DB 注入 / 事务测试 ---
 
-// getTestUser 返回名为 "testuser1" 的用户，若不存在则令测试失败。
+// getTestUser 返回名为 "testuser1" 的用户，若不存在或存在多条同名记录则令测试失败。
+// 唯一性由 SelectOneByOpts 保证：超过一条匹配时会返回错误。
 func getTestUser(t *testing.T) User {
 	t.Helper()
 	userRepo := &gormx.BaseRepo[User]{}
@@ -272,7 +273,8 @@ func getTestUser(t *testing.T) User {
 	return user
 }
 
-// getTestRole 返回指定名称的角色，若不存在则令测试失败。
+// getTestRole 返回指定名称的角色，若不存在或存在多条同名记录则令测试失败。
+// 唯一性由 SelectOneByOpts 保证：超过一条匹配时会返回错误。
 func getTestRole(t *testing.T, name string) Role {
 	t.Helper()
 	roleRepo := &gormx.BaseRepo[Role]{}
