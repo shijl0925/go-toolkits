@@ -23,34 +23,34 @@ import "errors"
 type IBaseService[T any] interface {
 	Page(page, pageSize int, opts ...DBOption) ([]T, int64, error)
 	ListByOpts(opts ...DBOption) ([]T, error)
-	ListByIds(ids []int) ([]T, error)
-	ListByMap(columnMap map[string]interface{}) ([]T, error)
+	ListByIds(ids []int, opts ...DBOption) ([]T, error)
+	ListByMap(columnMap map[string]interface{}, opts ...DBOption) ([]T, error)
 	GetOneByOpts(opts ...DBOption) (*T, error)
-	GetOneById(id int) (*T, error)
-	GetOneByMap(columnMap map[string]interface{}) (*T, error)
+	GetOneById(id int, opts ...DBOption) (*T, error)
+	GetOneByMap(columnMap map[string]interface{}, opts ...DBOption) (*T, error)
 	Exists(opts ...DBOption) bool
 	Count(opts ...DBOption) (int64, error)
-	Save(item *T) error
-	SaveOrUpdate(item *T) error
-	SaveBatch(items []*T) error
-	SaveInBatches(items []*T, batchSize int) error
-	Update(item *T) error
-	UpdateById(id int, vars map[string]interface{}) error
+	Save(item *T, opts ...DBOption) error
+	SaveOrUpdate(item *T, opts ...DBOption) error
+	SaveBatch(items []*T, opts ...DBOption) error
+	SaveInBatches(items []*T, batchSize int, opts ...DBOption) error
+	Update(item *T, opts ...DBOption) error
+	UpdateById(id int, vars map[string]interface{}, opts ...DBOption) error
 	UpdateBatch(vars map[string]interface{}, opts ...DBOption) error
-	Remove(item *T) error
+	Remove(item *T, opts ...DBOption) error
 	RemoveBatch(opts ...DBOption) error
-	RemoveById(id int) error
-	RemoveByIds(ids []int) error
-	RemoveByMap(columnMap map[string]interface{}) error
-	Upsert(item *T, vars map[string]interface{}) error
-	GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error)
-	UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error)
+	RemoveById(id int, opts ...DBOption) error
+	RemoveByIds(ids []int, opts ...DBOption) error
+	RemoveByMap(columnMap map[string]interface{}, opts ...DBOption) error
+	Upsert(item *T, vars map[string]interface{}, opts ...DBOption) error
+	GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error)
+	UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error)
 	Sum(field string, opts ...DBOption) (float64, error)
 	Max(field string, opts ...DBOption) (interface{}, error)
 	Min(field string, opts ...DBOption) (interface{}, error)
 	Avg(field string, opts ...DBOption) (float64, error)
-	Increment(id int, field string, value interface{}) error
-	Decrement(id int, field string, value interface{}) error
+	Increment(id int, field string, value interface{}, opts ...DBOption) error
+	Decrement(id int, field string, value interface{}, opts ...DBOption) error
 }
 
 // ServiceImplement 通用服务实现
@@ -97,11 +97,11 @@ func (s *ServiceImplement[Entity, T]) GetOneByOpts(opts ...DBOption) (*T, error)
 }
 
 // GetOneById 根据ID查询
-func (s *ServiceImplement[Entity, T]) GetOneById(id int) (*T, error) {
+func (s *ServiceImplement[Entity, T]) GetOneById(id int, opts ...DBOption) (*T, error) {
 	if r, ok := any(s.repo).(interface {
-		SelectOneById(id int) (T, error)
+		SelectOneById(id int, opts ...DBOption) (T, error)
 	}); ok {
-		item, err := r.SelectOneById(id)
+		item, err := r.SelectOneById(id, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -111,11 +111,11 @@ func (s *ServiceImplement[Entity, T]) GetOneById(id int) (*T, error) {
 }
 
 // GetOneByMap 根据条件查询单个
-func (s *ServiceImplement[Entity, T]) GetOneByMap(columnMap map[string]interface{}) (*T, error) {
+func (s *ServiceImplement[Entity, T]) GetOneByMap(columnMap map[string]interface{}, opts ...DBOption) (*T, error) {
 	if r, ok := any(s.repo).(interface {
-		SelectOneByMap(columnMap map[string]interface{}) (T, error)
+		SelectOneByMap(columnMap map[string]interface{}, opts ...DBOption) (T, error)
 	}); ok {
-		item, err := r.SelectOneByMap(columnMap)
+		item, err := r.SelectOneByMap(columnMap, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -135,61 +135,61 @@ func (s *ServiceImplement[Entity, T]) Exists(opts ...DBOption) bool {
 }
 
 // Save 保存
-func (s *ServiceImplement[Entity, T]) Save(item *T) error {
+func (s *ServiceImplement[Entity, T]) Save(item *T, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		Insert(item *T) error
+		Insert(item *T, opts ...DBOption) error
 	}); ok {
-		return r.Insert(item)
+		return r.Insert(item, opts...)
 	}
 	return errors.New("repo does not implement Insert method")
 }
 
 // SaveOrUpdate 保存或更新
-func (s *ServiceImplement[Entity, T]) SaveOrUpdate(item *T) error {
+func (s *ServiceImplement[Entity, T]) SaveOrUpdate(item *T, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		InsertOrUpdate(item *T) error
+		InsertOrUpdate(item *T, opts ...DBOption) error
 	}); ok {
-		return r.InsertOrUpdate(item)
+		return r.InsertOrUpdate(item, opts...)
 	}
 	return errors.New("repo does not implement InsertOrUpdate method")
 }
 
 // SaveBatch 批量保存
-func (s *ServiceImplement[Entity, T]) SaveBatch(items []*T) error {
+func (s *ServiceImplement[Entity, T]) SaveBatch(items []*T, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		InsertBatch(items []*T) error
+		InsertBatch(items []*T, opts ...DBOption) error
 	}); ok {
-		return r.InsertBatch(items)
+		return r.InsertBatch(items, opts...)
 	}
 	return errors.New("repo does not implement InsertBatch method")
 }
 
 // SaveInBatches 批量保存, 按批次处理
-func (s *ServiceImplement[Entity, T]) SaveInBatches(items []*T, batchSize int) error {
+func (s *ServiceImplement[Entity, T]) SaveInBatches(items []*T, batchSize int, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		InsertInBatches(items []*T, batchSize int) error
+		InsertInBatches(items []*T, batchSize int, opts ...DBOption) error
 	}); ok {
-		return r.InsertInBatches(items, batchSize)
+		return r.InsertInBatches(items, batchSize, opts...)
 	}
 	return errors.New("repo does not implement InsertInBatches method")
 }
 
 // Update 更新
-func (s *ServiceImplement[Entity, T]) Update(item *T) error {
+func (s *ServiceImplement[Entity, T]) Update(item *T, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		Update(item *T) error
+		Update(item *T, opts ...DBOption) error
 	}); ok {
-		return r.Update(item)
+		return r.Update(item, opts...)
 	}
 	return errors.New("repo does not implement Update method")
 }
 
 // UpdateById 根据ID更新
-func (s *ServiceImplement[Entity, T]) UpdateById(id int, vars map[string]interface{}) error {
+func (s *ServiceImplement[Entity, T]) UpdateById(id int, vars map[string]interface{}, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		UpdateById(id int, vars map[string]interface{}) error
+		UpdateById(id int, vars map[string]interface{}, opts ...DBOption) error
 	}); ok {
-		return r.UpdateById(id, vars)
+		return r.UpdateById(id, vars, opts...)
 	}
 	return errors.New("repo does not implement UpdateById method")
 }
@@ -205,11 +205,11 @@ func (s *ServiceImplement[Entity, T]) UpdateBatch(vars map[string]interface{}, o
 }
 
 // Remove 删除
-func (s *ServiceImplement[Entity, T]) Remove(item *T) error {
+func (s *ServiceImplement[Entity, T]) Remove(item *T, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		Delete(item *T) error
+		Delete(item *T, opts ...DBOption) error
 	}); ok {
-		return r.Delete(item)
+		return r.Delete(item, opts...)
 	}
 	return errors.New("repo does not implement Delete method")
 }
@@ -225,81 +225,81 @@ func (s *ServiceImplement[Entity, T]) RemoveBatch(opts ...DBOption) error {
 }
 
 // RemoveById 根据ID删除
-func (s *ServiceImplement[Entity, T]) RemoveById(id int) error {
+func (s *ServiceImplement[Entity, T]) RemoveById(id int, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		DeleteById(id int) error
+		DeleteById(id int, opts ...DBOption) error
 	}); ok {
-		return r.DeleteById(id)
+		return r.DeleteById(id, opts...)
 	}
 	return errors.New("repo does not implement DeleteById method")
 }
 
 // RemoveByIds 根据ID批量删除
-func (s *ServiceImplement[Entity, T]) RemoveByIds(ids []int) error {
+func (s *ServiceImplement[Entity, T]) RemoveByIds(ids []int, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		DeleteBatchIds(ids []int) error
+		DeleteBatchIds(ids []int, opts ...DBOption) error
 	}); ok {
-		return r.DeleteBatchIds(ids)
+		return r.DeleteBatchIds(ids, opts...)
 	}
 	return errors.New("repo does not implement DeleteBatchIds method")
 }
 
 // RemoveByMap 根据条件删除
-func (s *ServiceImplement[Entity, T]) RemoveByMap(columnMap map[string]interface{}) error {
+func (s *ServiceImplement[Entity, T]) RemoveByMap(columnMap map[string]interface{}, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		DeleteByMap(columnMap map[string]interface{}) error
+		DeleteByMap(columnMap map[string]interface{}, opts ...DBOption) error
 	}); ok {
-		return r.DeleteByMap(columnMap)
+		return r.DeleteByMap(columnMap, opts...)
 	}
 	return errors.New("repo does not implement DeleteByMap method")
 }
 
 // Upsert 插入或更新
-func (s *ServiceImplement[Entity, T]) Upsert(item *T, vars map[string]interface{}) error {
+func (s *ServiceImplement[Entity, T]) Upsert(item *T, vars map[string]interface{}, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		Upsert(item *T, vars map[string]interface{}) error
+		Upsert(item *T, vars map[string]interface{}, opts ...DBOption) error
 	}); ok {
-		return r.Upsert(item, vars)
+		return r.Upsert(item, vars, opts...)
 	}
 	return errors.New("repo does not implement Upsert method")
 }
 
 // GetOrCreate 获取或创建
-func (s *ServiceImplement[Entity, T]) GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error) {
+func (s *ServiceImplement[Entity, T]) GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error) {
 	if r, ok := any(s.repo).(interface {
-		GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error)
+		GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error)
 	}); ok {
-		return r.GetOrCreate(whereCond, assignAttrs)
+		return r.GetOrCreate(whereCond, assignAttrs, opts...)
 	}
 	return nil, errors.New("repo does not implement GetOrCreate method")
 }
 
 // UpdateOrCreate 不存在则创建，存在则更新
-func (s *ServiceImplement[Entity, T]) UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error) {
+func (s *ServiceImplement[Entity, T]) UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error) {
 	if r, ok := any(s.repo).(interface {
-		UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error)
+		UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error)
 	}); ok {
-		return r.UpdateOrCreate(whereCond, assignAttrs)
+		return r.UpdateOrCreate(whereCond, assignAttrs, opts...)
 	}
 	return nil, errors.New("repo does not implement UpdateOrCreate method")
 }
 
 // ListByIds 根据ID批量查询
-func (s *ServiceImplement[Entity, T]) ListByIds(ids []int) ([]T, error) {
+func (s *ServiceImplement[Entity, T]) ListByIds(ids []int, opts ...DBOption) ([]T, error) {
 	if r, ok := any(s.repo).(interface {
-		SelectListByIds(ids []int) ([]T, error)
+		SelectListByIds(ids []int, opts ...DBOption) ([]T, error)
 	}); ok {
-		return r.SelectListByIds(ids)
+		return r.SelectListByIds(ids, opts...)
 	}
 	return nil, errors.New("repo does not implement SelectListByIds method")
 }
 
 // ListByMap 根据条件查询
-func (s *ServiceImplement[Entity, T]) ListByMap(columnMap map[string]interface{}) ([]T, error) {
+func (s *ServiceImplement[Entity, T]) ListByMap(columnMap map[string]interface{}, opts ...DBOption) ([]T, error) {
 	if r, ok := any(s.repo).(interface {
-		SelectListByMap(columnMap map[string]interface{}) ([]T, error)
+		SelectListByMap(columnMap map[string]interface{}, opts ...DBOption) ([]T, error)
 	}); ok {
-		return r.SelectListByMap(columnMap)
+		return r.SelectListByMap(columnMap, opts...)
 	}
 	return nil, errors.New("repo does not implement SelectListByMap method")
 }
@@ -355,21 +355,21 @@ func (s *ServiceImplement[Entity, T]) Avg(field string, opts ...DBOption) (float
 }
 
 // Increment 字段自增
-func (s *ServiceImplement[Entity, T]) Increment(id int, field string, value interface{}) error {
+func (s *ServiceImplement[Entity, T]) Increment(id int, field string, value interface{}, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		Increment(id int, field string, value interface{}) error
+		Increment(id int, field string, value interface{}, opts ...DBOption) error
 	}); ok {
-		return r.Increment(id, field, value)
+		return r.Increment(id, field, value, opts...)
 	}
 	return errors.New("repo does not implement Increment method")
 }
 
 // Decrement 字段自减
-func (s *ServiceImplement[Entity, T]) Decrement(id int, field string, value interface{}) error {
+func (s *ServiceImplement[Entity, T]) Decrement(id int, field string, value interface{}, opts ...DBOption) error {
 	if r, ok := any(s.repo).(interface {
-		Decrement(id int, field string, value interface{}) error
+		Decrement(id int, field string, value interface{}, opts ...DBOption) error
 	}); ok {
-		return r.Decrement(id, field, value)
+		return r.Decrement(id, field, value, opts...)
 	}
 	return errors.New("repo does not implement Decrement method")
 }
