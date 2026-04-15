@@ -27,42 +27,42 @@ import (
 
 // IBaseRepo 定义基础接口
 type IBaseRepo[T any] interface {
-	SelectOneById(id int) (T, error)
+	SelectOneById(id int, opts ...DBOption) (T, error)
 	SelectOneByOpts(opts ...DBOption) (T, error)
-	SelectOneByMap(columnMap map[string]interface{}) (T, error)
-	SelectListByIds(ids []int) ([]T, error)
+	SelectOneByMap(columnMap map[string]interface{}, opts ...DBOption) (T, error)
+	SelectListByIds(ids []int, opts ...DBOption) ([]T, error)
 	SelectListByOpts(opts ...DBOption) ([]T, error)
-	SelectListByMap(columnMap map[string]interface{}) ([]T, error)
+	SelectListByMap(columnMap map[string]interface{}, opts ...DBOption) ([]T, error)
 	SelectPage(page, pageSize int, opts ...DBOption) ([]T, int64, error)
 	SelectCount(opts ...DBOption) (int64, error)
 	Exists(opts ...DBOption) bool
 
-	Insert(item *T) error
-	InsertBatch(items []*T) error
-	InsertInBatches(items []*T, batchSize int) error
-	InsertOrUpdate(item *T) error
+	Insert(item *T, opts ...DBOption) error
+	InsertBatch(items []*T, opts ...DBOption) error
+	InsertInBatches(items []*T, batchSize int, opts ...DBOption) error
+	InsertOrUpdate(item *T, opts ...DBOption) error
 
-	Update(item *T) error
-	UpdateById(id int, vars map[string]interface{}) error
+	Update(item *T, opts ...DBOption) error
+	UpdateById(id int, vars map[string]interface{}, opts ...DBOption) error
 	UpdateByOpts(vars map[string]interface{}, opts ...DBOption) error
 
-	Upsert(item *T, vars map[string]interface{}) error
-	GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error)
-	UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error)
+	Upsert(item *T, vars map[string]interface{}, opts ...DBOption) error
+	GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error)
+	UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error)
 
-	Delete(item *T) error
-	DeleteById(id int) error
-	DeleteBatchIds(ids []int) error
+	Delete(item *T, opts ...DBOption) error
+	DeleteById(id int, opts ...DBOption) error
+	DeleteBatchIds(ids []int, opts ...DBOption) error
 	DeleteByOpts(opts ...DBOption) error
-	DeleteByMap(columnMap map[string]interface{}) error
+	DeleteByMap(columnMap map[string]interface{}, opts ...DBOption) error
 
 	Sum(field string, opts ...DBOption) (float64, error)
 	Max(field string, opts ...DBOption) (interface{}, error)
 	Min(field string, opts ...DBOption) (interface{}, error)
 	Avg(field string, opts ...DBOption) (float64, error)
 
-	Increment(id int, field string, value interface{}) error
-	Decrement(id int, field string, value interface{}) error
+	Increment(id int, field string, value interface{}, opts ...DBOption) error
+	Decrement(id int, field string, value interface{}, opts ...DBOption) error
 }
 
 type BaseRepo[T any] struct{}
@@ -95,16 +95,16 @@ func (r *BaseRepo[T]) SelectOneByOpts(opts ...DBOption) (T, error) {
 }
 
 // SelectOneById 根据ID查询单条记录
-func (r *BaseRepo[T]) SelectOneById(id int) (T, error) {
+func (r *BaseRepo[T]) SelectOneById(id int, opts ...DBOption) (T, error) {
 	var item T
-	err := globalDb.Model(new(T)).Where("id = ?", id).First(&item).Error
+	err := GetDb(opts...).Model(new(T)).Where("id = ?", id).First(&item).Error
 
 	return item, err
 }
 
-func (r *BaseRepo[T]) SelectOneByMap(columnMap map[string]interface{}) (T, error) {
+func (r *BaseRepo[T]) SelectOneByMap(columnMap map[string]interface{}, opts ...DBOption) (T, error) {
 	var items []T
-	db := GetDb().Model(new(T))
+	db := GetDb(opts...).Model(new(T))
 
 	if len(columnMap) > 0 {
 		db = db.Where(columnMap)
@@ -133,9 +133,9 @@ func (r *BaseRepo[T]) SelectOneByMap(columnMap map[string]interface{}) (T, error
 }
 
 // SelectListByIds 根据ID批量查询
-func (r *BaseRepo[T]) SelectListByIds(ids []int) ([]T, error) {
+func (r *BaseRepo[T]) SelectListByIds(ids []int, opts ...DBOption) ([]T, error) {
 	var items []T
-	err := globalDb.Model(new(T)).Where("id in ?", ids).Find(&items).Error
+	err := GetDb(opts...).Model(new(T)).Where("id in ?", ids).Find(&items).Error
 	if err != nil {
 		return nil, err
 	}
@@ -179,9 +179,9 @@ func (r *BaseRepo[T]) SelectPage(page, pageSize int, opts ...DBOption) ([]T, int
 }
 
 // SelectListByMap 根据条件查询
-func (r *BaseRepo[T]) SelectListByMap(columnMap map[string]interface{}) ([]T, error) {
+func (r *BaseRepo[T]) SelectListByMap(columnMap map[string]interface{}, opts ...DBOption) ([]T, error) {
 	var items []T
-	db := GetDb().Model(new(T))
+	db := GetDb(opts...).Model(new(T))
 
 	if len(columnMap) > 0 {
 		db = db.Where(columnMap)
@@ -220,25 +220,25 @@ func (r *BaseRepo[T]) Exists(opts ...DBOption) bool {
 }
 
 // Insert 创建单条记录
-func (r *BaseRepo[T]) Insert(item *T) error {
+func (r *BaseRepo[T]) Insert(item *T, opts ...DBOption) error {
 	if item == nil {
 		return errors.New("item cannot be nil")
 	}
 
-	return globalDb.Create(item).Error
+	return GetDb(opts...).Create(item).Error
 }
 
 // InsertBatch 批量插入
-func (r *BaseRepo[T]) InsertBatch(items []*T) error {
+func (r *BaseRepo[T]) InsertBatch(items []*T, opts ...DBOption) error {
 	if len(items) == 0 {
 		return errors.New("items cannot be empty")
 	}
 
-	return globalDb.Create(items).Error
+	return GetDb(opts...).Create(items).Error
 }
 
 // InsertInBatches 批量插入, 按批次插入
-func (r *BaseRepo[T]) InsertInBatches(items []*T, batchSize int) error {
+func (r *BaseRepo[T]) InsertInBatches(items []*T, batchSize int, opts ...DBOption) error {
 	if len(items) == 0 {
 		return errors.New("items cannot be empty")
 	}
@@ -247,12 +247,12 @@ func (r *BaseRepo[T]) InsertInBatches(items []*T, batchSize int) error {
 		return errors.New("batchSize must be greater than 0")
 	}
 
-	return globalDb.CreateInBatches(items, batchSize).Error
+	return GetDb(opts...).CreateInBatches(items, batchSize).Error
 }
 
 // InsertOrUpdate 创建或更新, 若主键有值, 则更新, 否则创建
-func (r *BaseRepo[T]) InsertOrUpdate(item *T) error {
-	return globalDb.Clauses(clause.OnConflict{
+func (r *BaseRepo[T]) InsertOrUpdate(item *T, opts ...DBOption) error {
+	return GetDb(opts...).Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(item).Error
 }
@@ -380,19 +380,19 @@ func (r *BaseRepo[T]) filterUpdateFields(vars map[string]interface{}) map[string
 }
 
 // Update 更新单条记录
-func (r *BaseRepo[T]) Update(item *T) error {
+func (r *BaseRepo[T]) Update(item *T, opts ...DBOption) error {
 	if item == nil {
 		return errors.New("item cannot be nil")
 	}
 	// 使用Updates 而不是Save, 避免意外插入新纪录
-	return globalDb.Model(item).Updates(item).Error
+	return GetDb(opts...).Model(item).Updates(item).Error
 }
 
 // UpdateById 根据ID更新记录
-func (r *BaseRepo[T]) UpdateById(id int, vars map[string]interface{}) error {
+func (r *BaseRepo[T]) UpdateById(id int, vars map[string]interface{}, opts ...DBOption) error {
 	// 过滤不允许更新的字段
 	filteredVars := r.filterUpdateFields(vars)
-	return globalDb.Model(new(T)).Where("id = ?", id).Updates(filteredVars).Error
+	return GetDb(opts...).Model(new(T)).Where("id = ?", id).Updates(filteredVars).Error
 }
 
 // UpdateByOpts 根据条件更新记录
@@ -409,17 +409,17 @@ func (r *BaseRepo[T]) UpdateByOpts(vars map[string]interface{}, opts ...DBOption
 }
 
 // Upsert 插入或更新（根据唯一约束）
-func (r *BaseRepo[T]) Upsert(item *T, vars map[string]interface{}) error {
-	return globalDb.Clauses(clause.OnConflict{
+func (r *BaseRepo[T]) Upsert(item *T, vars map[string]interface{}, opts ...DBOption) error {
+	return GetDb(opts...).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.Assignments(vars),
 	}).Create(item).Error
 }
 
 // GetOrCreate 查找第一条匹配的记录，否则根据条件创建新记录
-func (r *BaseRepo[T]) GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error) {
+func (r *BaseRepo[T]) GetOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error) {
 	var item T
-	db := GetDb().Model(new(T))
+	db := GetDb(opts...).Model(new(T))
 
 	// 检查是否提供了更新条件
 	if len(whereCond) == 0 {
@@ -438,9 +438,9 @@ func (r *BaseRepo[T]) GetOrCreate(whereCond map[string]interface{}, assignAttrs 
 }
 
 // UpdateOrCreate 不存在则创建，存在则更新
-func (r *BaseRepo[T]) UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}) (*T, error) {
+func (r *BaseRepo[T]) UpdateOrCreate(whereCond map[string]interface{}, assignAttrs map[string]interface{}, opts ...DBOption) (*T, error) {
 	var item T
-	db := GetDb().Model(new(T))
+	db := GetDb(opts...).Model(new(T))
 
 	// FirstOrCreate 会先查找匹配 whereCond 的记录
 	// 如果找不到，则使用 whereCond + assignAttrs 创建新记录
@@ -454,21 +454,21 @@ func (r *BaseRepo[T]) UpdateOrCreate(whereCond map[string]interface{}, assignAtt
 }
 
 // Delete 删除单条记录
-func (r *BaseRepo[T]) Delete(item *T) error {
+func (r *BaseRepo[T]) Delete(item *T, opts ...DBOption) error {
 	if item == nil {
 		return errors.New("item cannot be nil")
 	}
-	return globalDb.Delete(item).Error
+	return GetDb(opts...).Delete(item).Error
 }
 
 // DeleteById 根据ID删除记录
-func (r *BaseRepo[T]) DeleteById(id int) error {
-	return globalDb.Where("id = ?", id).Delete(new(T)).Error
+func (r *BaseRepo[T]) DeleteById(id int, opts ...DBOption) error {
+	return GetDb(opts...).Where("id = ?", id).Delete(new(T)).Error
 }
 
 // DeleteBatchIds 根据ID批量删除记录
-func (r *BaseRepo[T]) DeleteBatchIds(ids []int) error {
-	return globalDb.Where("id in ?", ids).Delete(new(T)).Error
+func (r *BaseRepo[T]) DeleteBatchIds(ids []int, opts ...DBOption) error {
+	return GetDb(opts...).Where("id in ?", ids).Delete(new(T)).Error
 }
 
 // DeleteByOpts 根据条件删除记录
@@ -484,8 +484,8 @@ func (r *BaseRepo[T]) DeleteByOpts(opts ...DBOption) error {
 }
 
 // DeleteByMap 根据条件删除记录
-func (r *BaseRepo[T]) DeleteByMap(columnMap map[string]interface{}) error {
-	db := GetDb().Model(new(T))
+func (r *BaseRepo[T]) DeleteByMap(columnMap map[string]interface{}, opts ...DBOption) error {
+	db := GetDb(opts...).Model(new(T))
 
 	// 如果columnMap为空，不执行删除操作
 	if len(columnMap) == 0 {
@@ -564,11 +564,11 @@ func (r *BaseRepo[T]) Avg(field string, opts ...DBOption) (float64, error) {
 }
 
 // Increment 字段自增
-func (r *BaseRepo[T]) Increment(id int, field string, value interface{}) error {
-	return globalDb.Model(new(T)).Where("id = ?", id).UpdateColumn(field, gorm.Expr(field+" + ?", value)).Error
+func (r *BaseRepo[T]) Increment(id int, field string, value interface{}, opts ...DBOption) error {
+	return GetDb(opts...).Model(new(T)).Where("id = ?", id).UpdateColumn(field, gorm.Expr(field+" + ?", value)).Error
 }
 
 // Decrement 字段自减
-func (r *BaseRepo[T]) Decrement(id int, field string, value interface{}) error {
-	return globalDb.Model(new(T)).Where("id = ?", id).UpdateColumn(field, gorm.Expr(field+" - ?", value)).Error
+func (r *BaseRepo[T]) Decrement(id int, field string, value interface{}, opts ...DBOption) error {
+	return GetDb(opts...).Model(new(T)).Where("id = ?", id).UpdateColumn(field, gorm.Expr(field+" - ?", value)).Error
 }
