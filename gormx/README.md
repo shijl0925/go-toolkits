@@ -262,8 +262,8 @@ func assignRoles(user User, newRoles []Role, auditLog *AuditLog) error {
 }
 
 // 3. UseDB 也可直接在 RolesManager() 这类工厂方法中传入
-func (u *User) RolesManagerWithTx(tx *gorm.DB) gormx.AssociationManager[User, Role] {
-    return gormx.NewAssociationManager[User, Role](*u, "Roles", gormx.UseDB(tx))
+func (u User) RolesManagerWithTx(tx *gorm.DB) gormx.AssociationManager[User, Role] {
+    return gormx.NewAssociationManager[User, Role](u, "Roles", gormx.UseDB(tx))
 }
 ```
 
@@ -436,4 +436,3 @@ func main() {
 - **表名引号**：PostgreSQL 默认区分大小写并使用双引号，GORM 会自动处理；建议 `gorm:"column:xxx"` 使用全小写或 snake_case 命名。
 - **JSONB / 数组等扩展类型**：如需使用 PostgreSQL 特有的字段类型（`jsonb`、`text[]` 等），在模型定义上配合 `gorm.io/datatypes` 等扩展包即可，gormx 的查询构建器仍然适用。
 - **`Regexp` 区分大小写**：PostgreSQL 的 `~` 默认区分大小写；如需忽略大小写，可改用 `~*` 操作符，此时通过 `RawRows` 或 `Scan` 手写 WHERE 子句即可。
-
