@@ -92,6 +92,10 @@ func gormxExecutionScenarios() []dbScenario {
 		{name: "GenericAssociationManager_Set", test: TestGenericAssociationManager_Set},
 		{name: "GenericAssociationManager_Count", test: TestGenericAssociationManager_Count},
 		{name: "GenericAssociationManager_All", test: TestGenericAssociationManager_All},
+		{name: "AssociationManager_Add_Transaction_Rollback", test: TestAssociationManager_Add_WithTransaction_Rollback},
+		{name: "AssociationManager_Add_Transaction_Commit", test: TestAssociationManager_Add_WithTransaction_Commit},
+		{name: "AssociationManager_Set_Transaction_Rollback", test: TestAssociationManager_Set_WithTransaction_Rollback},
+		{name: "AssociationManager_Context_CancelledContext", test: TestAssociationManager_WithContext_CancelledContext},
 	}
 
 	return append(scenarios, queryExecutionScenarios()...)

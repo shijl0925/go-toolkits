@@ -143,6 +143,130 @@ query.Eq(&user.Name, "alice").In(&user.Status, []int{1, 2})
 sql, args := query.ToSQLAndArgs()
 ```
 
+## 注入请求级 DB 与事务
+
+`BaseRepo`、`ServiceImplement` 以及 `AssociationManager` 的所有方法均通过 `opts ...DBOption` 接受外部 `*gorm.DB` 实例。使用内置的 `UseDB(db)` 选项即可注入请求级 DB 或活动事务，无需修改全局状态，也无需改变方法签名。
+
+### BaseRepo
+
+```go
+// 1. 注入请求级 DB（以 Gin 为例）
+func listUsersHandler(c *gin.Context) {
+    requestDB := extractDBFromContext(c) // 从请求上下文获取携带 trace / tenant 信息的 DB
+
+    repo := &UserRepo{}
+    users, err := repo.SelectListByOpts(
+        gormx.UseDB(requestDB),
+        gormx.Where("status = ?", 1),
+    )
+    // ...
+}
+
+// 2. 注入事务（原子写操作）
+func createOrderWithItems(order *Order, items []*OrderItem) error {
+    tx := gormx.GetDb().Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+
+    orderRepo := &OrderRepo{}
+    if err := orderRepo.Insert(order, gormx.UseDB(tx)); err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    itemRepo := &OrderItemRepo{}
+    if err := itemRepo.InsertBatch(items, gormx.UseDB(tx)); err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    return tx.Commit().Error
+}
+```
+
+### ServiceImplement
+
+```go
+// 在 service 层传递事务，保证多步操作的原子性
+func (s *TransferService) Transfer(fromID, toID int, amount float64) error {
+    tx := gormx.GetDb().Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+
+    if err := s.Decrement(fromID, "balance", amount, gormx.UseDB(tx)); err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    if err := s.Increment(toID, "balance", amount, gormx.UseDB(tx)); err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    return tx.Commit().Error
+}
+
+// 注入请求级 DB（例如携带 trace_id 的 DB）
+func (s *UserService) GetActiveUsers(requestDB *gorm.DB) ([]User, error) {
+    return s.ListByOpts(
+        gormx.UseDB(requestDB),
+        gormx.Where("status = ?", 1),
+    )
+}
+```
+
+### AssociationManager
+
+`NewAssociationManager` 在构造时接受 `opts ...DBOption`，DB 实例在创建时一次性绑定，后续所有方法（`Add`、`Remove`、`Set`、`Clear`、`Count`、`All`）均复用该 DB。
+
+```go
+// 1. 注入请求级 DB
+func getRolesHandler(c *gin.Context) {
+    requestDB := extractDBFromContext(c)
+
+    user := loadUser()
+    manager := gormx.NewAssociationManager[User, Role](user, "Roles", gormx.UseDB(requestDB))
+    roles, err := manager.All()
+    // ...
+}
+
+// 2. 在事务中管理关联关系（整体替换角色 + 记录审计日志，原子提交）
+func assignRoles(user User, newRoles []Role, auditLog *AuditLog) error {
+    tx := gormx.GetDb().Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+
+    // 在同一事务中创建 manager，所有关联操作均走 tx
+    manager := gormx.NewAssociationManager[User, Role](user, "Roles", gormx.UseDB(tx))
+    if err := manager.Set(newRoles); err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    auditRepo := &AuditRepo{}
+    if err := auditRepo.Insert(auditLog, gormx.UseDB(tx)); err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    return tx.Commit().Error
+}
+
+// 3. UseDB 也可直接在 RolesManager() 这类工厂方法中传入
+func (u *User) RolesManagerWithTx(tx *gorm.DB) gormx.AssociationManager[User, Role] {
+    return gormx.NewAssociationManager[User, Role](*u, "Roles", gormx.UseDB(tx))
+}
+```
+
 ## API 导览
 
 ### Query[T] 常用条件能力

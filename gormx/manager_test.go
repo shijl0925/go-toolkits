@@ -1,9 +1,11 @@
 package gormx_test
 
 import (
+	"context"
 	"fmt"
-	"github.com/shijl0925/go-toolkits/gormx"
 	"testing"
+
+	"github.com/shijl0925/go-toolkits/gormx"
 )
 
 // TestGenericAssociationManager_Add 测试 Add 方法
@@ -252,5 +254,218 @@ func TestGenericAssociationManager_All(t *testing.T) {
 
 	if len(expectedRoles) > 0 {
 		t.Errorf("Expected roles not found: %v", expectedRoles)
+	}
+}
+
+// --- DB 注入 / 事务测试 ---
+
+// getTestUser 返回名为 "testuser1" 的用户，若不存在则令测试失败。
+func getTestUser(t *testing.T) User {
+	t.Helper()
+	userRepo := &gormx.BaseRepo[User]{}
+	uq, u := gormx.NewQuery[User]()
+	uq.Eq(&u.Name, "testuser1")
+	user, err := userRepo.SelectOneByOpts(uq.ToOptions()...)
+	if err != nil {
+		t.Fatalf("getTestUser: %v", err)
+	}
+	return user
+}
+
+// getTestRole 返回指定名称的角色，若不存在则令测试失败。
+func getTestRole(t *testing.T, name string) Role {
+	t.Helper()
+	roleRepo := &gormx.BaseRepo[Role]{}
+	rq, r := gormx.NewQuery[Role]()
+	rq.Eq(&r.Name, name)
+	role, err := roleRepo.SelectOneByOpts(rq.ToOptions()...)
+	if err != nil {
+		t.Fatalf("getTestRole(%q): %v", name, err)
+	}
+	return role
+}
+
+// TestAssociationManager_Add_WithTransaction_Rollback 验证在事务中通过 UseDB 注入的
+// AssociationManager.Add 操作会在事务回滚后还原：
+//  1. 在事务内添加关联，关联在事务内可见。
+//  2. 回滚事务后，关联从全局 DB 中消失。
+func TestAssociationManager_Add_WithTransaction_Rollback(t *testing.T) {
+	setupTestData(t)
+	setupPreloadTestData(t)
+
+	user := getTestUser(t)
+	role := getTestRole(t, "Admin")
+
+	tx := gormx.GetDb().Begin()
+	if tx.Error != nil {
+		t.Fatalf("failed to begin transaction: %v", tx.Error)
+	}
+
+	// 在事务内添加关联
+	txManager := gormx.NewAssociationManager[User, Role](user, "Roles", gormx.UseDB(tx))
+	if err := txManager.Add(role); err != nil {
+		tx.Rollback()
+		t.Fatalf("Add inside tx failed: %v", err)
+	}
+
+	// 事务内应能看到该关联
+	inTxRoles, err := txManager.All()
+	if err != nil {
+		tx.Rollback()
+		t.Fatalf("All inside tx failed: %v", err)
+	}
+	found := false
+	for _, r := range inTxRoles {
+		if r.Name == "Admin" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		tx.Rollback()
+		t.Fatal("expected role 'Admin' to be visible inside tx")
+	}
+
+	// 回滚
+	if err := tx.Rollback().Error; err != nil {
+		t.Fatalf("rollback failed: %v", err)
+	}
+
+	// 回滚后全局 DB 中不应有该关联
+	globalManager := gormx.NewAssociationManager[User, Role](user, "Roles")
+	afterRoles, err := globalManager.All()
+	if err != nil {
+		t.Fatalf("All after rollback failed: %v", err)
+	}
+	for _, r := range afterRoles {
+		if r.Name == "Admin" {
+			t.Error("expected role 'Admin' to be absent after rollback, but it was found")
+		}
+	}
+}
+
+// TestAssociationManager_Add_WithTransaction_Commit 验证在事务提交后，
+// 通过 UseDB 注入的 AssociationManager.Add 操作结果在全局 DB 中持久可见。
+func TestAssociationManager_Add_WithTransaction_Commit(t *testing.T) {
+	setupTestData(t)
+	setupPreloadTestData(t)
+
+	user := getTestUser(t)
+	role := getTestRole(t, "Editor")
+
+	tx := gormx.GetDb().Begin()
+	if tx.Error != nil {
+		t.Fatalf("failed to begin transaction: %v", tx.Error)
+	}
+
+	txManager := gormx.NewAssociationManager[User, Role](user, "Roles", gormx.UseDB(tx))
+	if err := txManager.Add(role); err != nil {
+		tx.Rollback()
+		t.Fatalf("Add inside tx failed: %v", err)
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		t.Fatalf("commit failed: %v", err)
+	}
+
+	// 提交后通过全局 DB 应能看到该关联
+	globalManager := gormx.NewAssociationManager[User, Role](user, "Roles")
+	afterRoles, err := globalManager.All()
+	if err != nil {
+		t.Fatalf("All after commit failed: %v", err)
+	}
+
+	found := false
+	for _, r := range afterRoles {
+		if r.Name == "Editor" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected role 'Editor' to be visible after commit, but not found")
+	}
+
+	// 清理：移除刚添加的关联，不影响其它测试
+	_ = globalManager.Clear()
+}
+
+// TestAssociationManager_Set_WithTransaction_Rollback 验证在事务中通过 UseDB 注入的
+// AssociationManager.Set 操作在回滚后不会改变原始关联状态。
+func TestAssociationManager_Set_WithTransaction_Rollback(t *testing.T) {
+	setupTestData(t)
+	setupPreloadTestData(t)
+
+	user := getTestUser(t)
+	roleAdmin := getTestRole(t, "Admin")
+	roleViewer := getTestRole(t, "Viewer")
+
+	// 先通过全局 DB 建立初始关联（Admin）
+	initialManager := gormx.NewAssociationManager[User, Role](user, "Roles")
+	if err := initialManager.Clear(); err != nil {
+		t.Fatalf("initial Clear failed: %v", err)
+	}
+	if err := initialManager.Add(roleAdmin); err != nil {
+		t.Fatalf("initial Add failed: %v", err)
+	}
+
+	tx := gormx.GetDb().Begin()
+	if tx.Error != nil {
+		t.Fatalf("failed to begin transaction: %v", tx.Error)
+	}
+
+	// 在事务内将角色替换为 Viewer
+	txManager := gormx.NewAssociationManager[User, Role](user, "Roles", gormx.UseDB(tx))
+	if err := txManager.Set([]Role{roleViewer}); err != nil {
+		tx.Rollback()
+		t.Fatalf("Set inside tx failed: %v", err)
+	}
+
+	// 回滚
+	if err := tx.Rollback().Error; err != nil {
+		t.Fatalf("rollback failed: %v", err)
+	}
+
+	// 全局 DB 中应仍保留原来的 Admin 关联
+	globalManager := gormx.NewAssociationManager[User, Role](user, "Roles")
+	afterRoles, err := globalManager.All()
+	if err != nil {
+		t.Fatalf("All after rollback failed: %v", err)
+	}
+
+	adminFound := false
+	for _, r := range afterRoles {
+		if r.Name == "Viewer" {
+			t.Error("expected role 'Viewer' to be absent after rollback, but it was found")
+		}
+		if r.Name == "Admin" {
+			adminFound = true
+		}
+	}
+	if !adminFound {
+		t.Error("expected original role 'Admin' to still be present after rollback")
+	}
+
+	// 清理
+	_ = globalManager.Clear()
+}
+
+// TestAssociationManager_WithContext_CancelledContext 验证通过 UseDB 注入携带已取消
+// context 的 DB 时，AssociationManager 的操作会正确返回错误，而非使用全局 DB 继续执行。
+func TestAssociationManager_WithContext_CancelledContext(t *testing.T) {
+	setupTestData(t)
+	setupPreloadTestData(t)
+
+	user := getTestUser(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // 提前取消
+
+	ctxDB := gormx.GetDb().WithContext(ctx)
+	manager := gormx.NewAssociationManager[User, Role](user, "Roles", gormx.UseDB(ctxDB))
+
+	_, err := manager.All()
+	if err == nil {
+		t.Error("expected an error from the cancelled context, got nil")
 	}
 }
