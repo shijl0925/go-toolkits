@@ -690,7 +690,7 @@ func TestBaseRepo_SelectPage(t *testing.T) {
 
 	t.Run("test select page with normal pagination", func(t *testing.T) {
 		// 测试正常分页查询
-		page := 1
+		page := 2
 		pageSize := 2
 
 		users, total, err := userRepo.SelectPage(page, pageSize)
@@ -705,8 +705,8 @@ func TestBaseRepo_SelectPage(t *testing.T) {
 		}
 
 		// 验证总数
-		if total == 0 {
-			t.Error("Expected total count to be greater than 0")
+		if total != 4 {
+			t.Errorf("Expected total count to be 4, got: %d", total)
 		}
 	})
 
@@ -727,8 +727,8 @@ func TestBaseRepo_SelectPage(t *testing.T) {
 		}
 
 		// 验证总数
-		if total != 0 {
-			t.Error("Expected total count is 0")
+		if total != 4 {
+			t.Errorf("Expected total count to be 4, got: %d", total)
 		}
 	})
 
@@ -749,8 +749,8 @@ func TestBaseRepo_SelectPage(t *testing.T) {
 		}
 
 		// 验证总数
-		if total != 0 {
-			t.Error("Expected total count is 0")
+		if total != 4 {
+			t.Errorf("Expected total count to be 4, got: %d", total)
 		}
 	})
 

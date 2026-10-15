@@ -161,17 +161,15 @@ func (r *BaseRepo[T]) SelectPage(page, pageSize int, opts ...DBOption) ([]T, int
 	var items []T
 
 	db := GetDb(opts...).Model(new(T))
-	query := db.Limit(pageSize).Offset((page - 1) * pageSize)
 
-	// 应用条件查询获取分页数据
-	err := query.Find(&items).Error
-	if err != nil {
+	// 在应用分页条件前统计总数
+	var total int64
+	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// 统计总数
-	var total int64
-	if err := db.Count(&total).Error; err != nil {
+	// 应用条件查询获取分页数据
+	if err := db.Limit(pageSize).Offset((page - 1) * pageSize).Find(&items).Error; err != nil {
 		return nil, 0, err
 	}
 
