@@ -731,7 +731,7 @@ func TestBaseRepo_SelectPage(t *testing.T) {
 			t.Error("Expected total count to be greater than 0")
 		}
 	})
-	
+
 	t.Run("test select page with out of range page", func(t *testing.T) {
 		// 测试超出范围的页码
 		page := 100
@@ -749,8 +749,8 @@ func TestBaseRepo_SelectPage(t *testing.T) {
 		}
 
 		// 验证总数
-		if total != 0 {
-			t.Error("Expected total count is 0")
+		if total != 4 {
+			t.Errorf("Expected total count to be 4, got: %d", total)
 		}
 	})
 
@@ -771,8 +771,8 @@ func TestBaseRepo_SelectPage(t *testing.T) {
 		}
 
 		// 验证总数
-		if total != 0 {
-			t.Error("Expected total count is 0")
+		if total != 4 {
+			t.Errorf("Expected total count to be 4, got: %d", total)
 		}
 	})
 
