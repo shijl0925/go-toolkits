@@ -76,17 +76,23 @@ func (m *GenericAssociationManager[T, R]) Clear() error {
 // Clear 后再 Append，使 Set 的行为符合“整体替换”语义。
 func (m *GenericAssociationManager[T, R]) Set(relations []R) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
-		assoc := tx.Model(&m.owner).Association(m.fieldName)
-		if err := assoc.Error; err != nil {
+		clearAssoc := tx.Model(&m.owner).Association(m.fieldName)
+		if err := clearAssoc.Error; err != nil {
 			return err
 		}
-		if err := assoc.Clear(); err != nil {
+		if err := clearAssoc.Clear(); err != nil {
 			return err
 		}
+
 		if len(relations) == 0 {
 			return nil
 		}
-		return assoc.Append(relations)
+
+		appendAssoc := tx.Model(&m.owner).Association(m.fieldName)
+		if err := appendAssoc.Error; err != nil {
+			return err
+		}
+		return appendAssoc.Append(relations)
 	})
 }
 
