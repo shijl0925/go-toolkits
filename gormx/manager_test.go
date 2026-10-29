@@ -177,6 +177,54 @@ func TestGenericAssociationManager_Set(t *testing.T) {
 	}
 }
 
+// TestGenericAssociationManager_Set_IdempotentWithDuplicateJoinRows 验证 Set
+// 在 many2many join 表已存在重复关联行时，仍会按整体替换语义清理并重建关联。
+func TestGenericAssociationManager_Set_IdempotentWithDuplicateJoinRows(t *testing.T) {
+	setupTestData(t)
+	setupPreloadTestData(t)
+
+	db := requireTestDB(t)
+	user := getTestUser(t)
+	role := getTestRole(t, "Admin")
+	manager := gormx.NewAssociationManager[User, Role](user, "Roles")
+
+	if err := manager.Clear(); err != nil {
+		t.Fatalf("initial Clear failed: %v", err)
+	}
+
+	duplicates := []UserRole{
+		{UserID: user.ID, RoleID: role.ID},
+		{UserID: user.ID, RoleID: role.ID},
+	}
+	if err := db.Create(&duplicates).Error; err != nil {
+		t.Fatalf("failed to create duplicate join rows: %v", err)
+	}
+
+	for i := 0; i < 3; i++ {
+		if err := manager.Set([]Role{role}); err != nil {
+			t.Fatalf("Set attempt %d failed: %v", i+1, err)
+		}
+	}
+
+	var activeJoinRows int64
+	if err := db.Model(&UserRole{}).
+		Where("user_id = ? AND role_id = ?", user.ID, role.ID).
+		Count(&activeJoinRows).Error; err != nil {
+		t.Fatalf("failed to count active join rows: %v", err)
+	}
+	if activeJoinRows != 1 {
+		t.Fatalf("expected exactly 1 active join row after repeated Set, got %d", activeJoinRows)
+	}
+
+	var preloaded User
+	if err := db.Preload("Roles").First(&preloaded, user.ID).Error; err != nil {
+		t.Fatalf("failed to preload user roles: %v", err)
+	}
+	if len(preloaded.Roles) != 1 || preloaded.Roles[0].ID != role.ID {
+		t.Fatalf("expected preloaded roles to contain only %q, got %#v", role.Name, preloaded.Roles)
+	}
+}
+
 // TestGenericAssociationManager_Count 测试 Count 方法
 func TestGenericAssociationManager_Count(t *testing.T) {
 	// 准备测试数据
