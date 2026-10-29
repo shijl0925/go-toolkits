@@ -12,7 +12,7 @@ import (
 //  - Add: 添加关联关系
 //  - Remove: 删除关联关系
 //  - Clear: 清空所有关联
-//  - Set: 设置关联关系（替换现有关系）
+//  - Set: 设置关联关系（事务内清空并重建）
 //  - Count: 统计关联数量
 //  - All: 获取所有关联数据
 
@@ -69,13 +69,25 @@ func (m *GenericAssociationManager[T, R]) Clear() error {
 	return assoc.Clear()
 }
 
-// Set 设置关联关系（替换现有关系）
+// Set 设置关联关系（事务内清空并重建）。
+//
+// GORM 的 Association.Replace 在 many2many join 表缺少组合唯一约束、
+// 且 join 表包含软删除字段时，可能无法保证重复调用的幂等性。这里显式
+// Clear 后再 Append，使 Set 的行为符合“整体替换”语义。
 func (m *GenericAssociationManager[T, R]) Set(relations []R) error {
-	assoc := m.db.Model(&m.owner).Association(m.fieldName)
-	if err := assoc.Error; err != nil {
-		return err
-	}
-	return assoc.Replace(relations)
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		assoc := tx.Model(&m.owner).Association(m.fieldName)
+		if err := assoc.Error; err != nil {
+			return err
+		}
+		if err := assoc.Clear(); err != nil {
+			return err
+		}
+		if len(relations) == 0 {
+			return nil
+		}
+		return assoc.Append(relations)
+	})
 }
 
 // Count 统计关联数量
